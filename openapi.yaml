@@ -1,0 +1,337 @@
+openapi: 3.0.3
+info:
+  title: FastingHero API
+  version: 1.0.0
+  description: API for FastingHero - Intermittent Fasting & Longevity App
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local Development Server
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        is_premium:
+          type: boolean
+        is_elite:
+          type: boolean
+    
+    AuthResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        expires_in:
+          type: integer
+
+    FastingSession:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        start_time:
+          type: string
+          format: date-time
+        end_time:
+          type: string
+          format: date-time
+          nullable: true
+        target_duration_hours:
+          type: integer
+        plan_type:
+          type: string
+          enum: [BEGINNER, INTERMEDIATE, OMAD, ELITE]
+        status:
+          type: string
+          enum: [ACTIVE, COMPLETED, CANCELLED]
+
+    HealthMetric:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [WEIGHT, WATER, STEPS, KETONES_BLOOD, ACETONE_BREATH]
+        value:
+          type: number
+        unit:
+          type: string
+        recorded_at:
+          type: string
+          format: date-time
+
+    SocialPost:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+        content:
+          type: string
+        image_url:
+          type: string
+        type:
+          type: string
+          enum: [STREAK, MEAL]
+        created_at:
+          type: string
+          format: date-time
+
+    MedicalData:
+      type: object
+      description: Encrypted medical data for Elite users
+      properties:
+        id:
+          type: string
+          format: uuid
+        fasting_session_id:
+          type: string
+          format: uuid
+        stage:
+          type: string
+          enum: [BEFORE, AFTER]
+        insulin:
+          type: number
+        glucose:
+          type: number
+        cortisol:
+          type: number
+        crp:
+          type: number
+        recorded_at:
+          type: string
+          format: date-time
+
+paths:
+  # Authentication
+  /auth/register:
+    post:
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: {type: string, format: email}
+                password: {type: string}
+      responses:
+        201:
+          description: User created
+        400:
+          description: Invalid input
+
+  /auth/login:
+    post:
+      summary: Login user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: {type: string, format: email}
+                password: {type: string}
+      responses:
+        200:
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+
+  /auth/refresh:
+    post:
+      summary: Refresh access token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refresh_token]
+              properties:
+                refresh_token: {type: string}
+      responses:
+        200:
+          description: Token refreshed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+
+  # Fasting Engine
+  /fasting/current:
+    get:
+      summary: Get current active fasting session
+      security: [{bearerAuth: []}]
+      responses:
+        200:
+          description: Current session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FastingSession'
+        404:
+          description: No active session
+
+  /fasting/start:
+    post:
+      summary: Start a new fast
+      security: [{bearerAuth: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [plan_type, target_duration_hours]
+              properties:
+                plan_type: {type: string}
+                target_duration_hours: {type: integer}
+      responses:
+        201:
+          description: Fast started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FastingSession'
+
+  /fasting/stop:
+    post:
+      summary: Stop current fast
+      security: [{bearerAuth: []}]
+      responses:
+        200:
+          description: Fast stopped
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FastingSession'
+
+  # Health & Keto (Premium)
+  /health/metrics:
+    post:
+      summary: Log health metric (Weight, Water, Steps)
+      security: [{bearerAuth: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HealthMetric'
+      responses:
+        201:
+          description: Metric logged
+
+  /health/keto:
+    post:
+      summary: Log Keto metrics (Premium Only)
+      description: Requires Premium subscription. Logs Blood Ketones or Acetone Breath.
+      security: [{bearerAuth: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [type, value]
+              properties:
+                type: 
+                  type: string
+                  enum: [KETONES_BLOOD, ACETONE_BREATH]
+                value: {type: number}
+      responses:
+        201:
+          description: Keto metric logged
+        403:
+          description: Premium subscription required
+
+  # Elite Health (Medical Data)
+  /health/elite/biomarkers:
+    post:
+      summary: Log medical biomarkers (Elite Only)
+      description: Encrypted storage for sensitive medical data.
+      security: [{bearerAuth: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MedicalData'
+      responses:
+        201:
+          description: Biomarkers logged
+        403:
+          description: Elite subscription required
+
+  # Social
+  /social/feed:
+    get:
+      summary: Get social feed
+      security: [{bearerAuth: []}]
+      responses:
+        200:
+          description: List of posts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SocialPost'
+
+  /social/post:
+    post:
+      summary: Create a social post
+      security: [{bearerAuth: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [content, type]
+              properties:
+                content: {type: string}
+                type: {type: string, enum: [STREAK, MEAL]}
+                image_url: {type: string}
+      responses:
+        201:
+          description: Post created
+
+  # GDPR
+  /user/export:
+    get:
+      summary: Export all user data (GDPR)
+      security: [{bearerAuth: []}]
+      responses:
+        200:
+          description: JSON export of all user data
+          content:
+            application/json:
+              schema:
+                type: object

@@ -1,0 +1,262 @@
+openapi: 3.0.3
+info:
+  title: FastingHero API
+  version: 1.0.0
+  description: API for FastingHero - Intermittent Fasting & Longevity App. Features include Fasting Engine, Keto Tracking (Premium), and Social Gamification.
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local Development Server
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        is_premium:
+          type: boolean
+          description: Indicates if the user has a premium subscription
+        subscription_tier:
+          type: string
+          enum: [free, premium, elite]
+    FastingSession:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        start_time:
+          type: string
+          format: date-time
+        end_time:
+          type: string
+          format: date-time
+          nullable: true
+        goal_hours:
+          type: integer
+          description: Target duration in hours
+        plan_type:
+          type: string
+          enum: [beginner, 16_8, 18_6, omad, 24h, 36h, extended]
+        status:
+          type: string
+          enum: [active, completed, cancelled]
+    KetoEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        logged_at:
+          type: string
+          format: date-time
+        ketone_level:
+          type: number
+          format: float
+          description: Blood Ketone levels (mmol/L) - LOCKED for Non-Premium
+        acetone_level:
+          type: number
+          format: float
+          description: Acetone breath readings - LOCKED for Non-Premium
+        source:
+          type: string
+          enum: [manual, device]
+    SocialPost:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        content:
+          type: string
+        image_url:
+          type: string
+        type:
+          type: string
+          enum: [streak, meal]
+        likes:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+    MedicalBiomarkers:
+      type: object
+      description: Elite user medical data (Encrypted)
+      properties:
+        insulin:
+          type: number
+        glucose:
+          type: number
+        cortisol:
+          type: number
+        crp:
+          type: number
+paths:
+  /auth/register:
+    post:
+      summary: Register a new user
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: {type: string, format: email}
+                password: {type: string, minLength: 8}
+      responses:
+        201:
+          description: User created successfully
+  /auth/login:
+    post:
+      summary: Login user
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: {type: string, format: email}
+                password: {type: string}
+      responses:
+        200:
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token: {type: string}
+                  refresh_token: {type: string}
+  /user/profile:
+    get:
+      summary: Get user profile and subscription status
+      tags: [User]
+      security: [{BearerAuth: []}]
+      responses:
+        200:
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+  /fasting/start:
+    post:
+      summary: Start a fasting session
+      tags: [Fasting]
+      security: [{BearerAuth: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [plan_type]
+              properties:
+                goal_hours: {type: integer}
+                plan_type: {type: string}
+      responses:
+        201:
+          description: Session started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FastingSession'
+  /fasting/stop:
+    post:
+      summary: Stop current fasting session
+      tags: [Fasting]
+      security: [{BearerAuth: []}]
+      responses:
+        200:
+          description: Session stopped
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FastingSession'
+  /fasting/current:
+    get:
+      summary: Get current active fasting session
+      tags: [Fasting]
+      security: [{BearerAuth: []}]
+      responses:
+        200:
+          description: Current session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FastingSession'
+        404:
+          description: No active session
+  /keto/log:
+    post:
+      summary: Log Keto data
+      description: Allows logging of Keto metrics. Hard data (ketone_level, acetone_level) requires PREMIUM subscription.
+      tags: [Keto]
+      security: [{BearerAuth: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KetoEntry'
+      responses:
+        201:
+          description: Entry logged
+        403:
+          description: Forbidden - Premium subscription required for hard data inputs
+  /social/feed:
+    get:
+      summary: Get social feed
+      tags: [Social]
+      security: [{BearerAuth: []}]
+      responses:
+        200:
+          description: Feed items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SocialPost'
+  /elite/biomarkers:
+    post:
+      summary: Log medical biomarkers (Elite Only)
+      tags: [Elite]
+      security: [{BearerAuth: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MedicalBiomarkers'
+      responses:
+        201:
+          description: Biomarkers logged securely
+        403:
+          description: Elite subscription required
