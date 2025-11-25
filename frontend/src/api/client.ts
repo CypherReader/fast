@@ -16,6 +16,18 @@ api.interceptors.request.use((config) => {
     return config;
 });
 
+// Add response interceptor for 401s
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response && error.response.status === 401) {
+            localStorage.removeItem('token');
+            window.location.href = '/login';
+        }
+        return Promise.reject(error);
+    }
+);
+
 export const authApi = {
     register: (email: string, password: string) => api.post<User>('/auth/register', { email, password }),
     login: (email: string, password: string) => api.post<{ token: string; refresh_token: string }>('/auth/login', { email, password }),

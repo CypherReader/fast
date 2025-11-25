@@ -41,6 +41,8 @@ const FastingJourney: React.FC<FastingJourneyProps> = ({ fastingHours }) => {
 
     useEffect(() => {
         const fetchInsight = async () => {
+            // Don't fetch if we already have an insight for this stage (simple cache could be better but this works for now)
+            // Actually, let's just fetch when stage changes.
             setLoadingInsight(true);
             try {
                 const res = await cortexApi.getInsight(fastingHours);
@@ -56,7 +58,7 @@ const FastingJourney: React.FC<FastingJourneyProps> = ({ fastingHours }) => {
         if (fastingHours > 0) {
             fetchInsight();
         }
-    }, [fastingHours]);
+    }, [currentStage.title]); // Only re-fetch when the stage changes
 
     return (
         <div className="bg-slate-900 border border-slate-700 rounded-xl overflow-hidden flex flex-col h-full min-h-[400px]">

@@ -164,3 +164,65 @@ func (r *ActivityRepository) FindByID(ctx context.Context, id string) (*domain.A
 	}
 	return nil, errors.New("activity not found")
 }
+
+type TelemetryRepository struct {
+	data        []domain.TelemetryData
+	connections map[string]*domain.DeviceConnection
+	mu          sync.RWMutex
+}
+
+func NewTelemetryRepository() *TelemetryRepository {
+	return &TelemetryRepository{
+		data:        make([]domain.TelemetryData, 0),
+		connections: make(map[string]*domain.DeviceConnection),
+	}
+}
+
+func (r *TelemetryRepository) SaveData(ctx context.Context, data *domain.TelemetryData) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.data = append(r.data, *data)
+	return nil
+}
+
+func (r *TelemetryRepository) GetLatestMetric(ctx context.Context, userID uuid.UUID, metricType domain.MetricType) (*domain.TelemetryData, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	// Iterate backwards to find latest
+	for i := len(r.data) - 1; i >= 0; i-- {
+		if r.data[i].UserID == userID && r.data[i].Type == metricType {
+			return &r.data[i], nil
+		}
+	}
+	return nil, nil
+}
+
+func (r *TelemetryRepository) SaveConnection(ctx context.Context, conn *domain.DeviceConnection) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	key := conn.UserID.String() + "_" + string(conn.Source)
+	r.connections[key] = conn
+	return nil
+}
+
+func (r *TelemetryRepository) GetConnection(ctx context.Context, userID uuid.UUID, source domain.TelemetrySource) (*domain.DeviceConnection, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	key := userID.String() + "_" + string(source)
+	if conn, ok := r.connections[key]; ok {
+		return conn, nil
+	}
+	return nil, errors.New("connection not found")
+}
+
+func (r *TelemetryRepository) ListConnections(ctx context.Context, userID uuid.UUID) ([]domain.DeviceConnection, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	var result []domain.DeviceConnection
+	for _, conn := range r.connections {
+		if conn.UserID == userID {
+			result = append(result, *conn)
+		}
+	}
+	return result, nil
+}

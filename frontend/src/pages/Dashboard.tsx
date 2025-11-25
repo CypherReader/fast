@@ -58,8 +58,24 @@ const Dashboard = () => {
       try {
         const res = await fastingApi.start(pendingFast.plan, pendingFast.hours);
         setSession(res.data);
-      } catch (error) {
-        alert("Failed to start fast");
+      } catch (error: any) {
+        console.error("Start fast error:", error);
+        if (error.response?.data?.error) {
+          const errorMessage = error.response.data.error;
+          alert(`Failed to start fast: ${errorMessage}`);
+
+          // If session already exists, try to sync
+          if (errorMessage.includes("active fasting session")) {
+            try {
+              const res = await fastingApi.getCurrent();
+              setSession(res.data);
+            } catch (e) {
+              console.error("Failed to recover session", e);
+            }
+          }
+        } else {
+          alert("Failed to start fast. Please check console for details.");
+        }
       } finally {
         setShowModal(false);
         setPendingFast(null);

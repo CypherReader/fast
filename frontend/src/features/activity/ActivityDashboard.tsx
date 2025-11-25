@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { Activity } from 'lucide-react';
+import { TelemetryUplink } from '@/components/bio/TelemetryUplink';
 
 // Mock data for now, will replace with API call later
 const mockStepsData = [
@@ -16,28 +17,15 @@ const mockStepsData = [
 ];
 
 export const ActivityDashboard = () => {
-    const [isConnected, setIsConnected] = useState(false);
-
-    const handleConnect = () => {
-        // Simulate connection
-        setIsConnected(true);
-    };
-
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
-                <h2 className="text-3xl font-bold tracking-tight">Activity Tracking</h2>
-                {!isConnected && (
-                    <Button onClick={handleConnect}>
-                        <Activity className="mr-2 h-4 w-4" />
-                        Connect Device
-                    </Button>
-                )}
-                {isConnected && (
-                    <Button variant="outline" disabled>
-                        Device Connected
-                    </Button>
-                )}
+                <h2 className="text-3xl font-bold tracking-tight text-white">Activity Tracking</h2>
+            </div>
+
+            {/* Telemetry Uplink Section */}
+            <div className="grid gap-4 md:grid-cols-1">
+                <TelemetryUplink />
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

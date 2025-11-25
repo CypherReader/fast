@@ -11,22 +11,24 @@ import (
 )
 
 type Handler struct {
-	authService     ports.AuthService
-	fastingService  ports.FastingService
-	ketoService     ports.KetoService
-	socialService   *services.SocialService
-	cortexService   ports.CortexService
-	activityService ports.ActivityService
+	authService      ports.AuthService
+	fastingService   ports.FastingService
+	ketoService      ports.KetoService
+	socialService    *services.SocialService
+	cortexService    ports.CortexService
+	activityService  ports.ActivityService
+	telemetryService ports.TelemetryService
 }
 
-func NewHandler(auth ports.AuthService, fasting ports.FastingService, keto ports.KetoService, social *services.SocialService, cortex ports.CortexService, activity ports.ActivityService) *Handler {
+func NewHandler(auth ports.AuthService, fasting ports.FastingService, keto ports.KetoService, social *services.SocialService, cortex ports.CortexService, activity ports.ActivityService, telemetry ports.TelemetryService) *Handler {
 	return &Handler{
-		authService:     auth,
-		fastingService:  fasting,
-		ketoService:     keto,
-		socialService:   social,
-		cortexService:   cortex,
-		activityService: activity,
+		authService:      auth,
+		fastingService:   fasting,
+		ketoService:      keto,
+		socialService:    social,
+		cortexService:    cortex,
+		activityService:  activity,
+		telemetryService: telemetry,
 	}
 }
 
@@ -70,7 +72,15 @@ func (h *Handler) RegisterRoutes(router *gin.Engine) {
 	{
 		activity.POST("/sync", h.SyncActivity)
 		activity.GET("/", h.GetActivities)
+		activity.GET("/", h.GetActivities)
 		activity.GET("/:id", h.GetActivity)
+	}
+
+	telemetry := protected.Group("/telemetry")
+	{
+		telemetry.POST("/connect", h.ConnectDevice)
+		telemetry.POST("/sync", h.SyncTelemetry)
+		telemetry.GET("/status", h.GetTelemetryStatus)
 	}
 }
 
@@ -297,4 +307,68 @@ func (h *Handler) GetActivity(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, activity)
+}
+
+func (h *Handler) ConnectDevice(c *gin.Context) {
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	userID := userIDVal.(uuid.UUID)
+
+	var req struct {
+		Source domain.TelemetrySource `json:"source"`
+	}
+	if err := c.BindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	conn, err := h.telemetryService.ConnectDevice(c.Request.Context(), userID, req.Source)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, conn)
+}
+
+func (h *Handler) SyncTelemetry(c *gin.Context) {
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	userID := userIDVal.(uuid.UUID)
+
+	var req struct {
+		Source domain.TelemetrySource `json:"source"`
+	}
+	if err := c.BindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	err := h.telemetryService.SyncData(c.Request.Context(), userID, req.Source)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"status": "synced"})
+}
+
+func (h *Handler) GetTelemetryStatus(c *gin.Context) {
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	userID := userIDVal.(uuid.UUID)
+
+	status, err := h.telemetryService.GetDeviceStatus(c.Request.Context(), userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, status)
 }

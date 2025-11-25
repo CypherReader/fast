@@ -43,8 +43,8 @@ func main() {
 
 	// Activity Repo (Memory only for now)
 	activityRepo := memory.NewActivityRepository()
+	telemetryRepo := memory.NewTelemetryRepository()
 
-	// 2. Initialize Services (Core)
 	// 2. Initialize Services (Core)
 	pricingService := services.NewPricingService()
 	authService := services.NewAuthService(userRepo)
@@ -52,6 +52,7 @@ func main() {
 	ketoService := services.NewKetoService(ketoRepo, userRepo)
 	socialService := services.NewSocialService()
 	activityService := services.NewActivityService(activityRepo)
+	telemetryService := services.NewTelemetryService(telemetryRepo)
 
 	// Initialize LLM Adapter
 	apiKey := os.Getenv("DEEPSEEK_API_KEY")
@@ -62,7 +63,7 @@ func main() {
 	cortexService := services.NewCortexService(llmAdapter, fastingRepo, userRepo)
 
 	// 3. Initialize Handlers (Adapters)
-	handler := http.NewHandler(authService, fastingService, ketoService, socialService, cortexService, activityService)
+	handler := http.NewHandler(authService, fastingService, ketoService, socialService, cortexService, activityService, telemetryService)
 
 	// 4. Setup Router
 	router := gin.Default()

@@ -1,6 +1,6 @@
 # FastingHero (Neuro-Fast)
 
-**"Put Your Money Where Your Goals Are."**
+> "Put Your Money Where Your Goals Are."
 
 FastingHero is a high-stakes accountability application designed to gamify discipline. It uses a unique "Commitment Vault" model where you deposit funds upfront and earn them back through disciplined actions like fasting, logging meals, and staying active.
 
