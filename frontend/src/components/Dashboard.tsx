@@ -3,6 +3,8 @@ import { fastingApi } from '../api/client';
 import { FastingSession } from '../api/types';
 import MedicalModal from './MedicalModal';
 import CortexWidget from './CortexWidget';
+import FastingClock from './FastingClock';
+import VaultStatus from './VaultStatus';
 
 const Dashboard: React.FC = () => {
     const [session, setSession] = useState<FastingSession | null>(null);
@@ -68,12 +70,7 @@ const Dashboard: React.FC = () => {
         }
     };
 
-    const formatTime = (seconds: number) => {
-        const h = Math.floor(seconds / 3600);
-        const m = Math.floor((seconds % 3600) / 60);
-        const s = seconds % 60;
-        return `${h}h ${m}m ${s}s`;
-    };
+
 
     const getFastingStage = (hours: number) => {
         if (hours < 12) return "Digestion Phase";
@@ -89,20 +86,13 @@ const Dashboard: React.FC = () => {
             <h1 className="text-3xl font-bold mb-8 text-emerald-400">FastingHero</h1>
 
             {/* Timer Circle */}
-            <div className="relative w-64 h-64 rounded-full border-4 border-emerald-500 flex items-center justify-center mb-8 shadow-[0_0_20px_rgba(16,185,129,0.5)]">
-                <div className="text-center">
-                    {session ? (
-                        <>
-                            <div className="text-4xl font-mono font-bold">{formatTime(elapsed)}</div>
-                            <div className="text-sm text-gray-400 mt-2">Goal: {session.goal_hours}h</div>
-                            <div className="text-xs text-emerald-300 mt-1 animate-pulse">
-                                {getFastingStage(elapsed / 3600)}
-                            </div>
-                        </>
-                    ) : (
-                        <div className="text-xl text-gray-400">Ready to Fast?</div>
-                    )}
-                </div>
+            <div className="mb-8">
+                <FastingClock
+                    elapsedSeconds={elapsed}
+                    goalHours={session?.goal_hours || 16}
+                    isFasting={!!session}
+                    stage={getFastingStage(elapsed / 3600)}
+                />
             </div>
 
             {/* Controls */}
@@ -127,19 +117,13 @@ const Dashboard: React.FC = () => {
                 </button>
             )}
 
-            {/* Price Ticker - The Lazy Tax */}
-            <div className="mt-8 bg-gray-900 border border-red-900/50 p-6 rounded-2xl w-full max-w-md shadow-[0_0_20px_rgba(220,38,38,0.2)]">
-                <div className="flex justify-between items-center mb-2">
-                    <div>
-                        <h3 className="text-lg font-bold text-red-500">The Lazy Tax</h3>
-                        <div className="text-xs text-gray-400">Projected bill for next month</div>
-                    </div>
-                    <div className="text-4xl font-mono font-bold text-white">$48.50</div>
-                </div>
-                <div className="w-full bg-gray-800 h-3 rounded-full overflow-hidden">
-                    <div className="bg-red-600 h-full w-[97%]"></div>
-                </div>
-                <div className="text-xs text-right text-red-400 mt-1">You are paying for your lack of discipline.</div>
+            {/* Commitment Vault */}
+            <div className="mt-8 w-full max-w-md">
+                <VaultStatus
+                    deposit={20.00}
+                    earned={session ? 5.50 : 0} // Mock data for now
+                    potentialRefund={session ? 5.50 : 0}
+                />
             </div>
 
             {/* Cortex AI Widget */}

@@ -10,6 +10,14 @@ const FASTING_STAGES = [
     { hours: 24, title: "Stem Cell Regen", desc: "Immune system reboot. Inflammation drops significantly. Deep healing active.", color: "text-yellow-400" }
 ];
 
+const FALLBACK_INSIGHTS: Record<string, string> = {
+    "Digestion": "Glucose levels are stabilizing. Your body is processing your last meal.",
+    "Glycogen Depletion": "Liver glycogen stores are being utilized. You may feel a slight dip in energy.",
+    "Metabolic Switch": "Ketone production has started. Your brain is switching to a more efficient fuel source.",
+    "Autophagy": "Intracellular repair mechanisms are at peak efficiency. Old proteins are being recycled.",
+    "Stem Cell Regen": "System-wide regeneration is occurring. Immune function is being reset."
+};
+
 interface FastingJourneyProps {
     fastingHours: number;
 }
@@ -39,7 +47,7 @@ const FastingJourney: React.FC<FastingJourneyProps> = ({ fastingHours }) => {
                 setInsight(res.data.insight);
             } catch (error) {
                 console.error("Failed to fetch insight", error);
-                setInsight("Biological data unavailable. Neural link unstable.");
+                setInsight(FALLBACK_INSIGHTS[currentStage.title] || "Biological data unavailable. Neural link unstable.");
             } finally {
                 setLoadingInsight(false);
             }

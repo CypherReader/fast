@@ -3,14 +3,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Scale, Droplets, Flame, Footprints, Lock } from "lucide-react";
+import { Scale, Droplets, Flame, Camera, Lock } from "lucide-react";
 
 const ProgressPage = () => {
   const [waterCount, setWaterCount] = useState(5);
   const [showPremiumModal, setShowPremiumModal] = useState(false);
   const waterGoal = 8;
-  const steps = 5420;
-  const stepGoal = 8000;
+
 
   const weightData = [
     { date: "Mon", weight: 180 },
@@ -74,17 +73,15 @@ const ProgressPage = () => {
               <button
                 key={i}
                 onClick={() => setWaterCount(Math.min(i + 1, waterGoal))}
-                className={`flex-1 h-12 rounded-lg transition-all duration-300 hover:scale-110 ${
-                  i < waterCount
-                    ? "bg-primary/20 border-2 border-primary animate-scale-in"
-                    : "bg-muted border-2 border-border hover:border-primary/50"
-                }`}
+                className={`flex-1 h-12 rounded-lg transition-all duration-300 hover:scale-110 ${i < waterCount
+                  ? "bg-primary/20 border-2 border-primary animate-scale-in"
+                  : "bg-muted border-2 border-border hover:border-primary/50"
+                  }`}
                 style={{ animationDelay: `${i * 0.05}s` }}
               >
                 <Droplets
-                  className={`mx-auto h-6 w-6 ${
-                    i < waterCount ? "text-primary" : "text-muted-foreground"
-                  }`}
+                  className={`mx-auto h-6 w-6 ${i < waterCount ? "text-primary" : "text-muted-foreground"
+                    }`}
                 />
               </button>
             ))}
@@ -125,23 +122,35 @@ const ProgressPage = () => {
         </CardContent>
       </Card>
 
-      {/* Step Monitor */}
-      <Card className="border-primary/20 animate-fade-in-up hover:border-primary/40 transition-all duration-300 hover:shadow-lg hover:shadow-primary/10" style={{ animationDelay: '0.4s' }}>
+      {/* Food Logging - Commitment Vault */}
+      <Card className="border-emerald-500/20 animate-fade-in-up hover:border-emerald-500/40 transition-all duration-300 hover:shadow-lg hover:shadow-emerald-500/10" style={{ animationDelay: '0.4s' }}>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <Footprints className="h-5 w-5 text-primary" />
-            Daily Steps
+            <Camera className="h-5 w-5 text-emerald-500" />
+            Food Logging
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
+          <div className="space-y-4">
             <div className="flex justify-between items-center">
-              <span className="text-2xl font-bold">{steps.toLocaleString()}</span>
-              <span className="text-sm text-muted-foreground">/ {stepGoal.toLocaleString()}</span>
+              <div>
+                <div className="text-2xl font-bold">2 / 3</div>
+                <div className="text-sm text-muted-foreground">Meals Logged Today</div>
+              </div>
+              <div className="text-right">
+                <div className="text-xl font-bold text-emerald-400">+$1.00</div>
+                <div className="text-xs text-emerald-500/80">Earned Back</div>
+              </div>
             </div>
-            <Progress value={(steps / stepGoal) * 100} className="h-2" />
-            <p className="text-sm text-muted-foreground">
-              {stepGoal - steps} steps to reach your goal
+            <Progress value={66} className="h-2 bg-slate-800" indicatorClassName="bg-emerald-500" />
+
+            <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white group">
+              <Camera className="mr-2 h-4 w-4 group-hover:scale-110 transition-transform" />
+              Log Meal Photo (+$0.50)
+            </Button>
+
+            <p className="text-xs text-center text-muted-foreground">
+              Photos are analyzed for nutritional content.
             </p>
           </div>
         </CardContent>

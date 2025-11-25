@@ -10,12 +10,14 @@ import Progress from "./pages/Progress";
 import Community from "./pages/Community";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
+import VaultIntro from "./pages/VaultIntro";
 
 import Contract from "./pages/Contract";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 
 import Tribe from "./pages/Tribe";
+import { ActivityDashboard } from "./features/activity/ActivityDashboard";
 
 const queryClient = new QueryClient();
 
@@ -35,7 +37,9 @@ const App = () => {
               <Route path="progress" element={<Progress />} />
               <Route path="community" element={<Community />} />
               <Route path="tribe" element={<Tribe />} />
+              <Route path="activity" element={<ActivityDashboard />} />
               <Route path="profile" element={<Profile />} />
+              <Route path="vault-intro" element={<VaultIntro />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

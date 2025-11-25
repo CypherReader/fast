@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Clock, Trophy, Heart } from "lucide-react";
+import { KnowledgeHub } from "@/components/community/KnowledgeHub";
 
 const Community = () => {
   const [activeTab, setActiveTab] = useState("feed");
@@ -67,15 +68,16 @@ const Community = () => {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="feed">Feed</TabsTrigger>
           <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
+          <TabsTrigger value="knowledge">Knowledge</TabsTrigger>
         </TabsList>
 
         <TabsContent value="feed" className="space-y-4 mt-6">
           {feedItems.map((item, index) => (
-            <Card 
-              key={item.id} 
+            <Card
+              key={item.id}
               className="border-primary/20 animate-fade-in-up hover:border-primary/40 transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 hover:scale-[1.02]"
               style={{ animationDelay: `${index * 0.1}s` }}
             >
@@ -127,18 +129,16 @@ const Community = () => {
           {leaderboard.map((user, index) => (
             <Card
               key={user.rank}
-              className={`border-primary/20 animate-fade-in-up hover:border-primary/40 transition-all duration-300 hover:shadow-lg hover:scale-[1.02] ${
-                user.highlight ? "bg-primary/5 border-primary/40 glow-primary" : ""
-              }`}
+              className={`border-primary/20 animate-fade-in-up hover:border-primary/40 transition-all duration-300 hover:shadow-lg hover:scale-[1.02] ${user.highlight ? "bg-primary/5 border-primary/40 glow-primary" : ""
+                }`}
               style={{ animationDelay: `${index * 0.05}s` }}
             >
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div
-                      className={`text-lg font-bold w-8 text-center ${
-                        user.rank <= 3 ? "text-primary" : "text-muted-foreground"
-                      }`}
+                      className={`text-lg font-bold w-8 text-center ${user.rank <= 3 ? "text-primary" : "text-muted-foreground"
+                        }`}
                     >
                       {user.badge || `#${user.rank}`}
                     </div>
@@ -158,6 +158,10 @@ const Community = () => {
               </CardContent>
             </Card>
           ))}
+        </TabsContent>
+
+        <TabsContent value="knowledge" className="mt-6">
+          <KnowledgeHub />
         </TabsContent>
       </Tabs>
     </div>

@@ -7,9 +7,10 @@ import (
 )
 
 const (
-	BasePrice   = 50.0
-	PriceFloor  = 1.0
-	IndexFactor = 0.49
+	MonthlyCharge = 30.0
+	BaseFee       = 10.0
+	VaultDeposit  = 20.0
+	DailyMax      = 2.0
 )
 
 type PricingService struct{}
@@ -18,28 +19,35 @@ func NewPricingService() *PricingService {
 	return &PricingService{}
 }
 
-func (s *PricingService) CalculatePrice(ctx context.Context, user *domain.User) float64 {
-	// Formula: Price = BasePrice ($50) - (DisciplineIndex * 0.49)
-	// Example: Index 100 -> 50 - 49 = $1
-	// Example: Index 0 -> 50 - 0 = $50
+// CalculateVaultStatus returns the current vault status for the user
+func (s *PricingService) CalculateVaultStatus(user *domain.User) (deposit float64, earned float64, potentialRefund float64) {
+	deposit = user.VaultDeposit
+	earned = user.EarnedRefund
 
-	discount := user.DisciplineIndex * IndexFactor
-	price := BasePrice - discount
+	// Refund cannot exceed deposit
+	potentialRefund = math.Min(earned, deposit)
+	return
+}
 
-	if price < PriceFloor {
-		return PriceFloor
+func (s *PricingService) AddDailyEarnings(ctx context.Context, user *domain.User, amount float64) {
+	// Logic to cap daily earnings would go here (requires tracking daily earnings in DB)
+	// For MVP, we just add to the total earned refund
+
+	user.EarnedRefund += amount
+
+	// Hard cap at vault deposit
+	if user.EarnedRefund > user.VaultDeposit {
+		user.EarnedRefund = user.VaultDeposit
 	}
+}
 
-	// Round to 2 decimal places
-	return math.Round(price*100) / 100
+// Deprecated: Kept for backward compatibility until full migration
+func (s *PricingService) CalculatePrice(ctx context.Context, user *domain.User) float64 {
+	_, _, potentialRefund := s.CalculateVaultStatus(user)
+	return MonthlyCharge - potentialRefund
 }
 
 func (s *PricingService) UpdateDisciplineIndex(ctx context.Context, user *domain.User, completedFast bool, verifiedKetosis bool) {
-	// Simple algorithm for MVP
-	// Completed fast: +1
-	// Verified ketosis: +2
-	// Missed fast (not implemented yet): -2
-
 	if completedFast {
 		user.DisciplineIndex += 1
 	}
@@ -53,6 +61,4 @@ func (s *PricingService) UpdateDisciplineIndex(ctx context.Context, user *domain
 	if user.DisciplineIndex < 0 {
 		user.DisciplineIndex = 0
 	}
-
-	user.CurrentPrice = s.CalculatePrice(ctx, user)
 }

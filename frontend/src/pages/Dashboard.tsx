@@ -1,47 +1,88 @@
 import { useState, useEffect } from "react";
-import { Flame, Droplet, Brain, Users, Zap, Lock, Share2, Activity, Target } from "lucide-react";
+import { Brain, Users, Zap, Lock, Share2, Activity, Target, Droplet } from "lucide-react";
 import FastingJourney from "@/components/bio/FastingJourney";
 import MetricCard from "@/components/bio/MetricCard";
-import PricingMechanism from "@/components/bio/PricingMechanism";
 import { fastingApi } from "@/api/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
-const INITIAL_PRICE = 50.00;
-const MIN_PRICE = 1.00;
+import FastingClock from "@/components/FastingClock";
+import VaultStatus from "@/components/VaultStatus";
+import { FastingSession } from "@/api/types";
+import MedicalModal from "@/components/MedicalModal";
 
 const Dashboard = () => {
-  const [fastingHours, setFastingHours] = useState(16.5);
+  const [session, setSession] = useState<FastingSession | null>(null);
+  const [elapsed, setElapsed] = useState(0);
   const [ketoneLevel] = useState(1.8);
   const [disciplineScore] = useState(65);
-  const [price, setPrice] = useState(INITIAL_PRICE);
-
-  // Simulate dynamic pricing calculation
-  useEffect(() => {
-    const calculatedPrice = INITIAL_PRICE - ((INITIAL_PRICE - MIN_PRICE) * (disciplineScore / 100));
-    setPrice(Math.max(MIN_PRICE, calculatedPrice));
-  }, [disciplineScore]);
+  const [showModal, setShowModal] = useState(false);
+  const [pendingFast, setPendingFast] = useState<{ plan: string; hours: number } | null>(null);
 
   // Fetch real fasting data
   useEffect(() => {
     const fetchData = async () => {
       try {
         const res = await fastingApi.getCurrent();
-        if (res.data) {
-          const start = new Date(res.data.start_time).getTime();
-          const now = new Date().getTime();
-          const hours = (now - start) / (1000 * 60 * 60);
-          setFastingHours(hours);
-        } else {
-          setFastingHours(0);
-        }
+        setSession(res.data);
       } catch (e) {
         console.error("Failed to fetch fasting data", e);
+        setSession(null);
       }
     };
     fetchData();
     const interval = setInterval(fetchData, 60000); // Update every minute
     return () => clearInterval(interval);
   }, []);
+
+  // Timer logic
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (session && session.status === 'active') {
+      interval = setInterval(() => {
+        const start = new Date(session.start_time).getTime();
+        const now = new Date().getTime();
+        setElapsed(Math.floor((now - start) / 1000));
+      }, 1000);
+    } else {
+      setElapsed(0);
+    }
+    return () => clearInterval(interval);
+  }, [session]);
+
+  const handleStart = (plan: string, hours: number) => {
+    setPendingFast({ plan, hours });
+    setShowModal(true);
+  };
+
+  const confirmStart = async () => {
+    if (pendingFast) {
+      try {
+        const res = await fastingApi.start(pendingFast.plan, pendingFast.hours);
+        setSession(res.data);
+      } catch (error) {
+        alert("Failed to start fast");
+      } finally {
+        setShowModal(false);
+        setPendingFast(null);
+      }
+    }
+  };
+
+  const handleStop = async () => {
+    try {
+      await fastingApi.stop();
+      setSession(null);
+      setElapsed(0);
+    } catch (error) {
+      alert("Failed to stop fast");
+    }
+  };
+
+  const getFastingStage = (hours: number) => {
+    if (hours < 12) return "Digestion Phase";
+    if (hours < 18) return "Fat Burning & Ketosis";
+    if (hours < 24) return "Autophagy Initiating";
+    return "Deep Cellular Repair";
+  };
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200 font-sans selection:bg-cyan-500/30 p-4 space-y-6">
@@ -56,12 +97,7 @@ const Dashboard = () => {
             </span>
           </div>
           <div className="flex items-center space-x-4">
-            <div className="flex flex-col items-end">
-              <span className="text-[10px] text-slate-400 uppercase tracking-wider">Lazy Tax</span>
-              <span className={`text-lg font-mono font-bold ${price <= 5 ? 'text-green-400' : 'text-red-400'}`}>
-                ${price.toFixed(2)}
-              </span>
-            </div>
+            {/* Vault moved to Profile */}
           </div>
         </div>
       </header>
@@ -82,62 +118,43 @@ const Dashboard = () => {
         {/* TAB 1: FOCUS - The Main Fasting Interface */}
         <TabsContent value="focus" className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
 
-          {/* Hero Timer Card */}
-          <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-8 flex flex-col items-center justify-center relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-b from-cyan-500/5 to-transparent pointer-events-none"></div>
-            <div className="w-48 h-48 rounded-full border-4 border-slate-800 flex items-center justify-center relative mb-4">
-              <div className={`absolute inset-0 rounded-full border-4 ${fastingHours > 0 ? 'border-cyan-500 animate-spin-slow' : 'border-slate-700'} border-t-transparent opacity-70`}></div>
-              <div className="text-center z-10">
-                <span className="text-4xl font-bold text-white font-mono">{fastingHours.toFixed(1)}</span>
-                <span className="block text-xs text-slate-400 uppercase tracking-widest mt-1">Hours</span>
-              </div>
-            </div>
-
-            <div className="flex flex-col items-center space-y-4 w-full">
-              <div className="flex items-center space-x-2 bg-slate-800/80 px-4 py-1.5 rounded-full border border-slate-700">
-                <Flame className={`w-4 h-4 ${fastingHours > 0 ? 'text-orange-500' : 'text-slate-500'}`} />
-                <span className="text-sm font-medium text-slate-200">
-                  {fastingHours > 16 ? "Autophagy Active" : fastingHours > 0 ? "Fat Burning" : "Ready to Fast"}
-                </span>
-              </div>
-
-              {fastingHours > 0 ? (
-                <button
-                  onClick={async () => {
-                    try {
-                      await fastingApi.stop();
-                      setFastingHours(0);
-                      // Refresh other data if needed
-                      window.location.reload(); // Simple reload to fetch fresh user stats
-                    } catch (e) {
-                      console.error("Failed to stop fast", e);
-                    }
-                  }}
-                  className="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 px-8 py-2 rounded-full font-bold transition-all"
-                >
-                  Stop Fast
-                </button>
-              ) : (
-                <button
-                  onClick={async () => {
-                    try {
-                      await fastingApi.start("circadian", 16);
-                      setFastingHours(0.1); // Optimistic update
-                      window.location.reload();
-                    } catch (e) {
-                      console.error("Failed to start fast", e);
-                    }
-                  }}
-                  className="bg-cyan-500 hover:bg-cyan-400 text-black px-8 py-2 rounded-full font-bold shadow-[0_0_15px_rgba(6,182,212,0.5)] transition-all"
-                >
-                  Start Fast
-                </button>
-              )}
-            </div>
+          {/* Hero Timer Card - Replaced with FastingClock */}
+          <div className="flex flex-col items-center justify-center">
+            <FastingClock
+              elapsedSeconds={elapsed}
+              goalHours={session?.goal_hours || 16}
+              isFasting={!!session}
+              stage={getFastingStage(elapsed / 3600)}
+            />
           </div>
 
+          {/* Controls */}
+          <div className="flex justify-center w-full">
+            {!session ? (
+              <div className="grid grid-cols-2 gap-4 w-full max-w-md">
+                <button onClick={() => handleStart('16_8', 16)} className="bg-emerald-600 hover:bg-emerald-700 p-4 rounded-xl font-bold transition-all text-white">
+                  Start 16:8
+                </button>
+                <button onClick={() => handleStart('18_6', 18)} className="bg-emerald-600 hover:bg-emerald-700 p-4 rounded-xl font-bold transition-all text-white">
+                  Start 18:6
+                </button>
+                <button onClick={() => handleStart('omad', 23)} className="bg-emerald-600 hover:bg-emerald-700 p-4 rounded-xl font-bold transition-all text-white">
+                  OMAD (23h)
+                </button>
+                <button onClick={() => handleStart('24h', 24)} className="bg-purple-600 hover:bg-purple-700 p-4 rounded-xl font-bold transition-all text-white">
+                  24h Reset
+                </button>
+              </div>
+            ) : (
+              <button onClick={handleStop} className="bg-red-500 hover:bg-red-600 px-8 py-3 rounded-full font-bold shadow-lg transition-all text-white">
+                End Fast
+              </button>
+            )}
+          </div>
+
+
           {/* Bio-Narrative Timeline */}
-          <FastingJourney fastingHours={fastingHours} />
+          <FastingJourney fastingHours={elapsed / 3600} />
 
         </TabsContent>
 
@@ -155,7 +172,7 @@ const Dashboard = () => {
               {[
                 { name: 'Sarah K.', status: 'Fasting 18h', streak: 12, alert: false },
                 { name: 'Mike R.', status: 'Eating Window', streak: 45, alert: false },
-                { name: 'You', status: `Fasting ${fastingHours.toFixed(0)}h`, streak: 8, alert: false },
+                { name: 'You', status: `Fasting ${(elapsed / 3600).toFixed(0)}h`, streak: 8, alert: false },
                 { name: 'Dave L.', status: 'Danger Zone', streak: 2, alert: true },
               ].map((member, i) => (
                 <div key={i} className="flex justify-between items-center p-3 hover:bg-slate-800 rounded-xl cursor-pointer transition-all border border-transparent hover:border-slate-700">
@@ -216,7 +233,14 @@ const Dashboard = () => {
             </div>
           </div>
 
-          <PricingMechanism currentPrice={price} disciplineScore={disciplineScore} />
+          {/* Replaced PricingMechanism with VaultStatus */}
+          <div className="h-full">
+            <VaultStatus
+              deposit={20.00}
+              earned={session ? 5.50 : 0}
+              potentialRefund={session ? 5.50 : 0}
+            />
+          </div>
 
           <div className="bg-yellow-900/10 border border-yellow-700/20 p-6 rounded-xl relative overflow-hidden group">
             <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
@@ -234,6 +258,12 @@ const Dashboard = () => {
           </div>
         </TabsContent>
       </Tabs>
+
+      <MedicalModal
+        isOpen={showModal}
+        onConfirm={confirmStart}
+        onCancel={() => setShowModal(false)}
+      />
     </div>
   );
 };

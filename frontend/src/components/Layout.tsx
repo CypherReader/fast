@@ -1,5 +1,5 @@
 import { Outlet, useLocation } from "react-router-dom";
-import { Home, TrendingUp, Users, User } from "lucide-react";
+import { Home, TrendingUp, Users, User, Activity } from "lucide-react";
 import { NavLink } from "./NavLink";
 import { cn } from "@/lib/utils";
 
@@ -9,7 +9,8 @@ const Layout = () => {
   const navItems = [
     { path: "/", icon: Home, label: "Dashboard" },
     { path: "/progress", icon: TrendingUp, label: "Progress" },
-    { path: "/tribe", icon: Users, label: "Tribe" },
+    { path: "/activity", icon: Activity, label: "Activity" },
+    { path: "/community", icon: Users, label: "Community" },
     { path: "/profile", icon: User, label: "Profile" },
   ];
 

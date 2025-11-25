@@ -1,23 +1,26 @@
 # FastingHero (Neuro-Fast)
 
-**"We don't charge for features. We charge for lack of discipline."**
+**"Put Your Money Where Your Goals Are."**
 
-FastingHero is a high-stakes fasting application designed to gamify discipline. It uses a unique "Lazy Tax" model where your subscription price is inversely correlated with your discipline score.
+FastingHero is a high-stakes accountability application designed to gamify discipline. It uses a unique "Commitment Vault" model where you deposit funds upfront and earn them back through disciplined actions like fasting, logging meals, and staying active.
 
 ## 🧠 Core Features
 
-### 1. The Lazy Tax (Dynamic Pricing)
+### 1. The Commitment Vault (Financial Accountability)
 
-- **Base Price**: $50.00 / month.
-- **Your Goal**: $0.00 / month.
-- **Mechanism**: Every completed fast lowers your price. Quitting early raises it.
-- **Philosophy**: Financial pain is a powerful motivator.
+- **The Deal**: $30/month subscription ($10 Base Fee + $20 Vault Deposit).
+- **The Mechanism**: You deposit $20 into your Vault at the start of the month.
+- **Earn It Back**: Every disciplined action unlocks a refund from your Vault.
+  - **Log a Meal**: +$0.50
+  - **Hit Step Goal**: +$0.50
+  - **Perfect Week Streak**: +$5.00
+- **Philosophy**: Loss aversion is a powerful motivator. Don't lose your own money.
 
 ### 2. Bio-Narrative Engine (Cortex 2.0)
 
 - **Biological Timeline**: Visualizes your journey through Digestion, Glycogen Depletion, Ketosis, and Autophagy.
-- **DeepSeek AI Insights**: Generates real-time, scientifically accurate physiological facts based on your exact fasting duration.
-- **"Focus" Mode**: A distraction-free timer interface.
+- **Real-Time Insights**: Generates scientifically accurate physiological facts based on your exact fasting duration.
+- **Fasting Clock**: A beautiful, animated interface to track your fasts.
 
 ### 3. The Tribe
 

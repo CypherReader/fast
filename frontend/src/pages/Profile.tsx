@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Lock, Check, AlertTriangle } from "lucide-react";
+import VaultStatus from "@/components/VaultStatus";
 
 const Profile = () => {
   const [showMedicalModal, setShowMedicalModal] = useState(false);
@@ -107,6 +108,13 @@ const Profile = () => {
           ))}
         </div>
       </div>
+
+      {/* Commitment Vault */}
+      <VaultStatus
+        deposit={20.00}
+        earned={5.50}
+        potentialRefund={5.50}
+      />
 
       {/* Elite Medical Data Section */}
       <Card className="border-secondary/20 relative overflow-hidden">

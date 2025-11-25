@@ -11,20 +11,22 @@ import (
 )
 
 type Handler struct {
-	authService    ports.AuthService
-	fastingService ports.FastingService
-	ketoService    ports.KetoService
-	socialService  *services.SocialService
-	cortexService  ports.CortexService
+	authService     ports.AuthService
+	fastingService  ports.FastingService
+	ketoService     ports.KetoService
+	socialService   *services.SocialService
+	cortexService   ports.CortexService
+	activityService ports.ActivityService
 }
 
-func NewHandler(auth ports.AuthService, fasting ports.FastingService, keto ports.KetoService, social *services.SocialService, cortex ports.CortexService) *Handler {
+func NewHandler(auth ports.AuthService, fasting ports.FastingService, keto ports.KetoService, social *services.SocialService, cortex ports.CortexService, activity ports.ActivityService) *Handler {
 	return &Handler{
-		authService:    auth,
-		fastingService: fasting,
-		ketoService:    keto,
-		socialService:  social,
-		cortexService:  cortex,
+		authService:     auth,
+		fastingService:  fasting,
+		ketoService:     keto,
+		socialService:   social,
+		cortexService:   cortex,
+		activityService: activity,
 	}
 }
 
@@ -62,6 +64,13 @@ func (h *Handler) RegisterRoutes(router *gin.Engine) {
 	{
 		cortex.POST("/chat", h.Chat)
 		cortex.POST("/insight", h.GetInsight)
+	}
+
+	activity := protected.Group("/activity")
+	{
+		activity.POST("/sync", h.SyncActivity)
+		activity.GET("/", h.GetActivities)
+		activity.GET("/:id", h.GetActivity)
 	}
 }
 
@@ -238,4 +247,54 @@ func (h *Handler) LogKeto(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusCreated, gin.H{"status": "logged"})
+}
+
+func (h *Handler) SyncActivity(c *gin.Context) {
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	userID := userIDVal.(uuid.UUID)
+
+	var req domain.Activity
+	if err := c.BindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	err := h.activityService.SyncActivity(c.Request.Context(), userID, req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{"status": "synced"})
+}
+
+func (h *Handler) GetActivities(c *gin.Context) {
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	userID := userIDVal.(uuid.UUID)
+
+	activities, err := h.activityService.GetActivities(c.Request.Context(), userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, activities)
+}
+
+func (h *Handler) GetActivity(c *gin.Context) {
+	id := c.Param("id")
+	activity, err := h.activityService.GetActivity(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "activity not found"})
+		return
+	}
+	c.JSON(http.StatusOK, activity)
 }

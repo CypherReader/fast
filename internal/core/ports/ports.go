@@ -56,3 +56,15 @@ type KetoRepository interface {
 type LLMProvider interface {
 	GenerateResponse(ctx context.Context, prompt string, systemPrompt string) (string, error)
 }
+
+type ActivityService interface {
+	SyncActivity(ctx context.Context, userID uuid.UUID, activity domain.Activity) error
+	GetActivities(ctx context.Context, userID uuid.UUID) ([]domain.Activity, error)
+	GetActivity(ctx context.Context, activityID string) (*domain.Activity, error)
+}
+
+type ActivityRepository interface {
+	Save(ctx context.Context, activity *domain.Activity) error
+	FindByUserID(ctx context.Context, userID uuid.UUID) ([]domain.Activity, error)
+	FindByID(ctx context.Context, id string) (*domain.Activity, error)
+}

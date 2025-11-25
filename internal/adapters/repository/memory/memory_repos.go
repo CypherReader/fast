@@ -125,3 +125,42 @@ func (r *KetoRepository) FindByUserID(ctx context.Context, userID uuid.UUID) ([]
 	}
 	return result, nil
 }
+
+type ActivityRepository struct {
+	activities map[string]*domain.Activity
+	mu         sync.RWMutex
+}
+
+func NewActivityRepository() *ActivityRepository {
+	return &ActivityRepository{
+		activities: make(map[string]*domain.Activity),
+	}
+}
+
+func (r *ActivityRepository) Save(ctx context.Context, activity *domain.Activity) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.activities[activity.ID] = activity
+	return nil
+}
+
+func (r *ActivityRepository) FindByUserID(ctx context.Context, userID uuid.UUID) ([]domain.Activity, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	var result []domain.Activity
+	for _, a := range r.activities {
+		if a.UserID == userID.String() {
+			result = append(result, *a)
+		}
+	}
+	return result, nil
+}
+
+func (r *ActivityRepository) FindByID(ctx context.Context, id string) (*domain.Activity, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	if activity, ok := r.activities[id]; ok {
+		return activity, nil
+	}
+	return nil, errors.New("activity not found")
+}
