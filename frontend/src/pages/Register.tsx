@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { authApi } from '../api/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,12 +8,21 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 const Register = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [referralCode, setReferralCode] = useState('');
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+
+    useEffect(() => {
+        const ref = searchParams.get('ref');
+        if (ref) {
+            setReferralCode(ref);
+        }
+    }, [searchParams]);
 
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            await authApi.register(email, password);
+            await authApi.register(email, password, referralCode);
             alert('Registration successful! Please login.');
             navigate('/login');
         } catch (error) {
@@ -42,6 +51,12 @@ const Register = () => {
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             required
+                        />
+                        <Input
+                            type="text"
+                            placeholder="Referral Code (Optional)"
+                            value={referralCode}
+                            onChange={(e) => setReferralCode(e.target.value)}
                         />
                         <Button type="submit" className="w-full">Register</Button>
                         <div className="text-center text-sm">

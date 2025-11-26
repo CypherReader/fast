@@ -4,60 +4,73 @@ import (
 	"context"
 	"errors"
 	"fastinghero/internal/core/domain"
+	"fastinghero/internal/core/ports"
 	"time"
 
 	"github.com/google/uuid"
 )
 
-type TribeRepository interface {
-	Create(ctx context.Context, tribe *domain.Tribe) error
-	GetByID(ctx context.Context, id uuid.UUID) (*domain.Tribe, error)
-	Update(ctx context.Context, tribe *domain.Tribe) error
-}
-
 type TribeService struct {
-	repo TribeRepository
+	repo     ports.TribeRepository
+	userRepo ports.UserRepository
 }
 
-func NewTribeService(repo TribeRepository) *TribeService {
-	return &TribeService{repo: repo}
+func NewTribeService(repo ports.TribeRepository, userRepo ports.UserRepository) *TribeService {
+	return &TribeService{
+		repo:     repo,
+		userRepo: userRepo,
+	}
 }
 
-func (s *TribeService) CreateTribe(ctx context.Context, name string, creatorID uuid.UUID) (*domain.Tribe, error) {
+func (s *TribeService) CreateTribe(ctx context.Context, name, description string, leaderID uuid.UUID) (*domain.Tribe, error) {
 	tribe := &domain.Tribe{
 		ID:              uuid.New(),
 		Name:            name,
-		MemberIDs:       []uuid.UUID{creatorID},
-		CollectiveScore: 100.0, // Start perfect
+		Description:     description,
+		LeaderID:        leaderID,
+		MemberCount:     1, // Leader is the first member
+		TotalDiscipline: 0,
 		CreatedAt:       time.Now(),
-		UpdatedAt:       time.Now(),
 	}
 
-	if err := s.repo.Create(ctx, tribe); err != nil {
+	if err := s.repo.Save(ctx, tribe); err != nil {
+		return nil, err
+	}
+
+	// Add leader as member
+	if err := s.repo.AddMember(ctx, tribe.ID, leaderID); err != nil {
 		return nil, err
 	}
 
 	return tribe, nil
 }
 
-func (s *TribeService) JoinTribe(ctx context.Context, tribeID uuid.UUID, userID uuid.UUID) error {
-	tribe, err := s.repo.GetByID(ctx, tribeID)
+func (s *TribeService) JoinTribe(ctx context.Context, tribeID, userID uuid.UUID) error {
+	// Check if user exists
+	user, err := s.userRepo.FindByID(ctx, userID)
 	if err != nil {
 		return err
 	}
-	if tribe == nil {
-		return errors.New("tribe not found")
+
+	if user.TribeID != nil {
+		return errors.New("user is already in a tribe")
 	}
 
-	// Check if already a member
-	for _, id := range tribe.MemberIDs {
-		if id == userID {
-			return errors.New("already a member")
-		}
+	if err := s.repo.AddMember(ctx, tribeID, userID); err != nil {
+		return err
 	}
 
-	tribe.MemberIDs = append(tribe.MemberIDs, userID)
-	tribe.UpdatedAt = time.Now()
+	return nil
+}
 
-	return s.repo.Update(ctx, tribe)
+func (s *TribeService) LeaveTribe(ctx context.Context, tribeID, userID uuid.UUID) error {
+	return s.repo.RemoveMember(ctx, tribeID, userID)
+}
+
+func (s *TribeService) GetTribeDetails(ctx context.Context, tribeID uuid.UUID) (*domain.Tribe, error) {
+	return s.repo.FindByID(ctx, tribeID)
+}
+
+func (s *TribeService) ListTribes(ctx context.Context) ([]domain.Tribe, error) {
+	return s.repo.FindAll(ctx)
 }

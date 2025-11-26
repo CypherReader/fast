@@ -29,7 +29,7 @@ api.interceptors.response.use(
 );
 
 export const authApi = {
-    register: (email: string, password: string) => api.post<User>('/auth/register', { email, password }),
+    register: (email: string, password: string, referralCode?: string) => api.post<User>('/auth/register', { email, password, referral_code: referralCode }),
     login: (email: string, password: string) => api.post<{ token: string; refresh_token: string }>('/auth/login', { email, password }),
     getProfile: () => api.get<User>('/user/profile'),
 };

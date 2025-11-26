@@ -3,6 +3,7 @@ export interface User {
   email: string;
   is_premium: boolean;
   subscription_tier: 'free' | 'premium' | 'elite';
+  referral_code?: string;
 }
 
 export interface FastingSession {

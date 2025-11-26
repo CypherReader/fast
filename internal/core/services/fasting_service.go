@@ -11,16 +11,16 @@ import (
 )
 
 type FastingService struct {
-	repo     ports.FastingRepository
-	pricing  *PricingService
-	userRepo ports.UserRepository
+	repo         ports.FastingRepository
+	vaultService ports.VaultService
+	userRepo     ports.UserRepository
 }
 
-func NewFastingService(repo ports.FastingRepository, pricing *PricingService, userRepo ports.UserRepository) *FastingService {
+func NewFastingService(repo ports.FastingRepository, vaultService ports.VaultService, userRepo ports.UserRepository) *FastingService {
 	return &FastingService{
-		repo:     repo,
-		pricing:  pricing,
-		userRepo: userRepo,
+		repo:         repo,
+		vaultService: vaultService,
+		userRepo:     userRepo,
 	}
 }
 
@@ -65,15 +65,8 @@ func (s *FastingService) StopFast(ctx context.Context, userID uuid.UUID) (*domai
 	user, err := s.userRepo.FindByID(ctx, userID)
 	if err == nil {
 		// Update discipline based on goal completion
-		// If goal met: +1, if not: -1 (simple logic for now)
-		// We reuse UpdateDisciplineIndex but might need to adjust it to handle "missed" logic better
-		// For now, let's assume UpdateDisciplineIndex handles positive reinforcement
-		// We'll add a manual check here for negative reinforcement if needed,
-		// but PricingService.UpdateDisciplineIndex currently only adds.
-		// Let's modify logic slightly:
-
 		if goalMet {
-			s.pricing.UpdateDisciplineIndex(ctx, user, true, false)
+			s.vaultService.UpdateDisciplineIndex(ctx, user, true, false)
 		} else {
 			// Penalize for quitting early (Lazy Tax)
 			user.DisciplineIndex -= 2
@@ -81,16 +74,20 @@ func (s *FastingService) StopFast(ctx context.Context, userID uuid.UUID) (*domai
 				user.DisciplineIndex = 0
 			}
 			// Recalculate price
-			user.CurrentPrice = s.pricing.CalculatePrice(ctx, user)
+			user.CurrentPrice = s.vaultService.CalculatePrice(ctx, user)
 		}
-
-		_ = s.userRepo.Save(ctx, user)
 	}
 
-	// 4. Update repo
-	if err := s.repo.Update(ctx, session); err != nil {
+	// 4. Save updated session
+	if err := s.repo.Save(ctx, session); err != nil {
 		return nil, err
 	}
+
+	// 5. Save updated user (if discipline/price changed)
+	if err := s.userRepo.Save(ctx, user); err != nil {
+		return nil, err
+	}
+
 	return session, nil
 }
 

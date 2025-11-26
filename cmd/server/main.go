@@ -1,45 +1,94 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"fastinghero/internal/adapters/handler/http"
-	"fastinghero/internal/adapters/repository/mariadb"
+	"fastinghero/internal/adapters/middleware"
+	"fastinghero/internal/adapters/payment"
 	"fastinghero/internal/adapters/repository/memory"
+	"fastinghero/internal/adapters/repository/postgres"
 	"fastinghero/internal/adapters/secondary/llm"
 	"fastinghero/internal/core/ports"
 	"fastinghero/internal/core/services"
 	"log"
 	"os"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	_ "github.com/go-sql-driver/mysql"
+	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
+	"github.com/robfig/cron/v3"
+	"golang.org/x/time/rate"
+
+	"fastinghero/pkg/logger"
 )
 
 func main() {
+	// Load .env file
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found, using system environment variables")
+	}
+
+	// Initialize logger
+	logLevel := os.Getenv("LOG_LEVEL")
+	if logLevel == "" {
+		logLevel = "info"
+	}
+	logger.Init(logLevel)
+	logger.Info().Msg("Starting FastingHero application...")
+
 	var userRepo ports.UserRepository
 	var fastingRepo ports.FastingRepository
 	var ketoRepo ports.KetoRepository
+	var tribeRepo ports.TribeRepository
+	var socialRepo ports.SocialRepository
+	var leaderboardRepo ports.LeaderboardRepository
+	var gamificationRepo ports.GamificationRepository
 
 	// Check for DB connection string
 	dsn := os.Getenv("DSN")
-	if dsn != "" {
-		log.Println("Connecting to MariaDB...")
-		db, err := sql.Open("mysql", dsn)
-		if err != nil {
-			log.Fatalf("Failed to open DB: %v", err)
+	if dsn == "" {
+		// Default to Postgres DSN if not set, or use a specific env var
+		host := os.Getenv("DB_HOST")
+		if host == "" {
+			host = "localhost"
 		}
-		if err := db.Ping(); err != nil {
-			log.Fatalf("Failed to ping DB: %v", err)
+		user := os.Getenv("POSTGRES_USER")
+		password := os.Getenv("POSTGRES_PASSWORD")
+		dbname := os.Getenv("POSTGRES_DB")
+		if user != "" && password != "" && dbname != "" {
+			dsn = "postgres://" + user + ":" + password + "@" + host + ":5432/" + dbname + "?sslmode=disable"
 		}
-		userRepo = mariadb.NewUserRepository(db)
-		fastingRepo = mariadb.NewFastingRepository(db)
-		ketoRepo = mariadb.NewKetoRepository(db)
-	} else {
-		log.Println("Using In-Memory Repositories")
-		userRepo = memory.NewUserRepository()
-		fastingRepo = memory.NewFastingRepository()
-		ketoRepo = memory.NewKetoRepository()
 	}
+
+	if dsn == "" {
+		log.Fatal("DSN environment variable not set")
+	}
+
+	log.Println("Connecting to PostgreSQL...")
+	db, err := sql.Open("postgres", dsn)
+	if err != nil {
+		log.Fatalf("Failed to open DB: %v", err)
+	}
+	if err := db.Ping(); err != nil {
+		log.Fatalf("Failed to ping DB: %v", err)
+	}
+
+	// Run Migrations
+	log.Println("Running database migrations...")
+	if err := postgres.RunMigrations(db, "migrations"); err != nil {
+		log.Fatalf("Failed to run migrations: %v", err)
+	}
+
+	userRepo = postgres.NewPostgresUserRepository(db)
+	fastingRepo = postgres.NewPostgresFastingRepository(db)
+	ketoRepo = postgres.NewPostgresKetoRepository(db)
+	tribeRepo = postgres.NewPostgresTribeRepository(db)
+	socialRepo = postgres.NewPostgresSocialRepository(db)
+	leaderboardRepo = postgres.NewPostgresLeaderboardRepository(db)
+	gamificationRepo = postgres.NewPostgresGamificationRepository(db)
+	referralRepo := postgres.NewPostgresReferralRepository(db)
 
 	// Activity Repo (Memory only for now)
 	activityRepo := memory.NewActivityRepository()
@@ -48,11 +97,23 @@ func main() {
 	recipeRepo := memory.NewRecipeRepository()
 
 	// 2. Initialize Services (Core)
-	pricingService := services.NewPricingService()
-	authService := services.NewAuthService(userRepo)
-	fastingService := services.NewFastingService(fastingRepo, pricingService, userRepo)
+	vaultService := services.NewVaultService(userRepo, nil) // Payment gateway injected later if needed for refunds
+	referralService := services.NewReferralService(referralRepo, userRepo, vaultService)
+
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		log.Fatal("JWT_SECRET environment variable is not set")
+	}
+	if jwtSecret == "your-secret-key" {
+		log.Fatal("JWT_SECRET must be changed from the default value")
+	}
+
+	authService := services.NewAuthService(userRepo, referralService, jwtSecret)
+	fastingService := services.NewFastingService(fastingRepo, vaultService, userRepo)
 	ketoService := services.NewKetoService(ketoRepo, userRepo)
-	socialService := services.NewSocialService()
+	socialService := services.NewSocialService(socialRepo, userRepo)
+	leaderboardService := services.NewLeaderboardService(leaderboardRepo)
+	gamificationService := services.NewGamificationService(gamificationRepo, fastingRepo)
 	activityService := services.NewActivityService(activityRepo)
 	telemetryService := services.NewTelemetryService(telemetryRepo)
 
@@ -66,27 +127,81 @@ func main() {
 
 	mealService := services.NewMealService(mealRepo, cortexService)
 	recipeService := services.NewRecipeService(recipeRepo)
+	tribeService := services.NewTribeService(tribeRepo, userRepo)
 
-	// 3. Initialize Handlers (Adapters)
-	handler := http.NewHandler(authService, fastingService, ketoService, socialService, cortexService, activityService, telemetryService, mealService, recipeService)
+	// Payment Adapter
+	stripeKey := os.Getenv("STRIPE_SECRET_KEY")
+	stripeWebhookSecret := os.Getenv("STRIPE_WEBHOOK_SECRET")
+	paymentAdapter := payment.NewStripeAdapter(stripeKey, stripeWebhookSecret)
+
+	// Notification Service
+	firebaseServiceAccountPath := os.Getenv("FIREBASE_SERVICE_ACCOUNT_PATH")
+	if firebaseServiceAccountPath == "" {
+		log.Println("Warning: FIREBASE_SERVICE_ACCOUNT_PATH not set, notifications will be disabled")
+	}
+	notificationRepo := postgres.NewPostgresNotificationRepository(db)
+	notificationService, err := services.NewNotificationService(notificationRepo, firebaseServiceAccountPath)
+	if err != nil {
+		log.Printf("Warning: Failed to initialize notification service: %v", err)
+		notificationService = nil // Continue without notifications
+	}
+
+	handler := http.NewHandler(
+		authService,
+		fastingService,
+		ketoService,
+		socialService,
+		leaderboardService,
+		gamificationService,
+		cortexService,
+		activityService,
+		telemetryService,
+		mealService,
+		recipeService,
+		tribeService,
+		paymentAdapter,
+		referralService,
+		notificationService,
+	)
 
 	// 4. Setup Router
 	router := gin.Default()
 
-	// CORS Middleware
-	router.Use(func(c *gin.Context) {
-		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
-		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT")
+	// Configure CORS
+	router.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:5173"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+	}))
 
-		if c.Request.Method == "OPTIONS" {
-			c.AbortWithStatus(204)
-			return
+	// Security Headers
+	router.Use(middleware.SecurityHeaders())
+
+	// Rate Limiting
+	// 100 requests per minute for anonymous users
+	anonymousLimiter := middleware.NewRateLimiter(rate.Limit(100.0/60.0), 10)
+	anonymousLimiter.CleanupOldVisitors()
+	router.Use(anonymousLimiter.Middleware())
+
+	// Request Logging
+	router.Use(middleware.RequestLogger())
+
+	// 5. Setup Cron Jobs
+	cronScheduler := cron.New()
+	_, err = cronScheduler.AddFunc("@daily", func() {
+		log.Println("Running daily vault earnings calculation...")
+		ctx := context.Background()
+		if err := vaultService.ProcessDailyEarnings(ctx); err != nil {
+			log.Printf("Error processing daily earnings: %v", err)
 		}
-
-		c.Next()
 	})
+	if err != nil {
+		log.Fatalf("Failed to add cron job: %v", err)
+	}
+	cronScheduler.Start()
+	log.Println("Cron scheduler started")
 
 	handler.RegisterRoutes(router)
 

@@ -4,75 +4,89 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Clock, Trophy, Heart } from "lucide-react";
-import { KnowledgeHub } from "@/components/community/KnowledgeHub";
-import { recipeApi, Recipe } from "@/api/client";
-import { Leaf, Beef, CheckCircle2 } from "lucide-react";
+import { api } from "@/services/api";
+import TribesTab from "@/components/TribesTab";
 
 const Community = () => {
   const [activeTab, setActiveTab] = useState("feed");
-  const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [dietFilter, setDietFilter] = useState<string>("all");
+  const [feedItems, setFeedItems] = useState<any[]>([]);
 
-  const fetchRecipes = async (diet?: string) => {
+  const fetchFeed = async () => {
     try {
-      const res = await recipeApi.list(diet === "all" ? undefined : diet);
-      setRecipes(res.data);
+      const res = await api.get('/social/feed');
+      // Transform backend events to UI format
+      const items = res.data.map((event: any) => ({
+        id: event.id,
+        user: event.user_name || "Unknown User",
+        initials: (event.user_name || "U").substring(0, 2).toUpperCase(),
+        action: formatAction(event),
+        time: new Date(event.created_at).toLocaleString(), // Simple formatting
+        likes: 0, // Mock for now
+      }));
+      setFeedItems(items);
     } catch (e) {
-      console.error("Failed to fetch recipes", e);
+      console.error("Failed to fetch feed", e);
     }
   };
 
-  // Fetch recipes when tab changes to recipes or filter changes
-  if (activeTab === "recipes" && recipes.length === 0) {
-    fetchRecipes(dietFilter);
+  const [leaderboardItems, setLeaderboardItems] = useState<any[]>([]);
+  const fetchLeaderboard = async () => {
+    try {
+      const res = await api.get('/leaderboard/');
+      // Transform
+      const items = res.data.map((entry: any) => ({
+        rank: entry.rank,
+        name: entry.user_name || "Unknown",
+        hours: Math.round(entry.total_fasting_hours),
+        badge: entry.rank === 1 ? "🏆" : entry.rank === 2 ? "🥈" : entry.rank === 3 ? "🥉" : "",
+        highlight: false // TODO: Check if current user
+      }));
+      setLeaderboardItems(items);
+    } catch (e) {
+      console.error("Failed to fetch leaderboard", e);
+    }
+  };
+
+  const [gamificationProfile, setGamificationProfile] = useState<any>(null);
+  const fetchGamificationProfile = async () => {
+    try {
+      const res = await api.get('/gamification/profile');
+      setGamificationProfile(res.data);
+    } catch (e) {
+      console.error("Failed to fetch gamification profile", e);
+    }
+  };
+
+  const formatAction = (event: any) => {
+    switch (event.type) {
+      case "fast_completed":
+        const data = JSON.parse(JSON.stringify(event.data)); // data is already object from axios
+        return `completed a ${data.duration_hours || '?'}h fast`;
+      case "keto_logged":
+        return "logged keto metrics";
+      case "tribe_joined":
+        return "joined a tribe";
+      default:
+        return "did something awesome";
+    }
+  };
+
+  if (activeTab === "feed" && feedItems.length === 0) {
+    fetchFeed();
   }
 
-  const feedItems = [
-    {
-      id: 1,
-      user: "Sarah M.",
-      initials: "SM",
-      action: "completed an 18-hour fast",
-      time: "2 hours ago",
-      likes: 24,
-    },
-    {
-      id: 2,
-      user: "Mike R.",
-      initials: "MR",
-      action: "shared a healthy breakfast",
-      time: "4 hours ago",
-      likes: 18,
-      image: true,
-    },
-    {
-      id: 3,
-      user: "Alex K.",
-      initials: "AK",
-      action: "reached a 7-day streak",
-      time: "6 hours ago",
-      likes: 42,
-    },
-    {
-      id: 4,
-      user: "Jordan P.",
-      initials: "JP",
-      action: "completed a 20-hour fast",
-      time: "8 hours ago",
-      likes: 31,
-    },
-  ];
+  if (activeTab === "leaderboard" && leaderboardItems.length === 0) {
+    fetchLeaderboard();
+  }
 
-  const leaderboard = [
-    { rank: 1, name: "Emma W.", hours: 126, badge: "🏆" },
-    { rank: 2, name: "David L.", hours: 118, badge: "🥈" },
-    { rank: 3, name: "Sophie T.", hours: 112, badge: "🥉" },
-    { rank: 4, name: "Chris M.", hours: 98, badge: "" },
-    { rank: 5, name: "Taylor B.", hours: 94, badge: "" },
-    { rank: 6, name: "Morgan F.", hours: 87, badge: "" },
-    { rank: 7, name: "Alex K.", hours: 84, badge: "" },
-    { rank: 8, name: "You", hours: 76, badge: "", highlight: true },
-  ];
+  if (activeTab === "progress" && !gamificationProfile) {
+    fetchGamificationProfile();
+  }
+
+
+
+
+
 
   return (
     <div className="space-y-6">
@@ -88,9 +102,9 @@ const Community = () => {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="feed">Feed</TabsTrigger>
+          <TabsTrigger value="tribes">Tribes</TabsTrigger>
           <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
-          <TabsTrigger value="recipes">Recipes</TabsTrigger>
-          <TabsTrigger value="knowledge">Knowledge</TabsTrigger>
+          <TabsTrigger value="progress">My Progress</TabsTrigger>
         </TabsList>
 
         <TabsContent value="feed" className="space-y-4 mt-6">
@@ -136,6 +150,10 @@ const Community = () => {
           ))}
         </TabsContent>
 
+        <TabsContent value="tribes" className="mt-6">
+          <TribesTab />
+        </TabsContent>
+
         <TabsContent value="leaderboard" className="space-y-3 mt-6">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-sm font-semibold">This Week</h3>
@@ -145,7 +163,7 @@ const Community = () => {
             </Badge>
           </div>
 
-          {leaderboard.map((user, index) => (
+          {leaderboardItems.map((user, index) => (
             <Card
               key={user.rank}
               className={`border-primary/20 animate-fade-in-up hover:border-primary/40 transition-all duration-300 hover:shadow-lg hover:scale-[1.02] ${user.highlight ? "bg-primary/5 border-primary/40 glow-primary" : ""
@@ -179,58 +197,57 @@ const Community = () => {
           ))}
         </TabsContent>
 
-        <TabsContent value="recipes" className="mt-6 space-y-6">
-          <div className="flex gap-2 overflow-x-auto pb-2">
-            {["all", "vegan", "vegetarian", "normal"].map((diet) => (
-              <Badge
-                key={diet}
-                variant={dietFilter === diet ? "default" : "outline"}
-                className="cursor-pointer capitalize px-4 py-2"
-                onClick={() => {
-                  setDietFilter(diet);
-                  fetchRecipes(diet);
-                }}
-              >
-                {diet}
-              </Badge>
-            ))}
-          </div>
+        <TabsContent value="progress" className="space-y-6 mt-6">
+          {gamificationProfile ? (
+            <>
+              {/* Streak Section */}
+              <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+                <CardHeader>
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <Trophy className="h-5 w-5 text-yellow-500" />
+                    Current Streak
+                  </h3>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-end gap-2">
+                    <span className="text-4xl font-bold text-primary">
+                      {gamificationProfile.streak?.current_streak || 0}
+                    </span>
+                    <span className="text-muted-foreground mb-1">days</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Longest streak: {gamificationProfile.streak?.longest_streak || 0} days
+                  </p>
+                </CardContent>
+              </Card>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {recipes.map((recipe) => (
-              <Card key={recipe.id} className="overflow-hidden hover:shadow-md transition-shadow">
-                <div className="relative h-48">
-                  <img src={recipe.image} alt={recipe.title} className="w-full h-full object-cover" />
-                  {recipe.is_simple && (
-                    <Badge className="absolute top-2 right-2 bg-green-500 hover:bg-green-600">
-                      <CheckCircle2 className="w-3 h-3 mr-1" />
-                      Simple
-                    </Badge>
+              {/* Badges Section */}
+              <div>
+                <h3 className="text-lg font-semibold mb-4">My Badges</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {gamificationProfile.badges?.map((badge: any) => (
+                    <Card key={badge.badge_id} className="border-primary/20 hover:border-primary/40 transition-all">
+                      <CardContent className="p-4 flex flex-col items-center text-center gap-2">
+                        <div className="text-4xl mb-2">{badge.badge_info?.icon || "🏅"}</div>
+                        <div className="font-semibold text-sm">{badge.badge_info?.name || badge.badge_id}</div>
+                        <div className="text-xs text-muted-foreground">{badge.badge_info?.description}</div>
+                        <div className="text-[10px] text-muted-foreground mt-1">
+                          Earned: {new Date(badge.earned_at).toLocaleDateString()}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                  {(!gamificationProfile.badges || gamificationProfile.badges.length === 0) && (
+                    <div className="col-span-full text-center text-muted-foreground py-8">
+                      No badges earned yet. Keep fasting to unlock them!
+                    </div>
                   )}
                 </div>
-                <CardHeader className="p-4">
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="font-bold text-lg">{recipe.title}</h3>
-                    <Badge variant="secondary" className="capitalize text-xs">
-                      {recipe.diet === 'vegan' && <Leaf className="w-3 h-3 mr-1 text-green-500" />}
-                      {recipe.diet === 'vegetarian' && <Leaf className="w-3 h-3 mr-1 text-yellow-500" />}
-                      {recipe.diet === 'normal' && <Beef className="w-3 h-3 mr-1 text-red-500" />}
-                      {recipe.diet}
-                    </Badge>
-                  </div>
-                  <p className="text-sm text-muted-foreground line-clamp-2">{recipe.description}</p>
-                  <div className="flex gap-4 mt-4 text-sm font-medium">
-                    <div>🔥 {recipe.calories} kcal</div>
-                    <div>🍞 {recipe.carbs}g net carbs</div>
-                  </div>
-                </CardHeader>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="knowledge" className="mt-6">
-          <KnowledgeHub />
+              </div>
+            </>
+          ) : (
+            <div className="text-center py-8">Loading profile...</div>
+          )}
         </TabsContent>
       </Tabs>
     </div>

@@ -1,6 +1,7 @@
 package http
 
 import (
+	"context"
 	"fastinghero/internal/core/domain"
 	"fastinghero/internal/core/ports"
 	"fastinghero/internal/core/services"
@@ -12,29 +13,94 @@ import (
 )
 
 type Handler struct {
-	authService      ports.AuthService
-	fastingService   ports.FastingService
-	ketoService      ports.KetoService
-	socialService    *services.SocialService
-	cortexService    ports.CortexService
-	activityService  ports.ActivityService
-	telemetryService ports.TelemetryService
-	mealService      ports.MealService
-	recipeService    ports.RecipeService
+	authService         ports.AuthService
+	fastingService      ports.FastingService
+	ketoService         ports.KetoService
+	socialService       ports.SocialService
+	leaderboardService  ports.LeaderboardService
+	gamificationService ports.GamificationService
+	cortexService       ports.CortexService
+	activityService     ports.ActivityService
+	telemetryService    ports.TelemetryService
+	mealService         ports.MealService
+	recipeService       ports.RecipeService
+	tribeService        ports.TribeService
+	paymentHandler      *PaymentHandler
+	tribeHandler        *TribeHandler
+	notificationService ports.NotificationService
 }
 
-func NewHandler(authService ports.AuthService, fastingService ports.FastingService, ketoService ports.KetoService, socialService *services.SocialService, cortexService ports.CortexService, activityService ports.ActivityService, telemetryService ports.TelemetryService, mealService ports.MealService, recipeService ports.RecipeService) *Handler {
+func NewHandler(
+	authService ports.AuthService,
+	fastingService ports.FastingService,
+	ketoService ports.KetoService,
+	socialService ports.SocialService,
+	leaderboardService ports.LeaderboardService,
+	gamificationService ports.GamificationService,
+	cortexService ports.CortexService,
+	activityService ports.ActivityService,
+	telemetryService ports.TelemetryService,
+	mealService ports.MealService,
+	recipeService ports.RecipeService,
+	tribeService ports.TribeService,
+	paymentGateway ports.PaymentGateway,
+	referralService ports.ReferralService,
+	notificationService ports.NotificationService,
+) *Handler {
 	return &Handler{
-		authService:      authService,
-		fastingService:   fastingService,
-		ketoService:      ketoService,
-		socialService:    socialService,
-		cortexService:    cortexService,
-		activityService:  activityService,
-		telemetryService: telemetryService,
-		mealService:      mealService,
-		recipeService:    recipeService,
+		authService:         authService,
+		fastingService:      fastingService,
+		ketoService:         ketoService,
+		socialService:       socialService,
+		leaderboardService:  leaderboardService,
+		gamificationService: gamificationService,
+		cortexService:       cortexService,
+		activityService:     activityService,
+		telemetryService:    telemetryService,
+		mealService:         mealService,
+		recipeService:       recipeService,
+		tribeService:        tribeService,
+		paymentHandler:      NewPaymentHandler(paymentGateway, referralService),
+		tribeHandler:        NewTribeHandler(tribeService),
+		notificationService: notificationService,
 	}
+}
+
+// ... (skip to RegisterRoutes if needed, but replace_file_content handles chunks)
+
+func (h *Handler) Register(c *gin.Context) {
+	var req struct {
+		Email        string `json:"email"`
+		Password     string `json:"password"`
+		ReferralCode string `json:"referral_code"`
+	}
+	if err := c.BindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	user, err := h.authService.Register(c.Request.Context(), req.Email, req.Password, req.ReferralCode)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusCreated, user)
+}
+
+func (h *Handler) Login(c *gin.Context) {
+	var req struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+	if err := c.BindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	token, refresh, err := h.authService.Login(c.Request.Context(), req.Email, req.Password)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"token": token, "refresh_token": refresh})
 }
 
 func (h *Handler) RegisterRoutes(router *gin.Engine) {
@@ -50,6 +116,12 @@ func (h *Handler) RegisterRoutes(router *gin.Engine) {
 	protected := api.Group("/")
 	protected.Use(AuthMiddleware(h.authService.(*services.AuthService)))
 
+	// User routes
+	user := protected.Group("/user")
+	{
+		user.GET("/profile", h.GetUserProfile)
+	}
+
 	fasting := protected.Group("/fasting")
 	{
 		fasting.POST("/start", h.StartFast)
@@ -60,11 +132,6 @@ func (h *Handler) RegisterRoutes(router *gin.Engine) {
 	keto := protected.Group("/keto")
 	{
 		keto.POST("/log", h.LogKeto)
-	}
-
-	social := protected.Group("/social")
-	{
-		social.GET("/feed", h.GetFeed)
 	}
 
 	cortex := protected.Group("/cortex")
@@ -100,6 +167,44 @@ func (h *Handler) RegisterRoutes(router *gin.Engine) {
 	recipes := protected.Group("/recipes")
 	{
 		recipes.GET("/", h.GetRecipes)
+	}
+
+	tribes := protected.Group("/tribes")
+	{
+		tribes.POST("/", h.tribeHandler.CreateTribe)
+		tribes.GET("/", h.tribeHandler.ListTribes)
+		tribes.POST("/:id/join", h.tribeHandler.JoinTribe)
+		tribes.POST("/:id/leave", h.tribeHandler.LeaveTribe)
+	}
+
+	socialGroup := protected.Group("/social")
+	{
+		socialGroup.GET("/feed", h.GetFeed)
+	}
+
+	leaderboardGroup := protected.Group("/leaderboard")
+	{
+		leaderboardGroup.GET("/", h.GetLeaderboard)
+	}
+
+	gamificationGroup := protected.Group("/gamification")
+	{
+		gamificationGroup.GET("/profile", h.GetGamificationProfile)
+	}
+
+	// Payment Routes
+	payment := api.Group("/payments")
+	{
+		payment.POST("/deposit", h.paymentHandler.HandleDeposit)
+		payment.POST("/webhook", h.paymentHandler.HandleWebhook)
+	}
+
+	// Notification Routes
+	notifications := protected.Group("/notifications")
+	{
+		notifications.POST("/register-token", h.RegisterFCMToken)
+		notifications.POST("/unregister-token", h.UnregisterFCMToken)
+		notifications.GET("/history", h.GetNotificationHistory)
 	}
 }
 
@@ -149,7 +254,6 @@ func (h *Handler) GetInsight(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-
 	c.JSON(http.StatusOK, gin.H{"insight": insight})
 }
 
@@ -162,38 +266,39 @@ func (h *Handler) GetFeed(c *gin.Context) {
 	c.JSON(http.StatusOK, feed)
 }
 
-func (h *Handler) Register(c *gin.Context) {
-	var req struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
+func (h *Handler) GetLeaderboard(c *gin.Context) {
+	ctx := c.Request.Context()
+	// Check if tribe_id query param is present
+	tribeIDStr := c.Query("tribe_id")
+	if tribeIDStr != "" {
+		// Tribe Leaderboard logic here if needed
 	}
-	if err := c.BindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	user, err := h.authService.Register(c.Request.Context(), req.Email, req.Password)
+
+	leaderboard, err := h.leaderboardService.GetGlobalLeaderboard(ctx)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch leaderboard"})
 		return
 	}
-	c.JSON(http.StatusCreated, user)
+	c.JSON(http.StatusOK, leaderboard)
 }
 
-func (h *Handler) Login(c *gin.Context) {
-	var req struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
-	}
-	if err := c.BindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+func (h *Handler) GetGamificationProfile(c *gin.Context) {
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
 	}
-	token, refresh, err := h.authService.Login(c.Request.Context(), req.Email, req.Password)
+	userID := userIDVal.(uuid.UUID)
+
+	streak, badges, err := h.gamificationService.GetUserGamificationProfile(c.Request.Context(), userID)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"token": token, "refresh_token": refresh})
+	c.JSON(http.StatusOK, gin.H{
+		"streak": streak,
+		"badges": badges,
+	})
 }
 
 func (h *Handler) StartFast(c *gin.Context) {
@@ -233,6 +338,15 @@ func (h *Handler) StopFast(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+
+	// Trigger Gamification Updates (Async or Sync)
+	// Ideally async, but sync for now for simplicity
+	go func() {
+		ctx := context.Background() // Use background context for async
+		h.gamificationService.UpdateStreak(ctx, userID)
+		h.gamificationService.CheckAndAwardBadges(ctx, userID, "fast_completed", session)
+	}()
+
 	c.JSON(http.StatusOK, session)
 }
 
@@ -516,4 +630,88 @@ func (h *Handler) GetRecipes(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, recipes)
+}
+
+func (h *Handler) RegisterFCMToken(c *gin.Context) {
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	userID := userIDVal.(uuid.UUID)
+
+	var req struct {
+		Token      string `json:"token"`
+		DeviceType string `json:"device_type"`
+	}
+	if err := c.BindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if req.DeviceType == "" {
+		req.DeviceType = "web"
+	}
+
+	err := h.notificationService.RegisterFCMToken(c.Request.Context(), userID, req.Token, req.DeviceType)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to register token"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Token registered successfully"})
+}
+
+func (h *Handler) UnregisterFCMToken(c *gin.Context) {
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	userID := userIDVal.(uuid.UUID)
+
+	var req struct {
+		Token string `json:"token"`
+	}
+	if err := c.BindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	err := h.notificationService.UnregisterFCMToken(c.Request.Context(), userID, req.Token)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to unregister token"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Token unregistered successfully"})
+}
+
+func (h *Handler) GetNotificationHistory(c *gin.Context) {
+	_, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	// This is a placeholder - the actual implementation would call the repository
+	// For now, return empty array
+	c.JSON(http.StatusOK, []interface{}{})
+}
+
+func (h *Handler) GetUserProfile(c *gin.Context) {
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	userID := userIDVal.(uuid.UUID)
+
+	user, err := h.authService.(*services.AuthService).GetUserByID(c.Request.Context(), userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch user profile"})
+		return
+	}
+
+	c.JSON(http.StatusOK, user)
 }

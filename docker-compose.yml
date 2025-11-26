@@ -18,17 +18,15 @@ services:
       - fasting-net
 
   db:
-    image: mariadb:10.6
+    image: postgres:15-alpine
     environment:
-      - MYSQL_ROOT_PASSWORD=rootsecret
-      - MYSQL_DATABASE=fastinghero
-      - MYSQL_USER=fastinghero
-      - MYSQL_PASSWORD=secret
+      - POSTGRES_USER=fastinghero
+      - POSTGRES_PASSWORD=secret
+      - POSTGRES_DB=fastinghero
     ports:
-      - "3306:3306"
+      - "5432:5432"
     volumes:
-      - db_data:/var/lib/mysql
-      - ./migrations:/docker-entrypoint-initdb.d
+      - db_data:/var/lib/postgresql/data
     networks:
       - fasting-net
 

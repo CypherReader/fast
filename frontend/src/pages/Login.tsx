@@ -4,17 +4,19 @@ import { authApi } from '../api/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useAuth } from '@/context/AuthContext';
 
 const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const navigate = useNavigate();
+    const { login } = useAuth();
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
             const res = await authApi.login(email, password);
-            localStorage.setItem('token', res.data.token);
+            login(res.data.token);
             navigate('/');
         } catch (error) {
             alert('Login failed');

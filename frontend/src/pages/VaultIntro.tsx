@@ -1,15 +1,82 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import PricingTable from '../components/PricingTable';
 import './VaultIntro.css';
+
+const PaymentForm = ({ onSuccess }: { onSuccess: () => void }) => {
+    const stripe = useStripe();
+    const elements = useElements();
+    const [error, setError] = useState<string | null>(null);
+    const [processing, setProcessing] = useState(false);
+
+    const handleSubmit = async (event: React.FormEvent) => {
+        event.preventDefault();
+
+        if (!stripe || !elements) {
+            return;
+        }
+
+        setProcessing(true);
+        const cardElement = elements.getElement(CardElement);
+
+        if (cardElement) {
+            const { error, paymentMethod } = await stripe.createPaymentMethod({
+                type: 'card',
+                card: cardElement,
+            });
+
+            if (error) {
+                setError(error.message || 'Payment failed');
+                setProcessing(false);
+            } else {
+                console.log('[PaymentMethod]', paymentMethod);
+                // Here you would send paymentMethod.id to your backend
+                // await api.post('/payments/deposit', { paymentMethodId: paymentMethod.id, amount: 30 });
+                onSuccess();
+                setProcessing(false);
+            }
+        }
+    };
+
+    return (
+        <form onSubmit={handleSubmit} style={{ maxWidth: '400px', margin: '20px auto', padding: '20px', border: '1px solid #ccc', borderRadius: '8px' }}>
+            <h3 style={{ marginBottom: '20px' }}>Secure Deposit ($30)</h3>
+            <div style={{ marginBottom: '20px', padding: '10px', border: '1px solid #eee', borderRadius: '4px' }}>
+                <CardElement options={{
+                    style: {
+                        base: {
+                            fontSize: '16px',
+                            color: '#424770',
+                            '::placeholder': {
+                                color: '#aab7c4',
+                            },
+                        },
+                        invalid: {
+                            color: '#9e2146',
+                        },
+                    },
+                }} />
+            </div>
+            {error && <div style={{ color: 'red', marginBottom: '10px' }}>{error}</div>}
+            <button type="submit" disabled={!stripe || processing} className="cta-button" style={{ width: '100%' }}>
+                {processing ? 'Processing...' : 'Pay & Start Vault'}
+            </button>
+        </form>
+    );
+};
 
 const VaultIntro = () => {
     const navigate = useNavigate();
+    const [showPayment, setShowPayment] = useState(false);
 
     const handleStart = (e: React.MouseEvent) => {
         e.preventDefault();
-        // Here you would typically trigger the subscription flow
-        // For now, we'll navigate to the dashboard or a checkout page
-        // Assuming we want to go back to the app after "starting"
+        setShowPayment(true);
+    };
+
+    const handlePaymentSuccess = () => {
+        // Navigate to dashboard after successful payment
         navigate('/');
     };
 
@@ -20,8 +87,14 @@ const VaultIntro = () => {
                 <div className="container">
                     <h1>Put Your Money Where Your Goals Are</h1>
                     <p>The accountability app that pays you back for discipline</p>
-                    <a href="#" onClick={handleStart} className="cta-button">Start Your Vault - It's Free to Try</a>
-                    <div className="trust-badge">✓ 30-day money-back guarantee · ✓ Cancel anytime · ✓ No hidden fees</div>
+
+                    {!showPayment ? (
+                        <PricingTable onSelectVault={() => setShowPayment(true)} />
+                    ) : (
+                        <PaymentForm onSuccess={handlePaymentSuccess} />
+                    )}
+
+                    <div className="trust-badge mt-8">✓ 30-day money-back guarantee · ✓ Cancel anytime · ✓ No hidden fees</div>
                 </div>
             </section>
 
@@ -154,7 +227,7 @@ const VaultIntro = () => {
                         </div>
                         <div className="stat">
                             <span className="stat-number">4.8/5</span>
-                            <span class="stat-label">User Rating</span>
+                            <span className="stat-label">User Rating</span>
                         </div>
                     </div>
                 </div>
@@ -194,7 +267,13 @@ const VaultIntro = () => {
                 <div className="container">
                     <h2>Ready to Stop Making Excuses?</h2>
                     <p>Join hundreds of people who've turned their goals into commitments—and earned money doing it.</p>
-                    <a href="#" onClick={handleStart} className="cta-button">Start Your Vault Today</a>
+                    {!showPayment ? (
+                        <a href="#" onClick={handleStart} className="cta-button">Start Your Vault Today</a>
+                    ) : (
+                        <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="cta-button">
+                            Scroll Up to Join
+                        </button>
+                    )}
                     <div className="guarantee">
                         🛡️ <strong>Risk-Free Guarantee:</strong> Try it for 30 days. If you don't see progress, we'll refund your entire deposit. No questions asked.
                     </div>

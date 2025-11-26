@@ -13,18 +13,20 @@ import (
 )
 
 type AuthService struct {
-	userRepo  ports.UserRepository
-	jwtSecret []byte
+	userRepo        ports.UserRepository
+	referralService ports.ReferralService
+	jwtSecret       []byte
 }
 
-func NewAuthService(userRepo ports.UserRepository) *AuthService {
+func NewAuthService(userRepo ports.UserRepository, referralService ports.ReferralService, jwtSecret string) *AuthService {
 	return &AuthService{
-		userRepo:  userRepo,
-		jwtSecret: []byte("SUPER_SECRET_KEY_CHANGE_ME"), // In prod, load from env
+		userRepo:        userRepo,
+		referralService: referralService,
+		jwtSecret:       []byte(jwtSecret),
 	}
 }
 
-func (s *AuthService) Register(ctx context.Context, email, password string) (*domain.User, error) {
+func (s *AuthService) Register(ctx context.Context, email, password string, referralCode string) (*domain.User, error) {
 	// 1. Check if user exists
 	if _, err := s.userRepo.FindByEmail(ctx, email); err == nil {
 		return nil, errors.New("email already in use")
@@ -50,6 +52,14 @@ func (s *AuthService) Register(ctx context.Context, email, password string) (*do
 
 	if err := s.userRepo.Save(ctx, user); err != nil {
 		return nil, err
+	}
+
+	// 4. Track Referral
+	if referralCode != "" && s.referralService != nil {
+		if err := s.referralService.TrackReferral(ctx, referralCode, user.ID); err != nil {
+			// Log error but don't fail registration
+			// In a real app, use a logger
+		}
 	}
 
 	return user, nil
@@ -110,5 +120,9 @@ func (s *AuthService) ValidateToken(ctx context.Context, tokenString string) (*d
 
 	// Ideally, we might cache this or just trust the token if it contains enough info
 	// For now, let's verify user still exists
+	return s.userRepo.FindByID(ctx, userID)
+}
+
+func (s *AuthService) GetUserByID(ctx context.Context, userID uuid.UUID) (*domain.User, error) {
 	return s.userRepo.FindByID(ctx, userID)
 }

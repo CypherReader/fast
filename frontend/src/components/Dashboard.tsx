@@ -4,6 +4,7 @@ import { FastingSession } from '../api/types';
 import MedicalModal from './MedicalModal';
 import CortexWidget from './CortexWidget';
 import FastingClock from './FastingClock';
+import VaultDashboard from './VaultDashboard';
 import VaultStatus from './VaultStatus';
 
 const Dashboard: React.FC = () => {
@@ -11,7 +12,7 @@ const Dashboard: React.FC = () => {
     const [elapsed, setElapsed] = useState(0);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
-    const [pendingFast, setPendingFast] = useState<{ plan: string; hours: number } | null>(null);
+    const [pendingFast, setPendingFast] = useState<{ plan: string; hours: number; startTime?: string } | null>(null);
 
     useEffect(() => {
         fetchCurrentSession();
@@ -49,7 +50,7 @@ const Dashboard: React.FC = () => {
     const confirmStart = async () => {
         if (pendingFast) {
             try {
-                const res = await fastingApi.start(pendingFast.plan, pendingFast.hours);
+                const res = await fastingApi.start(pendingFast.plan, pendingFast.hours, pendingFast.startTime);
                 setSession(res.data);
             } catch (error) {
                 alert("Failed to start fast");
@@ -70,8 +71,6 @@ const Dashboard: React.FC = () => {
         }
     };
 
-
-
     const getFastingStage = (hours: number) => {
         if (hours < 12) return "Digestion Phase";
         if (hours < 18) return "Fat Burning & Ketosis";
@@ -85,19 +84,39 @@ const Dashboard: React.FC = () => {
         <div className="min-h-screen bg-gray-900 text-white p-6 flex flex-col items-center">
             <h1 className="text-3xl font-bold mb-8 text-emerald-400">FastingHero</h1>
 
-            {/* Timer Circle */}
-            <div className="mb-8">
-                <FastingClock
-                    elapsedSeconds={elapsed}
-                    goalHours={session?.goal_hours || 16}
-                    isFasting={!!session}
-                    stage={getFastingStage(elapsed / 3600)}
-                />
+            {/* Main Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 w-full max-w-6xl">
+                {/* Left Column: Fasting Clock & Vault */}
+                <div className="lg:col-span-2 space-y-8">
+                    <FastingClock
+                        elapsedSeconds={elapsed}
+                        goalHours={session?.goal_hours || 16}
+                        isFasting={!!session}
+                        stage={getFastingStage(elapsed / 3600)}
+                    />
+
+                    <VaultDashboard
+                        deposit={20.00}
+                        earned={session ? 2.00 : 0.00} // Mock data for now
+                        discipline={85} // Mock data for now
+                        dailyPotential={2.00}
+                    />
+                </div>
+
+                {/* Right Column: Cortex & Stats */}
+                <div className="space-y-8">
+                    <CortexWidget />
+                    <VaultStatus
+                        deposit={20.00}
+                        earned={session ? 5.50 : 0}
+                        potentialRefund={session ? 5.50 : 0}
+                    />
+                </div>
             </div>
 
             {/* Controls */}
             {!session ? (
-                <div className="grid grid-cols-2 gap-4 w-full max-w-md">
+                <div className="grid grid-cols-2 gap-4 w-full max-w-md mt-8">
                     <button onClick={() => handleStart('16_8', 16)} className="bg-emerald-600 hover:bg-emerald-700 p-4 rounded-xl font-bold transition-all">
                         Start 16:8
                     </button>
@@ -107,33 +126,17 @@ const Dashboard: React.FC = () => {
                     <button onClick={() => handleStart('omad', 23)} className="bg-emerald-600 hover:bg-emerald-700 p-4 rounded-xl font-bold transition-all">
                         OMAD (23h)
                     </button>
-                    <button onClick={() => handleStart('24h', 24)} className="bg-purple-600 hover:bg-purple-700 p-4 rounded-xl font-bold transition-all">
-                        24h Reset
+                    <button onClick={() => handleStart('custom', 16)} className="bg-emerald-600 hover:bg-emerald-700 p-4 rounded-xl font-bold transition-all">
+                        Custom
                     </button>
                 </div>
             ) : (
-                <button onClick={handleStop} className="bg-red-500 hover:bg-red-600 px-8 py-3 rounded-full font-bold shadow-lg transition-all">
-                    End Fast
-                </button>
+                <div className="mt-8 w-full max-w-md">
+                    <button onClick={handleStop} className="bg-red-600 hover:bg-red-700 p-4 rounded-xl font-bold w-full transition-all">
+                        Stop Fast
+                    </button>
+                </div>
             )}
-
-            {/* Commitment Vault */}
-            <div className="mt-8 w-full max-w-md">
-                <VaultStatus
-                    deposit={20.00}
-                    earned={session ? 5.50 : 0} // Mock data for now
-                    potentialRefund={session ? 5.50 : 0}
-                />
-            </div>
-
-            {/* Cortex AI Widget */}
-            <CortexWidget />
-
-            <MedicalModal
-                isOpen={showModal}
-                onConfirm={confirmStart}
-                onCancel={() => setShowModal(false)}
-            />
 
             {/* Social Feed Teaser */}
             <div className="mt-8 w-full max-w-md">
@@ -155,6 +158,17 @@ const Dashboard: React.FC = () => {
                     </div>
                 </div>
             </div>
+
+            <MedicalModal
+                isOpen={showModal}
+                onConfirm={confirmStart}
+                onCancel={() => setShowModal(false)}
+                startTime={pendingFast?.startTime || ''}
+                onStartTimeChange={(time) => setPendingFast(prev => prev ? { ...prev, startTime: time } : null)}
+                goalHours={pendingFast?.hours || 16}
+                onGoalHoursChange={(hours) => setPendingFast(prev => prev ? { ...prev, hours } : null)}
+                showGoalInput={true}
+            />
         </div>
     );
 };

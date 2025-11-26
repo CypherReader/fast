@@ -1,4 +1,20 @@
-# FastingHero (Neuro-Fast)
+# FastingHero
+
+## Configuration
+
+Copy `.env.example` to `.env` and update the values:
+
+```bash
+cp .env.example .env
+```
+
+**Important**: You must generate a secure `JWT_SECRET` for production:
+
+```bash
+openssl rand -base64 32
+```
+
+ (Neuro-Fast)
 
 > "Put Your Money Where Your Goals Are."
 

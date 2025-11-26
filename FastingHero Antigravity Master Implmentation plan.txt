@@ -1,0 +1,255 @@
+# FastingHero: Antigravity Master Implementation Plan
+
+**Version**: 2.0 (Antigravity Optimized)
+**Created**: November 26, 2025
+**Purpose**: Autonomous execution guide for FastingHero production build.
+
+---
+
+## 🤖 Agent Instructions (How to run this file)
+
+1.  **Context**: Read this entire file to understand the architectural dependencies.
+2.  **Execution**: When instructed to run a specific task (e.g., "Execute Task 1.1"), locate the **Agent Directive** block for that task.
+3.  **Artifacts**: Update the project's "Implementation Plan" Artifact as you complete items.
+4.  **Verification**: After writing code, YOU must run the relevant build or test commands in the terminal to verify success before marking a task complete.
+
+---
+
+## Phase 1: Critical Security & Infrastructure
+
+### Task 1.1: Implement Password Hashing (Bcrypt)
+
+**Priority**: ✅ CRITICAL
+**Status**: [ ] Pending
+
+**Context**: Passwords are currently plain text. Implementation of `bcrypt` is required immediately.
+
+**Files to Modify**:
+* `internal/core/services/auth_service.go`
+* `go.mod`
+
+**Agent Directive**:
+> Reference `internal/core/services/auth_service.go`.
+> 1. Add `golang.org/x/crypto/bcrypt` to imports and run `go mod tidy`.
+> 2. In `Register()`: Hash the password using `bcrypt.GenerateFromPassword` (Cost 10) before storing it in the user struct.
+> 3. In `Login()`: Replace the string comparison with `bcrypt.CompareHashAndPassword`.
+> 4. **Verification**: Create a temporary unit test in `auth_service_test.go` that registers a user and asserts the stored password does not match the input password string. Run the test.
+
+---
+
+### Task 1.2: Externalize JWT Secret
+
+**Priority**: ✅ CRITICAL
+**Status**: [ ] Pending
+
+**Context**: Hardcoded secrets are a security vulnerability.
+
+**Files to Modify**:
+* `cmd/server/main.go`
+* `internal/core/services/auth_service.go`
+* `.env.example`
+* `README.md`
+
+**Agent Directive**:
+> 1. **Refactor**: Modify `cmd/server/main.go` to load `JWT_SECRET` via `os.Getenv`. Panic if the value is unset or equals "your-secret-key".
+> 2. **Inject**: Update the `AuthService` struct and constructor to accept `jwtSecret` as a dependency. Remove the hardcoded constant.
+> 3. **Documentation**: Create `.env.example` including `JWT_SECRET` and update `README.md` with instructions on how to generate a secure secret (e.g., `openssl rand -base64 32`).
+> 4. **Verification**: Run `go run cmd/server/main.go` without env vars and confirm it panics.
+
+---
+
+### Task 1.3: PostgreSQL Migration (Infrastructure)
+
+**Priority**: ✅ CRITICAL
+**Status**: [ ] Pending
+
+**Context**: Moving from in-memory maps to PostgreSQL.
+
+**Files to Create/Modify**:
+* `migrations/001_initial_schema.sql` (New)
+* `internal/adapters/repository/postgres_repository.go` (New)
+* `internal/adapters/repository/memory_repository.go` (Delete/Archive)
+* `docker-compose.yml` (New)
+
+**Agent Directive**:
+> 1. **Schema**: Create `migrations/001_initial_schema.sql`. Define tables for `users`, `fasting_sessions`, `meals`, `telemetry_data`, `recipes`, and `tribes`. Ensure UUIDs are used for primary keys and Indexes are created for foreign keys.
+> 2. **Repository**: Create `postgres_repository.go`. Implement the Repository interface using `database/sql`. Use prepared statements (`stmt`) for all queries.
+> 3. **Infrastructure**: Create a `docker-compose.yml` file for PostgreSQL 15. Configure environment variables matching `.env.example`.
+> 4. **Main**: Update `cmd/server/main.go` to initialize the Postgres connection and inject it into the repository layer.
+> 5. **Verification**: Start the DB via `docker-compose up -d`. Run the application and ensure it connects to the DB successfully.
+
+---
+
+### Task 1.4: Migration System Implementation
+
+**Priority**: ✅ CRITICAL
+**Status**: [ ] Pending
+
+**Context**: We need robust schema evolution tracking.
+
+**Agent Directive**:
+> 1. **Logic**: Create `internal/adapters/repository/migrations.go`. Implement a system that reads `.sql` files from the `migrations/` folder, checks a `schema_migrations` table in the DB, and applies only new files based on checksum or version number.
+> 2. **Integration**: Call `RunMigrations()` in `cmd/server/main.go` before the server starts listening.
+> 3. **Tooling**: Create a `Makefile` with commands: `migrate-up`, `migrate-down`, and `migrate-create`.
+> 4. **Verification**: Run `make migrate-up` and check the database to ensure tables are created.
+
+---
+
+## Phase 2: Core Vault Features
+
+### Task 2.1: Stripe Integration
+
+**Priority**: ✅ CRITICAL
+**Status**: [ ] Pending
+
+**Context**: Secure handling of Vault deposits and subscriptions.
+
+**Agent Directive**:
+> 1. **Adapter**: Create `internal/adapters/payment/stripe_adapter.go`. Implement the Stripe Go client.
+> 2. **Methods**: Implement `CreateCustomer`, `CreateSubscription` (for the Vault), and `CreatePayout` (for refunds).
+> 3. **Handlers**: Create `internal/adapters/http/payment_handlers.go` with endpoints for Deposit and Webhooks.
+> 4. **Frontend**: Update `frontend/src/pages/VaultIntro.tsx` to use Stripe Elements.
+> 5. **Verification**: Use the Stripe CLI (if available) or a mock test to verify that the `CreateCustomer` function returns a valid Stripe ID.
+
+---
+
+### Task 2.2: Vault Logic & Earnings
+
+**Priority**: ✅ CRITICAL
+**Status**: [ ] Pending
+
+**Context**: The core game loop: Discipline = Money Back.
+
+**Agent Directive**:
+> 1. **Service**: Rename `pricing_service.go` to `vault_service.go`.
+> 2. **Logic**: Implement `CalculateDailyEarning`. Formula: `$2.00 * (DisciplineIndex / 100)`. Cap at $2.00.
+> 3. **Cron**: In `cmd/server/main.go`, implement a cron job (using `robfig/cron`) that runs at midnight UTC. It should check for active fasts and award earnings.
+> 4. **Refunds**: Implement the monthly refund logic: Sum earnings -> Create Stripe Payout -> Reset earnings.
+> 5. **Verification**: Write a table-driven unit test in `vault_service_test.go` with various Discipline Indexes (50, 80, 100) to ensure earnings are calculated correctly.
+
+---
+
+### Task 2.3: Vault Dashboard UI
+
+**Priority**: ✅ CRITICAL
+**Status**: [ ] Pending
+
+**Context**: Visualizing the "Money at Risk" vs "Money Earned".
+
+**Agent Directive**:
+> 1. **Components**: Create `VaultDashboard.tsx`, `EarningsChart.tsx` (using Recharts), and `TransactionHistory.tsx`.
+> 2. **Integration**: Add these components to `frontend/src/pages/Dashboard.tsx`.
+> 3. **API**: Update `frontend/src/services/api.ts` to fetch `getVaultBalance`.
+> 4. **Styling**: Ensure the "Potential Refund" amount is highlighted in Blue/Green to distinguish it from "Deposited" (Neutral).
+> 5. **Verification**: Run the frontend build `npm run build` to ensure no TypeScript errors exist in the new components.
+
+---
+
+### Task 2.4: Subscription Tiers
+
+**Priority**: 🔶 HIGH
+**Status**: [ ] Pending
+
+**Context**: Free vs. Vault ($20) vs. Vault+ ($30).
+
+**Agent Directive**:
+> 1. **Domain**: Update `internal/core/domain/user.go` to include `SubscriptionTier` enum.
+> 2. **API**: Create `internal/adapters/http/subscription_handlers.go` handling upgrades/downgrades via Stripe.
+> 3. **UI**: Create `frontend/src/pages/Subscription.tsx` with a 3-column pricing table.
+> 4. **Gating**: Implement a backend middleware or service check that prevents 'Free' tier users from accessing Vault features.
+
+---
+
+## Phase 3: Growth Engines
+
+### Task 3.1: Tribe System MVP
+
+**Priority**: 🔶 HIGH
+**Status**: [ ] Pending
+
+**Context**: Social accountability via groups.
+
+**Agent Directive**:
+> 1. **Schema**: Update migrations to include `tribe_invites`, `tribe_activities`, and link Users to Tribes.
+> 2. **Backend**: Implement `internal/adapters/http/tribe_handlers.go` (Join, Leave, Create, Feed).
+> 3. **Logic**: Implement `CalculateCollectiveDiscipline` (Average of members). Trigger this recalculation whenever a member completes a fast.
+> 4. **Frontend**: Create `frontend/src/pages/Tribes.tsx` and the `TribeLeaderboard.tsx` component.
+
+---
+
+### Task 3.2: Referral System
+
+**Priority**: 🔶 HIGH
+**Status**: [ ] Pending
+
+**Context**: Bilateral reward ($5 credit) for referrals.
+
+**Agent Directive**:
+> 1. **Service**: Create `internal/core/services/referral_service.go`.
+> 2. **Logic**: Generate unique 6-char codes for users.
+> 3. **Attribution**: Update `Register()` to look for `?ref=CODE` cookies. If found, link the users.
+> 4. **Reward**: Implement `CompleteReferral` which adds $5 vault credit to both users *only after* the new user makes their first Vault deposit.
+
+---
+
+### Task 3.3: Push Notifications (Firebase)
+
+**Priority**: 🟡 MEDIUM
+**Status**: [ ] Pending
+
+**Agent Directive**:
+> 1. **Infrastructure**: Create `internal/adapters/notification/firebase_adapter.go`.
+> 2. **Service**: Implement `SendFastReminder` and `SendEarningNotification`.
+> 3. **Frontend**: Add `frontend/public/firebase-messaging-sw.js` service worker.
+> 4. **Flow**: Request permission on the Dashboard. If granted, send the FCM token to `POST /api/v1/notifications/register`.
+
+---
+
+## Phase 4: Scale & Polish
+
+### Task 4.1: Rate Limiting & Security
+
+**Priority**: 🔶 HIGH
+**Status**: [ ] Pending
+
+**Agent Directive**:
+> 1. **Middleware**: Implement `internal/middleware/rate_limiter.go` using Redis or an in-memory map.
+> 2. **Rules**: Strict limits on `/auth/*` (10/hour). Loose limits on API (100/min).
+> 3. **Headers**: Add `security.go` middleware to inject `X-Content-Type-Options`, `X-Frame-Options`, and `HSTS` headers.
+
+### Task 4.2: Logging & Error Handling
+
+**Priority**: 🔶 HIGH
+**Status**: [ ] Pending
+
+**Agent Directive**:
+> 1. **Logger**: Implement `internal/logger/logger.go` using `uber-go/zap`.
+> 2. **Middleware**: Create `request_logger.go` to log Method, Path, Duration, and Status for every request.
+> 3. **Errors**: Create a centralized error handler that catches domain errors and maps them to clean HTTP 4xx/5xx responses without leaking stack traces.
+
+### Task 4.5: Mobile Optimization (PWA)
+
+**Priority**: 🟡 MEDIUM
+**Status**: [ ] Pending
+
+**Agent Directive**:
+> 1. **Manifest**: Generate `frontend/public/manifest.json` with appropriate icons and theme colors.
+> 2. **Viewport**: Audit `index.html` meta tags for `viewport-fit=cover`.
+> 3. **Service Worker**: Ensure offline fallback is enabled in Vite config.
+> 4. **Verification**: Run a Lighthouse audit (if available in environment) or verify build size is under 300KB.
+
+---
+
+## Phase 5: Pre-Launch Validation
+
+### Task 5.1 & 5.2: Audit & Load Test
+
+**Priority**: ✅ CRITICAL
+**Status**: [ ] Pending
+
+**Agent Directive**:
+> 1. **Script**: Create `scripts/security-audit.sh` to grep for TODOs, hardcoded secrets, and print them.
+> 2. **Load Test**: Create a k6 script `tests/load/scenarios.js` simulating 1000 users logging in and fetching dashboard data.
+> 3. **Documentation**: Generate API docs (Swagger/OpenAPI) based on the routes defined in `server/main.go`.
+
+---

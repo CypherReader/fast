@@ -25,7 +25,7 @@ func (s *KetoService) LogEntry(ctx context.Context, userID uuid.UUID, entry doma
 		if err != nil {
 			return err
 		}
-		if !user.IsPremium() {
+		if !user.IsVaultMember() {
 			return errors.New("premium subscription required for hard data inputs")
 		}
 	}

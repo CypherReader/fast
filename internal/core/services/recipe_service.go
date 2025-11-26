@@ -40,13 +40,14 @@ func (s *RecipeService) GetRecipes(ctx context.Context, diet domain.DietType) ([
 		// Vegetarian -> Vegetarian + Vegan
 		// Normal -> All (including meat)
 
-		if diet == domain.DietNormal {
+		switch diet {
+		case domain.DietNormal:
 			filtered = append(filtered, r)
-		} else if diet == domain.DietVegetarian {
+		case domain.DietVegetarian:
 			if r.Diet == domain.DietVegetarian || r.Diet == domain.DietVegan {
 				filtered = append(filtered, r)
 			}
-		} else if diet == domain.DietVegan {
+		case domain.DietVegan:
 			if r.Diet == domain.DietVegan {
 				filtered = append(filtered, r)
 			}

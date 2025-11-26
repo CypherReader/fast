@@ -1,25 +1,33 @@
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useEffect } from "react";
-import { Home, TrendingUp, Users, User, Activity } from "lucide-react";
+import { Home, TrendingUp, Users, User, Activity, Book } from "lucide-react";
 import { NavLink } from "./NavLink";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/context/AuthContext";
+import { useNotifications } from "@/hooks/useNotifications";
 
 const Layout = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user, loading } = useAuth();
+
+  // Initialize notification support
+  useNotifications();
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
+    if (!loading && !user) {
       navigate("/login");
     }
-  }, [navigate]);
+  }, [user, loading, navigate]);
+
+  if (loading) return <div>Loading...</div>;
 
   const navItems = [
     { path: "/", icon: Home, label: "Dashboard" },
     { path: "/progress", icon: TrendingUp, label: "Progress" },
     { path: "/activity", icon: Activity, label: "Activity" },
     { path: "/community", icon: Users, label: "Community" },
+    { path: "/resources", icon: Book, label: "Resources" },
     { path: "/profile", icon: User, label: "Profile" },
   ];
 

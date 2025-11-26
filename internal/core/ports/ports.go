@@ -11,7 +11,7 @@ import (
 // Primary Ports (Services)
 
 type AuthService interface {
-	Register(ctx context.Context, email, password string) (*domain.User, error)
+	Register(ctx context.Context, email, password string, referralCode string) (*domain.User, error)
 	Login(ctx context.Context, email, password string) (string, string, error) // token, refresh, error
 	ValidateToken(ctx context.Context, token string) (*domain.User, error)
 }
@@ -25,6 +25,15 @@ type FastingService interface {
 
 type KetoService interface {
 	LogEntry(ctx context.Context, userID uuid.UUID, entry domain.KetoEntry) error
+}
+
+type VaultService interface {
+	CalculateVaultStatus(user *domain.User) (deposit float64, earned float64, potentialRefund float64)
+	CalculateDailyEarning(disciplineIndex int) float64
+	ProcessDailyEarnings(ctx context.Context) error
+	AddDailyEarnings(ctx context.Context, user *domain.User, amount float64)
+	CalculatePrice(ctx context.Context, user *domain.User) float64
+	UpdateDisciplineIndex(ctx context.Context, user *domain.User, completedFast bool, verifiedKetosis bool)
 }
 
 // Secondary Ports (Repositories)
@@ -41,6 +50,7 @@ type UserRepository interface {
 	Save(ctx context.Context, user *domain.User) error
 	FindByEmail(ctx context.Context, email string) (*domain.User, error)
 	FindByID(ctx context.Context, id uuid.UUID) (*domain.User, error)
+	FindByReferralCode(ctx context.Context, code string) (*domain.User, error)
 }
 
 type FastingRepository interface {
@@ -88,4 +98,20 @@ type RecipeRepository interface {
 
 type RecipeService interface {
 	GetRecipes(ctx context.Context, diet domain.DietType) ([]domain.Recipe, error)
+}
+
+type NotificationService interface {
+	SendNotification(ctx context.Context, userID uuid.UUID, title, body string, notifType domain.NotificationType, data map[string]string) error
+	SendBatchNotification(ctx context.Context, userIDs []uuid.UUID, title, body string, notifType domain.NotificationType, data map[string]string) error
+	RegisterFCMToken(ctx context.Context, userID uuid.UUID, token, deviceType string) error
+	UnregisterFCMToken(ctx context.Context, userID uuid.UUID, token string) error
+}
+
+type NotificationRepository interface {
+	SaveToken(ctx context.Context, token *domain.FCMToken) error
+	GetUserTokens(ctx context.Context, userID uuid.UUID) ([]domain.FCMToken, error)
+	DeleteToken(ctx context.Context, tokenString string) error
+	SaveNotification(ctx context.Context, notification *domain.Notification) error
+	GetUserNotifications(ctx context.Context, userID uuid.UUID, limit int) ([]domain.Notification, error)
+	MarkAsRead(ctx context.Context, notificationID uuid.UUID) error
 }
