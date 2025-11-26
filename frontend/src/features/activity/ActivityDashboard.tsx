@@ -67,8 +67,10 @@ export const ActivityDashboard = () => {
                         <Activity className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{weight !== null ? `${weight} kg` : "--"}</div>
-                        <p className="text-xs text-muted-foreground">Latest Logged Value</p>
+                        <div className="text-2xl font-bold">{weight !== null ? `${weight} lbs` : "--"}</div>
+                        <p className="text-xs text-muted-foreground">
+                            {weight !== null ? `${(weight / 2.20462).toFixed(1)} kg` : "Latest Logged Value"}
+                        </p>
                     </CardContent>
                 </Card>
                 <Card>

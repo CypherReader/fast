@@ -16,7 +16,7 @@ import Referrals from "./pages/Referrals";
 
 import Contract from "./pages/Contract";
 import Login from "./pages/Login";
-import Register from "./pages/Register";
+import Onboarding from "./pages/Onboarding";
 
 import Tribe from "./pages/Tribe";
 import { ActivityDashboard } from "./features/activity/ActivityDashboard";
@@ -29,7 +29,18 @@ const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY || "pk_t
 
 import { AuthProvider } from "@/context/AuthContext";
 
+import { ProtectedFastingRoute } from "./features/paywall/ProtectedFastingRoute";
+
+// ... imports ...
+
+import { useEffect } from "react";
+import { initAnalytics } from "@/lib/analytics";
+
 const App = () => {
+  useEffect(() => {
+    initAnalytics();
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <Elements stripe={stripePromise}>
@@ -40,9 +51,13 @@ const App = () => {
             <BrowserRouter>
               <Routes>
                 <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
+                <Route path="/register" element={<Onboarding />} />
                 <Route path="/contract" element={<Contract />} />
-                <Route path="/" element={<Layout />}>
+                <Route path="/" element={
+                  <ProtectedFastingRoute>
+                    <Layout />
+                  </ProtectedFastingRoute>
+                }>
                   <Route index element={<Dashboard />} />
                   <Route path="progress" element={<Progress />} />
                   <Route path="community" element={<Community />} />

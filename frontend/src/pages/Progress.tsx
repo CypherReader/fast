@@ -68,6 +68,7 @@ const ProgressPage = () => {
   const [showWeightModal, setShowWeightModal] = useState(false);
   const [manualWeight, setManualWeight] = useState("");
   const [loading, setLoading] = useState(false);
+  const [weightUnit, setWeightUnit] = useState<'kg' | 'lbs'>('lbs'); // Unit preference
 
   const [currentWeight, setCurrentWeight] = useState<number | null>(null);
 
@@ -90,11 +91,13 @@ const ProgressPage = () => {
     if (!manualWeight) return;
     setLoading(true);
     try {
-      console.log("Logging weight:", manualWeight);
+      console.log("Logging weight:", manualWeight, weightUnit);
+      // Convert to lbs for storage if in kg
+      const weightInLbs = weightUnit === 'kg' ? parseFloat(manualWeight) * 2.20462 : parseFloat(manualWeight);
       await api.post('/telemetry/manual', {
         type: 'weight',
-        value: parseFloat(manualWeight),
-        unit: 'lbs'
+        value: weightInLbs,
+        unit: 'lbs' // Always store in lbs
       });
       console.log("Weight logged successfully");
       setManualWeight("");
@@ -107,6 +110,15 @@ const ProgressPage = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Convert weight for display
+  const displayWeight = (weightInLbs: number | null) => {
+    if (weightInLbs === null) return "No data";
+    if (weightUnit === 'kg') {
+      return `${(weightInLbs / 2.20462).toFixed(1)} kg`;
+    }
+    return `${weightInLbs} lbs`;
   };
 
   return (
@@ -147,11 +159,11 @@ const ProgressPage = () => {
           <div className="mt-4 pt-4 border-t border-border">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Current</span>
-              <span className="font-bold text-primary">{currentWeight ? `${currentWeight} lbs` : "No data"}</span>
+              <span className="font-bold text-primary">{displayWeight(currentWeight)}</span>
             </div>
             <div className="flex justify-between text-sm mt-1">
               <span className="text-muted-foreground">This week</span>
-              <span className="font-bold text-chart-4">-1.5 lbs</span>
+              <span className="font-bold text-chart-4">-{weightUnit === 'kg' ? '0.7 kg' : '1.5 lbs'}</span>
             </div>
           </div>
         </CardContent>
@@ -190,38 +202,8 @@ const ProgressPage = () => {
         </CardContent>
       </Card>
 
-      {/* Keto Gauge - Premium Feature */}
-      <Card className="border-secondary/20 relative overflow-hidden animate-fade-in-up hover:border-secondary/40 transition-all duration-300 hover:shadow-lg hover:shadow-secondary/10" style={{ animationDelay: '0.3s' }}>
-        <div className="absolute top-2 right-2">
-          <Lock className="h-4 w-4 text-secondary" />
-        </div>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Flame className="h-5 w-5 text-secondary" />
-            Ketosis Level
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="text-center">
-              <div className="text-4xl font-bold text-secondary">73</div>
-              <div className="text-sm text-muted-foreground">Estimated Score</div>
-            </div>
-            <Progress value={73} className="h-2" />
-            <Button
-              onClick={() => setShowPremiumModal(true)}
-              variant="outline"
-              className="w-full border-secondary/50 hover:bg-secondary/10"
-            >
-              <Lock className="mr-2 h-4 w-4" />
-              Log Precision Blood Ketones
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Food Logging - Commitment Vault */}
-      <Card className="border-emerald-500/20 animate-fade-in-up hover:border-emerald-500/40 transition-all duration-300 hover:shadow-lg hover:shadow-emerald-500/10" style={{ animationDelay: '0.4s' }}>
+      <Card className="border-emerald-500/20 animate-fade-in-up hover:border-emerald-500/40 transition-all duration-300 hover:shadow-lg hover:shadow-emerald-500/10" style={{ animationDelay: '0.3s' }}>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <Camera className="h-5 w-5 text-emerald-500" />
@@ -289,6 +271,36 @@ const ProgressPage = () => {
         </CardContent>
       </Card>
 
+      {/* Keto Gauge - Premium Feature */}
+      <Card className="border-secondary/20 relative overflow-hidden animate-fade-in-up hover:border-secondary/40 transition-all duration-300 hover:shadow-lg hover:shadow-secondary/10" style={{ animationDelay: '0.4s' }}>
+        <div className="absolute top-2 right-2">
+          <Lock className="h-4 w-4 text-secondary" />
+        </div>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Flame className="h-5 w-5 text-secondary" />
+            Ketosis Level
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="text-center">
+              <div className="text-4xl font-bold text-secondary">73</div>
+              <div className="text-sm text-muted-foreground">Estimated Score</div>
+            </div>
+            <Progress value={73} className="h-2" />
+            <Button
+              onClick={() => setShowPremiumModal(true)}
+              variant="outline"
+              className="w-full border-secondary/50 hover:bg-secondary/10"
+            >
+              <Lock className="mr-2 h-4 w-4" />
+              Log Precision Blood Ketones
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Premium Upsell Modal */}
       <Dialog open={showPremiumModal} onOpenChange={setShowPremiumModal}>
         <DialogContent>
@@ -325,14 +337,35 @@ const ProgressPage = () => {
           <DialogHeader>
             <DialogTitle>Log Weight</DialogTitle>
             <DialogDescription>
-              Enter your current weight in lbs.
+              Enter your current weight.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 pt-4">
+            {/* Unit Selector */}
+            <div className="flex gap-2 mb-4">
+              <button
+                onClick={() => setWeightUnit('lbs')}
+                className={`flex-1 px-4 py-2 rounded-md transition-all ${weightUnit === 'lbs'
+                  ? 'bg-primary text-white'
+                  : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                  }`}
+              >
+                lbs
+              </button>
+              <button
+                onClick={() => setWeightUnit('kg')}
+                className={`flex-1 px-4 py-2 rounded-md transition-all ${weightUnit === 'kg'
+                  ? 'bg-primary text-white'
+                  : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                  }`}
+              >
+                kg
+              </button>
+            </div>
             <div className="flex gap-2">
               <input
                 type="number"
-                placeholder="e.g. 175.5"
+                placeholder={weightUnit === 'kg' ? 'e.g. 79.5' : 'e.g. 175.5'}
                 value={manualWeight}
                 onChange={(e) => setManualWeight(e.target.value)}
                 className="flex-1 bg-slate-900 border border-slate-700 rounded-md px-3 py-2 text-white focus:outline-none focus:border-primary"

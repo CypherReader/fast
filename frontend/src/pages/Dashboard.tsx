@@ -8,6 +8,16 @@ import FastingClock from "@/components/FastingClock";
 import VaultStatus from "@/components/VaultStatus";
 import { FastingSession } from "@/api/types";
 import MedicalModal from "@/components/MedicalModal";
+import { VaultHeroCard } from "@/features/vault/VaultHeroCard";
+import { SocialProofBanner } from "@/components/trust/SocialProofBanner";
+import { ActivityTicker } from "@/components/trust/ActivityTicker";
+import { ChallengeCard } from "@/features/engagement/ChallengeCard";
+import { StreakCounter } from "@/features/engagement/StreakCounter";
+import { ReferralTeaser } from "@/features/referral/ReferralTeaser";
+import { ReferralModal } from "@/features/referral/ReferralModal";
+import { TribeDiscovery } from "@/features/tribe/TribeDiscovery";
+import { FloatingActionMenu } from "@/components/ui/FloatingActionMenu";
+import { RefundCountdown } from "@/features/vault/RefundCountdown";
 
 const Dashboard = () => {
   const [session, setSession] = useState<FastingSession | null>(null);
@@ -17,6 +27,8 @@ const Dashboard = () => {
   const [showModal, setShowModal] = useState(false);
   const [pendingFast, setPendingFast] = useState<{ plan: string; hours: number } | null>(null);
   const [manualStartTime, setManualStartTime] = useState("");
+  const [showReferralModal, setShowReferralModal] = useState(false);
+  const [isInTribe] = useState(false); // Mock state for demo
 
   // Fetch real fasting data
   useEffect(() => {
@@ -141,10 +153,16 @@ const Dashboard = () => {
             </span>
           </div>
           <div className="flex items-center space-x-4">
+            <RefundCountdown daysRemaining={12} />
+            <StreakCounter streak={8} />
             {/* Vault moved to Profile */}
           </div>
         </div>
       </header>
+
+      {/* Trust Signals */}
+      <SocialProofBanner />
+      <ActivityTicker />
 
       <Tabs defaultValue="focus" className="w-full space-y-6">
         <TabsList className="grid w-full grid-cols-3 bg-slate-900 p-1 rounded-xl border border-slate-800">
@@ -161,6 +179,20 @@ const Dashboard = () => {
 
         {/* TAB 1: FOCUS - The Main Fasting Interface */}
         <TabsContent value="focus" className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+
+          {/* Vault Hero Card - NEW Priority */}
+          <VaultHeroCard
+            earned={session ? 5.50 : 0}
+            deposit={20.00}
+            daysUntilRefund={12}
+            fastsRemaining={4}
+          />
+
+          {/* Daily Challenge Card */}
+          <ChallengeCard />
+
+          {/* Referral Teaser */}
+          <ReferralTeaser onInvite={() => setShowReferralModal(true)} />
 
           {/* Hero Timer Card - Replaced with FastingClock */}
           <div className="flex flex-col items-center justify-center">
@@ -207,48 +239,54 @@ const Dashboard = () => {
 
         {/* TAB 2: TRIBE - Social Accountability */}
         <TabsContent value="tribe" className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <div className="bg-slate-900/50 rounded-xl p-6 border border-slate-800">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="font-bold text-white flex items-center text-lg">
-                <Users className="w-5 h-5 mr-2 text-purple-400" /> Tribe Leaderboard
-              </h3>
-              <span className="text-xs bg-purple-500/20 text-purple-300 px-3 py-1 rounded-full border border-purple-500/30">Rank #42</span>
-            </div>
-
-            <div className="space-y-4">
-              {[
-                { name: 'Sarah K.', status: 'Fasting 18h', streak: 12, alert: false },
-                { name: 'Mike R.', status: 'Eating Window', streak: 45, alert: false },
-                { name: 'You', status: `Fasting ${(elapsed / 3600).toFixed(0)}h`, streak: 8, alert: false },
-                { name: 'Dave L.', status: 'Danger Zone', streak: 2, alert: true },
-              ].map((member, i) => (
-                <div key={i} className="flex justify-between items-center p-3 hover:bg-slate-800 rounded-xl cursor-pointer transition-all border border-transparent hover:border-slate-700">
-                  <div className="flex items-center">
-                    <div className={`w-3 h-3 rounded-full mr-3 ${member.alert ? 'bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.6)]' : 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]'}`}></div>
-                    <span className="text-slate-200 font-medium">{member.name}</span>
-                  </div>
-                  <div className="flex items-center space-x-4">
-                    <span className="text-slate-500 text-xs">{member.status}</span>
-                    <span className="font-mono text-cyan-400 text-xs bg-cyan-950/30 px-2 py-1 rounded">Day {member.streak}</span>
-                  </div>
+          {!isInTribe ? (
+            <TribeDiscovery />
+          ) : (
+            <>
+              <div className="bg-slate-900/50 rounded-xl p-6 border border-slate-800">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="font-bold text-white flex items-center text-lg">
+                    <Users className="w-5 h-5 mr-2 text-purple-400" /> Tribe Leaderboard
+                  </h3>
+                  <span className="text-xs bg-purple-500/20 text-purple-300 px-3 py-1 rounded-full border border-purple-500/30">Rank #42</span>
                 </div>
-              ))}
-            </div>
 
-            <button className="w-full mt-6 bg-purple-600/10 hover:bg-purple-600/20 text-purple-300 border border-purple-500/30 py-3 rounded-xl text-sm flex justify-center items-center transition-all font-medium">
-              <Zap className="w-4 h-4 mr-2" /> Nudge Dave (Cost: 0.5 pts)
-            </button>
-          </div>
+                <div className="space-y-4">
+                  {[
+                    { name: 'Sarah K.', status: 'Fasting 18h', streak: 12, alert: false },
+                    { name: 'Mike R.', status: 'Eating Window', streak: 45, alert: false },
+                    { name: 'You', status: `Fasting ${(elapsed / 3600).toFixed(0)}h`, streak: 8, alert: false },
+                    { name: 'Dave L.', status: 'Danger Zone', streak: 2, alert: true },
+                  ].map((member, i) => (
+                    <div key={i} className="flex justify-between items-center p-3 hover:bg-slate-800 rounded-xl cursor-pointer transition-all border border-transparent hover:border-slate-700">
+                      <div className="flex items-center">
+                        <div className={`w-3 h-3 rounded-full mr-3 ${member.alert ? 'bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.6)]' : 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]'}`}></div>
+                        <span className="text-slate-200 font-medium">{member.name}</span>
+                      </div>
+                      <div className="flex items-center space-x-4">
+                        <span className="text-slate-500 text-xs">{member.status}</span>
+                        <span className="font-mono text-cyan-400 text-xs bg-cyan-950/30 px-2 py-1 rounded">Day {member.streak}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
 
-          <div className="bg-slate-800/30 p-4 rounded-xl border border-slate-700/50 flex items-center justify-between">
-            <div>
-              <h4 className="font-bold text-white text-sm">Proof of Discipline</h4>
-              <p className="text-xs text-slate-400">Share verification card to Instagram</p>
-            </div>
-            <button className="bg-pink-600 hover:bg-pink-500 text-white px-4 py-2 rounded-lg text-sm flex items-center transition-colors shadow-lg shadow-pink-900/20">
-              <Share2 className="w-4 h-4 mr-2" /> Share (+5 pts)
-            </button>
-          </div>
+                <button className="w-full mt-6 bg-purple-600/10 hover:bg-purple-600/20 text-purple-300 border border-purple-500/30 py-3 rounded-xl text-sm flex justify-center items-center transition-all font-medium">
+                  <Zap className="w-4 h-4 mr-2" /> Nudge Dave (Cost: 0.5 pts)
+                </button>
+              </div>
+
+              <div className="bg-slate-800/30 p-4 rounded-xl border border-slate-700/50 flex items-center justify-between">
+                <div>
+                  <h4 className="font-bold text-white text-sm">Proof of Discipline</h4>
+                  <p className="text-xs text-slate-400">Share verification card to Instagram</p>
+                </div>
+                <button className="bg-pink-600 hover:bg-pink-500 text-white px-4 py-2 rounded-lg text-sm flex items-center transition-colors shadow-lg shadow-pink-900/20">
+                  <Share2 className="w-4 h-4 mr-2" /> Share (+5 pts)
+                </button>
+              </div>
+            </>
+          )}
         </TabsContent>
 
         {/* TAB 3: YOU - Metrics & Pricing */}
@@ -306,6 +344,12 @@ const Dashboard = () => {
         </TabsContent>
       </Tabs>
 
+      <FloatingActionMenu
+        onLogWeight={() => console.log("Log Weight")}
+        onLogWater={() => console.log("Log Water")}
+        onStartFast={() => setShowModal(true)}
+      />
+
       <MedicalModal
         isOpen={showModal}
         onConfirm={confirmStart}
@@ -315,6 +359,11 @@ const Dashboard = () => {
         goalHours={pendingFast?.hours || 12}
         onGoalHoursChange={(h) => setPendingFast(prev => prev ? { ...prev, hours: h } : null)}
         showGoalInput={pendingFast?.plan === 'custom'}
+      />
+
+      <ReferralModal
+        open={showReferralModal}
+        onOpenChange={setShowReferralModal}
       />
     </div>
   );
