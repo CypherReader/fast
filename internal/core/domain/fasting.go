@@ -36,11 +36,14 @@ type FastingSession struct {
 	Status    FastingStatus   `json:"status"`
 }
 
-func NewFastingSession(userID uuid.UUID, plan FastingPlanType, goalHours int) *FastingSession {
+func NewFastingSession(userID uuid.UUID, plan FastingPlanType, goalHours int, startTime time.Time) *FastingSession {
+	if startTime.IsZero() {
+		startTime = time.Now()
+	}
 	return &FastingSession{
 		ID:        uuid.New(),
 		UserID:    userID,
-		StartTime: time.Now(),
+		StartTime: startTime,
 		GoalHours: goalHours,
 		PlanType:  plan,
 		Status:    StatusActive,

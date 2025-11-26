@@ -5,6 +5,7 @@ import (
 	"fastinghero/internal/core/ports"
 	"fastinghero/internal/core/services"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -18,17 +19,21 @@ type Handler struct {
 	cortexService    ports.CortexService
 	activityService  ports.ActivityService
 	telemetryService ports.TelemetryService
+	mealService      ports.MealService
+	recipeService    ports.RecipeService
 }
 
-func NewHandler(auth ports.AuthService, fasting ports.FastingService, keto ports.KetoService, social *services.SocialService, cortex ports.CortexService, activity ports.ActivityService, telemetry ports.TelemetryService) *Handler {
+func NewHandler(authService ports.AuthService, fastingService ports.FastingService, ketoService ports.KetoService, socialService *services.SocialService, cortexService ports.CortexService, activityService ports.ActivityService, telemetryService ports.TelemetryService, mealService ports.MealService, recipeService ports.RecipeService) *Handler {
 	return &Handler{
-		authService:      auth,
-		fastingService:   fasting,
-		ketoService:      keto,
-		socialService:    social,
-		cortexService:    cortex,
-		activityService:  activity,
-		telemetryService: telemetry,
+		authService:      authService,
+		fastingService:   fastingService,
+		ketoService:      ketoService,
+		socialService:    socialService,
+		cortexService:    cortexService,
+		activityService:  activityService,
+		telemetryService: telemetryService,
+		mealService:      mealService,
+		recipeService:    recipeService,
 	}
 }
 
@@ -72,7 +77,7 @@ func (h *Handler) RegisterRoutes(router *gin.Engine) {
 	{
 		activity.POST("/sync", h.SyncActivity)
 		activity.GET("/", h.GetActivities)
-		activity.GET("/", h.GetActivities)
+
 		activity.GET("/:id", h.GetActivity)
 	}
 
@@ -81,6 +86,20 @@ func (h *Handler) RegisterRoutes(router *gin.Engine) {
 		telemetry.POST("/connect", h.ConnectDevice)
 		telemetry.POST("/sync", h.SyncTelemetry)
 		telemetry.GET("/status", h.GetTelemetryStatus)
+		telemetry.POST("/manual", h.LogManualTelemetry)
+		telemetry.GET("/metric", h.GetLatestMetric)
+		telemetry.GET("/weekly", h.GetWeeklyStats)
+	}
+
+	meals := protected.Group("/meals")
+	{
+		meals.POST("/", h.LogMeal)
+		meals.GET("/", h.GetMeals)
+	}
+
+	recipes := protected.Group("/recipes")
+	{
+		recipes.GET("/", h.GetRecipes)
 	}
 }
 
@@ -188,12 +207,13 @@ func (h *Handler) StartFast(c *gin.Context) {
 	var req struct {
 		PlanType  domain.FastingPlanType `json:"plan_type"`
 		GoalHours int                    `json:"goal_hours"`
+		StartTime *time.Time             `json:"start_time"`
 	}
 	if err := c.BindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	session, err := h.fastingService.StartFast(c.Request.Context(), userID, req.PlanType, req.GoalHours)
+	session, err := h.fastingService.StartFast(c.Request.Context(), userID, req.PlanType, req.GoalHours, req.StartTime)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -371,4 +391,129 @@ func (h *Handler) GetTelemetryStatus(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, status)
+}
+
+func (h *Handler) LogManualTelemetry(c *gin.Context) {
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	userID := userIDVal.(uuid.UUID)
+
+	var req struct {
+		Type  domain.MetricType `json:"type"`
+		Value float64           `json:"value"`
+		Unit  string            `json:"unit"`
+	}
+	if err := c.BindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	data, err := h.telemetryService.LogManualData(c.Request.Context(), userID, req.Type, req.Value, req.Unit)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusCreated, data)
+}
+
+func (h *Handler) GetLatestMetric(c *gin.Context) {
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	userID := userIDVal.(uuid.UUID)
+
+	metricType := c.Query("type")
+	if metricType == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "metric type required"})
+		return
+	}
+
+	data, err := h.telemetryService.GetLatestMetric(c.Request.Context(), userID, domain.MetricType(metricType))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if data == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "no data found"})
+		return
+	}
+	c.JSON(http.StatusOK, data)
+}
+
+func (h *Handler) GetWeeklyStats(c *gin.Context) {
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	userID := userIDVal.(uuid.UUID)
+
+	metricType := c.Query("type")
+	if metricType == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "metric type required"})
+		return
+	}
+
+	stats, err := h.telemetryService.GetWeeklyStats(c.Request.Context(), userID, domain.MetricType(metricType))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, stats)
+}
+
+func (h *Handler) LogMeal(c *gin.Context) {
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	userID := userIDVal.(uuid.UUID)
+
+	var req struct {
+		Image       string `json:"image"`
+		Description string `json:"description"`
+	}
+	if err := c.BindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	meal, err := h.mealService.LogMeal(c.Request.Context(), userID, req.Image, req.Description)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusCreated, meal)
+}
+
+func (h *Handler) GetMeals(c *gin.Context) {
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	userID := userIDVal.(uuid.UUID)
+
+	meals, err := h.mealService.GetMeals(c.Request.Context(), userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, meals)
+}
+
+func (h *Handler) GetRecipes(c *gin.Context) {
+	diet := c.Query("diet")
+	recipes, err := h.recipeService.GetRecipes(c.Request.Context(), domain.DietType(diet))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, recipes)
 }

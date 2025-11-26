@@ -94,3 +94,11 @@ func (s *TelemetryService) LogManualData(ctx context.Context, userID uuid.UUID, 
 	}
 	return data, nil
 }
+
+func (s *TelemetryService) GetLatestMetric(ctx context.Context, userID uuid.UUID, metricType domain.MetricType) (*domain.TelemetryData, error) {
+	return s.repo.GetLatestMetric(ctx, userID, metricType)
+}
+
+func (s *TelemetryService) GetWeeklyStats(ctx context.Context, userID uuid.UUID, metricType domain.MetricType) ([]domain.DailyStat, error) {
+	return s.repo.GetWeeklyStats(ctx, userID, metricType)
+}

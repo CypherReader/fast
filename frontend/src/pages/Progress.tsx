@@ -1,15 +1,19 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Scale, Droplets, Flame, Camera, Lock } from "lucide-react";
+import { api, mealApi } from "@/api/client";
 
 const ProgressPage = () => {
   const [waterCount, setWaterCount] = useState(5);
   const [showPremiumModal, setShowPremiumModal] = useState(false);
+  const [mealsLogged, setMealsLogged] = useState(0);
+  const [earnedBack, setEarnedBack] = useState(0.00);
   const waterGoal = 8;
-
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [recentMeals, setRecentMeals] = useState<any[]>([]);
 
   const weightData = [
     { date: "Mon", weight: 180 },
@@ -18,6 +22,92 @@ const ProgressPage = () => {
     { date: "Thu", weight: 178.8 },
     { date: "Fri", weight: 178.5 },
   ];
+
+  const fetchMeals = async () => {
+    try {
+      const res = await mealApi.list();
+      const meals = res.data || [];
+      setRecentMeals(meals);
+      // Count meals logged today
+      const today = new Date().toISOString().split('T')[0];
+      const todayMeals = meals.filter((m: any) => m.logged_at.startsWith(today));
+      setMealsLogged(todayMeals.length);
+      setEarnedBack(todayMeals.length * 0.50);
+    } catch (e) {
+      console.error("Failed to fetch meals", e);
+    }
+  };
+
+  useEffect(() => {
+    fetchMeals();
+  }, []);
+
+  const handleCameraClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64String = reader.result as string;
+        // Log meal
+        try {
+          await mealApi.log(base64String, "Meal logged via camera");
+          alert("Meal logged successfully! +$0.50 earned back.");
+          fetchMeals();
+        } catch (e) {
+          alert("Failed to log meal");
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const [showWeightModal, setShowWeightModal] = useState(false);
+  const [manualWeight, setManualWeight] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const [currentWeight, setCurrentWeight] = useState<number | null>(null);
+
+  const fetchWeight = async () => {
+    try {
+      console.log("Fetching weight...");
+      const res = await api.get('/telemetry/metric', { params: { type: 'weight' } });
+      console.log("Weight fetched:", res.data);
+      setCurrentWeight(res.data.value);
+    } catch (e) {
+      console.log("No weight data found", e);
+    }
+  };
+
+  useEffect(() => {
+    fetchWeight();
+  }, []);
+
+  const handleLogWeight = async () => {
+    if (!manualWeight) return;
+    setLoading(true);
+    try {
+      console.log("Logging weight:", manualWeight);
+      await api.post('/telemetry/manual', {
+        type: 'weight',
+        value: parseFloat(manualWeight),
+        unit: 'lbs'
+      });
+      console.log("Weight logged successfully");
+      setManualWeight("");
+      setShowWeightModal(false);
+      alert("Weight logged successfully");
+      await fetchWeight(); // Refresh data immediately
+    } catch (error) {
+      console.error("Failed to log weight:", error);
+      alert("Failed to log weight");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -31,11 +121,19 @@ const ProgressPage = () => {
 
       {/* Weight Tracker */}
       <Card className="border-primary/20 animate-fade-in-up hover:border-primary/40 transition-all duration-300 hover:shadow-lg hover:shadow-primary/10" style={{ animationDelay: '0.1s' }}>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-base">
             <Scale className="h-5 w-5 text-primary" />
             Weight Trend
           </CardTitle>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-8"
+            onClick={() => setShowWeightModal(true)}
+          >
+            Log Weight
+          </Button>
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
@@ -49,7 +147,7 @@ const ProgressPage = () => {
           <div className="mt-4 pt-4 border-t border-border">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Current</span>
-              <span className="font-bold text-primary">178.5 lbs</span>
+              <span className="font-bold text-primary">{currentWeight ? `${currentWeight} lbs` : "No data"}</span>
             </div>
             <div className="flex justify-between text-sm mt-1">
               <span className="text-muted-foreground">This week</span>
@@ -134,24 +232,59 @@ const ProgressPage = () => {
           <div className="space-y-4">
             <div className="flex justify-between items-center">
               <div>
-                <div className="text-2xl font-bold">2 / 3</div>
+                <div className="text-2xl font-bold">{mealsLogged} / 3</div>
                 <div className="text-sm text-muted-foreground">Meals Logged Today</div>
               </div>
               <div className="text-right">
-                <div className="text-xl font-bold text-emerald-400">+$1.00</div>
+                <div className="text-xl font-bold text-emerald-400">+${earnedBack.toFixed(2)}</div>
                 <div className="text-xs text-emerald-500/80">Earned Back</div>
               </div>
             </div>
-            <Progress value={66} className="h-2 bg-slate-800" indicatorClassName="bg-emerald-500" />
+            <Progress value={(mealsLogged / 3) * 100} className="h-2 bg-slate-800" indicatorClassName="bg-emerald-500" />
 
-            <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white group">
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              className="hidden"
+            />
+
+            <Button
+              onClick={handleCameraClick}
+              disabled={mealsLogged >= 3}
+              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white group disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               <Camera className="mr-2 h-4 w-4 group-hover:scale-110 transition-transform" />
-              Log Meal Photo (+$0.50)
+              {mealsLogged >= 3 ? "Daily Limit Reached" : "Log Meal Photo (+$0.50)"}
             </Button>
 
             <p className="text-xs text-center text-muted-foreground">
               Photos are analyzed for nutritional content.
             </p>
+
+            {/* Recent Meals */}
+            <div className="mt-4">
+              <h4 className="text-sm font-semibold mb-2">Recent Meals</h4>
+              <div className="space-y-3">
+                {recentMeals.slice(0, 3).map((meal, i) => (
+                  <div key={i} className="flex gap-3 bg-muted/50 p-2 rounded-lg">
+                    <div className="relative w-16 h-16 rounded-md overflow-hidden flex-shrink-0">
+                      <img src={meal.image} alt="Meal" className="object-cover w-full h-full" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{meal.description}</p>
+                      <p className="text-xs text-muted-foreground line-clamp-2">{meal.analysis}</p>
+                      <div className="flex gap-2 mt-1">
+                        {meal.is_keto && <span className="text-[10px] bg-green-500/20 text-green-500 px-1.5 py-0.5 rounded">Keto</span>}
+                        {!meal.is_authentic && <span className="text-[10px] bg-red-500/20 text-red-500 px-1.5 py-0.5 rounded">Fake?</span>}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -183,6 +316,36 @@ const ProgressPage = () => {
               </Button>
             </DialogDescription>
           </DialogHeader>
+        </DialogContent>
+      </Dialog>
+
+      {/* Manual Weight Modal */}
+      <Dialog open={showWeightModal} onOpenChange={setShowWeightModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Log Weight</DialogTitle>
+            <DialogDescription>
+              Enter your current weight in lbs.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div className="flex gap-2">
+              <input
+                type="number"
+                placeholder="e.g. 175.5"
+                value={manualWeight}
+                onChange={(e) => setManualWeight(e.target.value)}
+                className="flex-1 bg-slate-900 border border-slate-700 rounded-md px-3 py-2 text-white focus:outline-none focus:border-primary"
+                step="0.1"
+              />
+              <Button
+                onClick={handleLogWeight}
+                disabled={loading || !manualWeight}
+              >
+                Save
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

@@ -44,6 +44,8 @@ func main() {
 	// Activity Repo (Memory only for now)
 	activityRepo := memory.NewActivityRepository()
 	telemetryRepo := memory.NewTelemetryRepository()
+	mealRepo := memory.NewMealRepository()
+	recipeRepo := memory.NewRecipeRepository()
 
 	// 2. Initialize Services (Core)
 	pricingService := services.NewPricingService()
@@ -62,8 +64,11 @@ func main() {
 	llmAdapter := llm.NewDeepSeekAdapter(apiKey)
 	cortexService := services.NewCortexService(llmAdapter, fastingRepo, userRepo)
 
+	mealService := services.NewMealService(mealRepo, cortexService)
+	recipeService := services.NewRecipeService(recipeRepo)
+
 	// 3. Initialize Handlers (Adapters)
-	handler := http.NewHandler(authService, fastingService, ketoService, socialService, cortexService, activityService, telemetryService)
+	handler := http.NewHandler(authService, fastingService, ketoService, socialService, cortexService, activityService, telemetryService, mealService, recipeService)
 
 	// 4. Setup Router
 	router := gin.Default()

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Activity, Watch, Smartphone, RefreshCw, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Activity, Watch, RefreshCw, CheckCircle, AlertTriangle } from 'lucide-react';
 import { api } from '@/api/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,7 +17,14 @@ const SUPPORTED_DEVICES = [
     { id: 'oura', name: 'Oura Ring', icon: CheckCircle, color: 'text-white' }, // Placeholder icon
 ];
 
-export const TelemetryUplink = () => {
+interface TelemetryUplinkProps {
+    onDataUpdate?: () => void;
+}
+
+export const TelemetryUplink = ({ onDataUpdate }: TelemetryUplinkProps) => {
+    const [showManualModal, setShowManualModal] = useState(false);
+    const [manualValue, setManualValue] = useState("");
+    const [metricType, setMetricType] = useState<'steps' | 'weight'>('steps');
     const [connections, setConnections] = useState<DeviceConnection[]>([]);
     const [loading, setLoading] = useState(false);
 
@@ -59,15 +66,88 @@ export const TelemetryUplink = () => {
         }
     };
 
+    const handleManualLog = async () => {
+        if (!manualValue) return;
+        setLoading(true);
+        try {
+            await api.post('/telemetry/manual', {
+                type: metricType,
+                value: parseFloat(manualValue),
+                unit: metricType === 'steps' ? 'count' : 'kg'
+            });
+            setManualValue("");
+            setShowManualModal(false);
+            alert(`${metricType === 'steps' ? 'Steps' : 'Weight'} logged successfully (Trust Score: 0.5)`);
+            if (onDataUpdate) onDataUpdate();
+        } catch (error) {
+            alert(`Failed to log ${metricType}`);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <Card className="bg-slate-900 border-slate-800">
             <CardHeader>
-                <CardTitle className="flex items-center text-white">
-                    <Activity className="mr-2 h-5 w-5 text-cyan-400" />
-                    Bio-Telemetry Uplink
+                <CardTitle className="flex items-center justify-between text-white">
+                    <div className="flex items-center">
+                        <Activity className="mr-2 h-5 w-5 text-cyan-400" />
+                        Bio-Telemetry Uplink
+                    </div>
+                    <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-xs text-slate-400 hover:text-white"
+                        onClick={() => setShowManualModal(!showManualModal)}
+                    >
+                        + Manual Entry
+                    </Button>
                 </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+                {showManualModal && (
+                    <div className="p-4 bg-slate-800 rounded-lg border border-slate-700 animate-in fade-in slide-in-from-top-2">
+                        <h4 className="text-sm font-medium text-slate-200 mb-3">Log Manual Data</h4>
+
+                        <div className="flex gap-2 mb-3">
+                            <Button
+                                size="sm"
+                                variant={metricType === 'steps' ? 'default' : 'outline'}
+                                onClick={() => setMetricType('steps')}
+                                className={metricType === 'steps' ? 'bg-cyan-600' : 'border-slate-600 text-slate-300'}
+                            >
+                                Steps
+                            </Button>
+                            <Button
+                                size="sm"
+                                variant={metricType === 'weight' ? 'default' : 'outline'}
+                                onClick={() => setMetricType('weight')}
+                                className={metricType === 'weight' ? 'bg-cyan-600' : 'border-slate-600 text-slate-300'}
+                            >
+                                Weight
+                            </Button>
+                        </div>
+
+                        <div className="flex gap-2">
+                            <input
+                                type="number"
+                                placeholder={metricType === 'steps' ? "e.g. 5000" : "e.g. 75.5"}
+                                value={manualValue}
+                                onChange={(e) => setManualValue(e.target.value)}
+                                className="flex-1 bg-slate-900 border border-slate-700 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500"
+                            />
+                            <Button
+                                size="sm"
+                                className="bg-cyan-600 hover:bg-cyan-700"
+                                onClick={handleManualLog}
+                                disabled={loading || !manualValue}
+                            >
+                                Log
+                            </Button>
+                        </div>
+                    </div>
+                )}
+
                 {SUPPORTED_DEVICES.map((device) => {
                     const connection = connections.find(c => c.source === device.id);
                     const isConnected = connection?.status === 'connected';

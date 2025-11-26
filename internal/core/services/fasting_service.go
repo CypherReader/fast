@@ -24,14 +24,19 @@ func NewFastingService(repo ports.FastingRepository, pricing *PricingService, us
 	}
 }
 
-func (s *FastingService) StartFast(ctx context.Context, userID uuid.UUID, plan domain.FastingPlanType, goalHours int) (*domain.FastingSession, error) {
+func (s *FastingService) StartFast(ctx context.Context, userID uuid.UUID, plan domain.FastingPlanType, goalHours int, startTime *time.Time) (*domain.FastingSession, error) {
 	// Check if active fast exists
 	active, _ := s.repo.FindActiveByUserID(ctx, userID)
 	if active != nil {
 		return nil, errors.New("active fasting session already exists")
 	}
 
-	session := domain.NewFastingSession(userID, plan, goalHours)
+	st := time.Now()
+	if startTime != nil {
+		st = *startTime
+	}
+
+	session := domain.NewFastingSession(userID, plan, goalHours, st)
 	if err := s.repo.Save(ctx, session); err != nil {
 		return nil, err
 	}

@@ -16,6 +16,7 @@ const Dashboard = () => {
   const [disciplineScore] = useState(65);
   const [showModal, setShowModal] = useState(false);
   const [pendingFast, setPendingFast] = useState<{ plan: string; hours: number } | null>(null);
+  const [manualStartTime, setManualStartTime] = useState("");
 
   // Fetch real fasting data
   useEffect(() => {
@@ -50,13 +51,20 @@ const Dashboard = () => {
 
   const handleStart = (plan: string, hours: number) => {
     setPendingFast({ plan, hours });
+    setManualStartTime(""); // Reset
     setShowModal(true);
   };
 
   const confirmStart = async () => {
     if (pendingFast) {
       try {
-        const res = await fastingApi.start(pendingFast.plan, pendingFast.hours);
+        // Format manualStartTime to RFC3339 if present
+        let startTimeStr = undefined;
+        if (manualStartTime) {
+          startTimeStr = new Date(manualStartTime).toISOString();
+        }
+
+        const res = await fastingApi.start(pendingFast.plan, pendingFast.hours, startTimeStr);
         setSession(res.data);
       } catch (error: any) {
         console.error("Start fast error:", error);
@@ -84,12 +92,32 @@ const Dashboard = () => {
   };
 
   const handleStop = async () => {
-    try {
-      await fastingApi.stop();
-      setSession(null);
-      setElapsed(0);
-    } catch (error) {
-      alert("Failed to stop fast");
+    if (!session) return;
+
+    const hoursElapsed = elapsed / 3600;
+    const goal = session.goal_hours;
+    const progress = (hoursElapsed / goal) * 100;
+
+    let message = "Are you sure you want to end your fast?";
+    if (progress < 100) {
+      if (progress > 80) {
+        message = `You are nearly there! ${progress.toFixed(0)}% complete. Just ${(goal - hoursElapsed).toFixed(1)} hours to go. Are you sure you want to stop now?`;
+      } else {
+        message = `You are ${progress.toFixed(0)}% of the way to your ${goal}h goal. Stopping now will result in a discipline penalty. Continue?`;
+      }
+    } else {
+      message = `Goal achieved! You've fasted for ${hoursElapsed.toFixed(1)} hours. Ready to end?`;
+    }
+
+    if (window.confirm(message)) {
+      try {
+        await fastingApi.stop();
+        setSession(null);
+        setElapsed(0);
+        alert("Fast ended. Great work!");
+      } catch (error) {
+        alert("Failed to stop fast");
+      }
     }
   };
 
@@ -159,6 +187,9 @@ const Dashboard = () => {
                 </button>
                 <button onClick={() => handleStart('24h', 24)} className="bg-purple-600 hover:bg-purple-700 p-4 rounded-xl font-bold transition-all text-white">
                   24h Reset
+                </button>
+                <button onClick={() => handleStart('custom', 12)} className="col-span-2 bg-slate-700 hover:bg-slate-600 p-4 rounded-xl font-bold transition-all text-white border border-slate-600">
+                  Custom / Manual Start
                 </button>
               </div>
             ) : (
@@ -279,6 +310,11 @@ const Dashboard = () => {
         isOpen={showModal}
         onConfirm={confirmStart}
         onCancel={() => setShowModal(false)}
+        startTime={manualStartTime}
+        onStartTimeChange={setManualStartTime}
+        goalHours={pendingFast?.hours || 12}
+        onGoalHoursChange={(h) => setPendingFast(prev => prev ? { ...prev, hours: h } : null)}
+        showGoalInput={pendingFast?.plan === 'custom'}
       />
     </div>
   );

@@ -50,3 +50,9 @@ type DeviceConnection struct {
 	AccessToken  string          `json:"-"`      // Encrypted in real app
 	RefreshToken string          `json:"-"`      // Encrypted in real app
 }
+
+type DailyStat struct {
+	Date  string  `json:"date"`  // YYYY-MM-DD
+	Day   string  `json:"day"`   // Mon, Tue, etc.
+	Value float64 `json:"value"` // Aggregated value
+}

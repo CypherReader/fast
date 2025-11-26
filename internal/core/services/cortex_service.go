@@ -4,6 +4,7 @@ import (
 	"context"
 	"fastinghero/internal/core/ports"
 	"fmt"
+	"strings"
 
 	"github.com/google/uuid"
 )
@@ -85,4 +86,41 @@ func (s *CortexService) GenerateInsight(ctx context.Context, userID uuid.UUID, f
 	}
 
 	return response, nil
+}
+
+func (s *CortexService) AnalyzeMeal(ctx context.Context, imageBase64, description string) (string, bool, bool, error) {
+	// 1. Construct Prompt
+	// Since DeepSeek V2 is text-only, we rely heavily on the user's description for now.
+	// In a real multimodal scenario, the image would be primary.
+	prompt := fmt.Sprintf(`Analyze this meal based on the user's description: "%s".
+	1. Is this a real photo of food taken by a camera, or does it look like a screen capture/fake? (Authenticity)
+	2. Estimate the carb content based on the description. Is it Keto-friendly (under 10g net carbs)?
+	
+	Output format:
+	Analysis: [Brief description of food and carb estimate]
+	Authenticity: [Verified/Suspicious]
+	Keto-Friendly: [Yes/No]
+	`, description)
+
+	// 2. Call LLM
+	// We pass the image still, in case the adapter supports it or for future proofing
+	response, err := s.llm.AnalyzeImage(ctx, imageBase64, prompt)
+	if err != nil {
+		return "", false, false, fmt.Errorf("llm error: %w", err)
+	}
+
+	// 3. Parse Response (Simple string parsing for MVP)
+	isAuthentic := true
+	isKeto := true
+
+	// Basic parsing logic
+	lowerResp := strings.ToLower(response)
+	if strings.Contains(lowerResp, "keto-friendly: no") {
+		isKeto = false
+	}
+	if strings.Contains(lowerResp, "authenticity: suspicious") || strings.Contains(lowerResp, "fake") {
+		isAuthentic = false
+	}
+
+	return response, isAuthentic, isKeto, nil
 }

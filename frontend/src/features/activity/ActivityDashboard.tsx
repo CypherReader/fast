@@ -1,22 +1,44 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { api } from '@/api/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { Activity } from 'lucide-react';
 import { TelemetryUplink } from '@/components/bio/TelemetryUplink';
 
-// Mock data for now, will replace with API call later
-const mockStepsData = [
-    { day: 'Mon', steps: 6000 },
-    { day: 'Tue', steps: 8500 },
-    { day: 'Wed', steps: 7200 },
-    { day: 'Thu', steps: 10500 },
-    { day: 'Fri', steps: 5000 },
-    { day: 'Sat', steps: 12000 },
-    { day: 'Sun', steps: 9000 },
-];
+
 
 export const ActivityDashboard = () => {
+    const [steps, setSteps] = useState<number | null>(null);
+    const [weight, setWeight] = useState<number | null>(null);
+    const [weeklySteps, setWeeklySteps] = useState<any[]>([]);
+
+    const fetchData = async () => {
+        try {
+            const stepsRes = await api.get('/telemetry/metric', { params: { type: 'steps' } });
+            setSteps(stepsRes.data.value);
+        } catch (e) {
+            console.log("No steps data found");
+        }
+
+        try {
+            const weightRes = await api.get('/telemetry/metric', { params: { type: 'weight' } });
+            setWeight(weightRes.data.value);
+        } catch (e) {
+            console.log("No weight data found");
+        }
+
+        try {
+            const weeklyRes = await api.get('/telemetry/weekly', { params: { type: 'steps' } });
+            setWeeklySteps(weeklyRes.data);
+        } catch (e) {
+            console.log("No weekly steps data found");
+        }
+    };
+
+    useEffect(() => {
+        fetchData();
+    }, []);
+
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
@@ -25,7 +47,7 @@ export const ActivityDashboard = () => {
 
             {/* Telemetry Uplink Section */}
             <div className="grid gap-4 md:grid-cols-1">
-                <TelemetryUplink />
+                <TelemetryUplink onDataUpdate={fetchData} />
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -35,8 +57,18 @@ export const ActivityDashboard = () => {
                         <Activity className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">9,000</div>
-                        <p className="text-xs text-muted-foreground">+20.1% from yesterday</p>
+                        <div className="text-2xl font-bold">{steps !== null ? steps.toLocaleString() : "0"}</div>
+                        <p className="text-xs text-muted-foreground">Latest Logged Value</p>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Current Weight</CardTitle>
+                        <Activity className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{weight !== null ? `${weight} kg` : "--"}</div>
+                        <p className="text-xs text-muted-foreground">Latest Logged Value</p>
                     </CardContent>
                 </Card>
                 <Card>
@@ -68,7 +100,7 @@ export const ActivityDashboard = () => {
                     </CardHeader>
                     <CardContent className="pl-2">
                         <ResponsiveContainer width="100%" height={350}>
-                            <BarChart data={mockStepsData}>
+                            <BarChart data={weeklySteps}>
                                 <XAxis
                                     dataKey="day"
                                     stroke="#888888"
@@ -87,7 +119,7 @@ export const ActivityDashboard = () => {
                                     cursor={{ fill: 'transparent' }}
                                     contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '8px', color: '#fff' }}
                                 />
-                                <Bar dataKey="steps" fill="#adfa1d" radius={[4, 4, 0, 0]} />
+                                <Bar dataKey="value" fill="#adfa1d" radius={[4, 4, 0, 0]} />
                             </BarChart>
                         </ResponsiveContainer>
                     </CardContent>

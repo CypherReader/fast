@@ -3,6 +3,7 @@ package ports
 import (
 	"context"
 	"fastinghero/internal/core/domain"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -16,7 +17,7 @@ type AuthService interface {
 }
 
 type FastingService interface {
-	StartFast(ctx context.Context, userID uuid.UUID, plan domain.FastingPlanType, goalHours int) (*domain.FastingSession, error)
+	StartFast(ctx context.Context, userID uuid.UUID, plan domain.FastingPlanType, goalHours int, startTime *time.Time) (*domain.FastingSession, error)
 	StopFast(ctx context.Context, userID uuid.UUID) (*domain.FastingSession, error)
 	GetCurrentFast(ctx context.Context, userID uuid.UUID) (*domain.FastingSession, error)
 	GetFastingHistory(ctx context.Context, userID uuid.UUID) ([]domain.FastingSession, error)
@@ -31,6 +32,7 @@ type KetoService interface {
 type CortexService interface {
 	Chat(ctx context.Context, userID uuid.UUID, message string) (string, error)
 	GenerateInsight(ctx context.Context, userID uuid.UUID, fastingHours float64) (string, error)
+	AnalyzeMeal(ctx context.Context, imageBase64, description string) (string, bool, bool, error)
 }
 
 // Secondary Ports (Repositories & Adapters)
@@ -55,6 +57,7 @@ type KetoRepository interface {
 
 type LLMProvider interface {
 	GenerateResponse(ctx context.Context, prompt string, systemPrompt string) (string, error)
+	AnalyzeImage(ctx context.Context, imageBase64, prompt string) (string, error)
 }
 
 type ActivityService interface {
@@ -67,4 +70,22 @@ type ActivityRepository interface {
 	Save(ctx context.Context, activity *domain.Activity) error
 	FindByUserID(ctx context.Context, userID uuid.UUID) ([]domain.Activity, error)
 	FindByID(ctx context.Context, id string) (*domain.Activity, error)
+}
+
+type MealRepository interface {
+	Save(ctx context.Context, meal *domain.Meal) error
+	FindByUserID(ctx context.Context, userID uuid.UUID) ([]domain.Meal, error)
+}
+
+type MealService interface {
+	LogMeal(ctx context.Context, userID uuid.UUID, image, description string) (*domain.Meal, error)
+	GetMeals(ctx context.Context, userID uuid.UUID) ([]domain.Meal, error)
+}
+
+type RecipeRepository interface {
+	FindAll(ctx context.Context) ([]domain.Recipe, error)
+}
+
+type RecipeService interface {
+	GetRecipes(ctx context.Context, diet domain.DietType) ([]domain.Recipe, error)
 }

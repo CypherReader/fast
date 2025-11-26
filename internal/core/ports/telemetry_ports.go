@@ -10,6 +10,7 @@ import (
 type TelemetryRepository interface {
 	SaveData(ctx context.Context, data *domain.TelemetryData) error
 	GetLatestMetric(ctx context.Context, userID uuid.UUID, metricType domain.MetricType) (*domain.TelemetryData, error)
+	GetWeeklyStats(ctx context.Context, userID uuid.UUID, metricType domain.MetricType) ([]domain.DailyStat, error)
 	SaveConnection(ctx context.Context, conn *domain.DeviceConnection) error
 	GetConnection(ctx context.Context, userID uuid.UUID, source domain.TelemetrySource) (*domain.DeviceConnection, error)
 	ListConnections(ctx context.Context, userID uuid.UUID) ([]domain.DeviceConnection, error)
@@ -21,4 +22,6 @@ type TelemetryService interface {
 	SyncData(ctx context.Context, userID uuid.UUID, source domain.TelemetrySource) error
 	GetDeviceStatus(ctx context.Context, userID uuid.UUID) ([]domain.DeviceConnection, error)
 	LogManualData(ctx context.Context, userID uuid.UUID, metricType domain.MetricType, value float64, unit string) (*domain.TelemetryData, error)
+	GetLatestMetric(ctx context.Context, userID uuid.UUID, metricType domain.MetricType) (*domain.TelemetryData, error)
+	GetWeeklyStats(ctx context.Context, userID uuid.UUID, metricType domain.MetricType) ([]domain.DailyStat, error)
 }
