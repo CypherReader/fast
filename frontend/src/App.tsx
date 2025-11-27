@@ -1,81 +1,56 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Layout from "./components/Layout";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { OnboardingProvider } from "@/contexts/OnboardingContext";
+import Index from "./pages/Index";
+import NotFound from "./pages/NotFound";
 import Dashboard from "./pages/Dashboard";
 import Progress from "./pages/Progress";
 import Community from "./pages/Community";
 import Resources from "./pages/Resources";
-import Profile from "./pages/Profile";
-import NotFound from "./pages/NotFound";
-import VaultIntro from "./pages/VaultIntro";
-import Referrals from "./pages/Referrals";
-
-import Contract from "./pages/Contract";
 import Login from "./pages/Login";
-import Onboarding from "./pages/Onboarding";
-
-import Tribe from "./pages/Tribe";
-import { ActivityDashboard } from "./features/activity/ActivityDashboard";
-
-import { Elements } from "@stripe/react-stripe-js";
-import { loadStripe } from "@stripe/stripe-js";
+import OnboardingWelcome from "./pages/onboarding/OnboardingWelcome";
+import OnboardingGoal from "./pages/onboarding/OnboardingGoal";
+import OnboardingPlan from "./pages/onboarding/OnboardingPlan";
+import OnboardingVault from "./pages/onboarding/OnboardingVault";
+import OnboardingAccount from "./pages/onboarding/OnboardingAccount";
+import OnboardingPayment from "./pages/onboarding/OnboardingPayment";
+import OnboardingSuccess from "./pages/onboarding/OnboardingSuccess";
 
 const queryClient = new QueryClient();
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY || "pk_test_placeholder");
 
-import { AuthProvider } from "@/context/AuthContext";
-
-import { ProtectedFastingRoute } from "./features/paywall/ProtectedFastingRoute";
-
-// ... imports ...
-
-import { useEffect } from "react";
-import { initAnalytics } from "@/lib/analytics";
-
-const App = () => {
-  useEffect(() => {
-    initAnalytics();
-  }, []);
-
-  return (
-    <QueryClientProvider client={queryClient}>
-      <Elements stripe={stripePromise}>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <AuthProvider>
-            <BrowserRouter>
-              <Routes>
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Onboarding />} />
-                <Route path="/contract" element={<Contract />} />
-                <Route path="/" element={
-                  <ProtectedFastingRoute>
-                    <Layout />
-                  </ProtectedFastingRoute>
-                }>
-                  <Route index element={<Dashboard />} />
-                  <Route path="progress" element={<Progress />} />
-                  <Route path="community" element={<Community />} />
-                  <Route path="resources" element={<Resources />} />
-                  <Route path="tribe" element={<Tribe />} />
-                  <Route path="activity" element={<ActivityDashboard />} />
-                  <Route path="profile" element={<Profile />} />
-                  <Route path="vault-intro" element={<VaultIntro />} />
-                  <Route path="referrals" element={<Referrals />} />
-                </Route>
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </BrowserRouter>
-          </AuthProvider>
-        </TooltipProvider>
-      </Elements>
-    </QueryClientProvider>
-  );
-};
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <OnboardingProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/progress" element={<Progress />} />
+            <Route path="/community" element={<Community />} />
+            <Route path="/resources" element={<Resources />} />
+            <Route path="/recipes" element={<Navigate to="/resources?tab=recipes" replace />} />
+            <Route path="/videos" element={<Navigate to="/resources?tab=videos" replace />} />
+            <Route path="/onboarding" element={<OnboardingWelcome />} />
+            <Route path="/onboarding/goal" element={<OnboardingGoal />} />
+            <Route path="/onboarding/plan" element={<OnboardingPlan />} />
+            <Route path="/onboarding/vault" element={<OnboardingVault />} />
+            <Route path="/onboarding/account" element={<OnboardingAccount />} />
+            <Route path="/onboarding/payment" element={<OnboardingPayment />} />
+            <Route path="/onboarding/success" element={<OnboardingSuccess />} />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </OnboardingProvider>
+    </TooltipProvider>
+  </QueryClientProvider>
+);
 
 export default App;

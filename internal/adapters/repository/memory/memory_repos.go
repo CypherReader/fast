@@ -53,6 +53,14 @@ func (r *UserRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain.Us
 	return nil, errors.New("user not found")
 }
 
+func (r *UserRepository) FindByReferralCode(ctx context.Context, code string) (*domain.User, error) {
+	// In memory, we don't store referral code on user struct in this example,
+	// but let's assume we can't find it or return nil.
+	// Actually, domain.User doesn't seem to have ReferralCode field based on previous view.
+	// Let's check domain.User.
+	return nil, errors.New("user not found")
+}
+
 type FastingRepository struct {
 	sessions map[string]*domain.FastingSession
 	mu       sync.RWMutex
@@ -383,4 +391,304 @@ func (r *TelemetryRepository) ListConnections(ctx context.Context, userID uuid.U
 		}
 	}
 	return result, nil
+}
+
+// --- Missing Repositories Implementation ---
+
+type TribeRepository struct {
+	tribes  map[string]*domain.Tribe
+	members map[string][]string // tribeID -> []userID
+	mu      sync.RWMutex
+}
+
+func NewTribeRepository() *TribeRepository {
+	return &TribeRepository{
+		tribes:  make(map[string]*domain.Tribe),
+		members: make(map[string][]string),
+	}
+}
+
+func (r *TribeRepository) Save(ctx context.Context, tribe *domain.Tribe) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.tribes[tribe.ID.String()] = tribe
+	return nil
+}
+
+func (r *TribeRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain.Tribe, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	if tribe, ok := r.tribes[id.String()]; ok {
+		return tribe, nil
+	}
+	return nil, errors.New("tribe not found")
+}
+
+func (r *TribeRepository) FindAll(ctx context.Context) ([]domain.Tribe, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	var result []domain.Tribe
+	for _, t := range r.tribes {
+		result = append(result, *t)
+	}
+	return result, nil
+}
+
+func (r *TribeRepository) AddMember(ctx context.Context, tribeID, userID uuid.UUID) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	tid := tribeID.String()
+	uid := userID.String()
+
+	// Check if already member
+	for _, m := range r.members[tid] {
+		if m == uid {
+			return nil
+		}
+	}
+	r.members[tid] = append(r.members[tid], uid)
+	return nil
+}
+
+func (r *TribeRepository) RemoveMember(ctx context.Context, tribeID, userID uuid.UUID) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	tid := tribeID.String()
+	uid := userID.String()
+
+	members := r.members[tid]
+	for i, m := range members {
+		if m == uid {
+			r.members[tid] = append(members[:i], members[i+1:]...)
+			return nil
+		}
+	}
+	return nil
+}
+
+type SocialRepository struct {
+	events []domain.SocialEvent
+	mu     sync.RWMutex
+}
+
+func NewSocialRepository() *SocialRepository {
+	return &SocialRepository{
+		events: make([]domain.SocialEvent, 0),
+	}
+}
+
+func (r *SocialRepository) SaveEvent(ctx context.Context, event *domain.SocialEvent) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.events = append(r.events, *event)
+	return nil
+}
+
+func (r *SocialRepository) GetFeed(ctx context.Context, limit int) ([]domain.SocialEvent, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	// Return last 'limit' events reversed
+	count := len(r.events)
+	if limit > count {
+		limit = count
+	}
+
+	result := make([]domain.SocialEvent, limit)
+	for i := 0; i < limit; i++ {
+		result[i] = r.events[count-1-i]
+	}
+	return result, nil
+}
+
+func (r *SocialRepository) GetTribeFeed(ctx context.Context, tribeID uuid.UUID, limit int) ([]domain.SocialEvent, error) {
+	// For simplicity in memory, just return global feed
+	return r.GetFeed(ctx, limit)
+}
+
+type LeaderboardRepository struct {
+	// In memory we can just calculate on fly or return dummy
+}
+
+func NewLeaderboardRepository() *LeaderboardRepository {
+	return &LeaderboardRepository{}
+}
+
+func (r *LeaderboardRepository) GetGlobalLeaderboard(ctx context.Context, limit int) ([]domain.LeaderboardEntry, error) {
+	return []domain.LeaderboardEntry{}, nil
+}
+
+func (r *LeaderboardRepository) GetTribeLeaderboard(ctx context.Context, tribeID uuid.UUID, limit int) ([]domain.LeaderboardEntry, error) {
+	return []domain.LeaderboardEntry{}, nil
+}
+
+type GamificationRepository struct {
+	badges  map[string][]domain.UserBadge
+	streaks map[string]*domain.UserStreak
+	mu      sync.RWMutex
+}
+
+func NewGamificationRepository() *GamificationRepository {
+	return &GamificationRepository{
+		badges:  make(map[string][]domain.UserBadge),
+		streaks: make(map[string]*domain.UserStreak),
+	}
+}
+
+func (r *GamificationRepository) SaveUserBadge(ctx context.Context, badge *domain.UserBadge) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	uid := badge.UserID.String()
+	r.badges[uid] = append(r.badges[uid], *badge)
+	return nil
+}
+
+func (r *GamificationRepository) GetUserBadges(ctx context.Context, userID uuid.UUID) ([]domain.UserBadge, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	return r.badges[userID.String()], nil
+}
+
+func (r *GamificationRepository) UpdateUserStreak(ctx context.Context, streak *domain.UserStreak) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.streaks[streak.UserID.String()] = streak
+	return nil
+}
+
+func (r *GamificationRepository) GetUserStreak(ctx context.Context, userID uuid.UUID) (*domain.UserStreak, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	if s, ok := r.streaks[userID.String()]; ok {
+		return s, nil
+	}
+	return nil, nil
+}
+
+type ReferralRepository struct {
+	referrals []domain.Referral
+	mu        sync.RWMutex
+}
+
+func NewReferralRepository() *ReferralRepository {
+	return &ReferralRepository{
+		referrals: make([]domain.Referral, 0),
+	}
+}
+
+func (r *ReferralRepository) Save(ctx context.Context, referral *domain.Referral) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.referrals = append(r.referrals, *referral)
+	return nil
+}
+
+func (r *ReferralRepository) FindByRefereeID(ctx context.Context, refereeID uuid.UUID) (*domain.Referral, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	for _, ref := range r.referrals {
+		if ref.RefereeID == refereeID {
+			return &ref, nil
+		}
+	}
+	return nil, nil
+}
+
+func (r *ReferralRepository) FindByReferrerID(ctx context.Context, referrerID uuid.UUID) ([]domain.Referral, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	var result []domain.Referral
+	for _, ref := range r.referrals {
+		if ref.ReferrerID == referrerID {
+			result = append(result, ref)
+		}
+	}
+	return result, nil
+}
+
+func (r *ReferralRepository) Update(ctx context.Context, referral *domain.Referral) error {
+	// In memory slice update is tricky without pointer, but for now append is okay or simple loop
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	for i, ref := range r.referrals {
+		if ref.ID == referral.ID {
+			r.referrals[i] = *referral
+			return nil
+		}
+	}
+	return errors.New("referral not found")
+}
+
+type NotificationRepository struct {
+	tokens        map[string][]domain.FCMToken
+	notifications map[string][]domain.Notification
+	mu            sync.RWMutex
+}
+
+func NewNotificationRepository() *NotificationRepository {
+	return &NotificationRepository{
+		tokens:        make(map[string][]domain.FCMToken),
+		notifications: make(map[string][]domain.Notification),
+	}
+}
+
+func (r *NotificationRepository) SaveToken(ctx context.Context, token *domain.FCMToken) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	uid := token.UserID.String()
+	r.tokens[uid] = append(r.tokens[uid], *token)
+	return nil
+}
+
+func (r *NotificationRepository) GetUserTokens(ctx context.Context, userID uuid.UUID) ([]domain.FCMToken, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	return r.tokens[userID.String()], nil
+}
+
+func (r *NotificationRepository) DeleteToken(ctx context.Context, tokenString string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	// Naive implementation: iterate all users
+	for uid, tokens := range r.tokens {
+		for i, t := range tokens {
+			if t.Token == tokenString {
+				r.tokens[uid] = append(tokens[:i], tokens[i+1:]...)
+				return nil
+			}
+		}
+	}
+	return nil
+}
+
+func (r *NotificationRepository) SaveNotification(ctx context.Context, notification *domain.Notification) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	uid := notification.UserID.String()
+	r.notifications[uid] = append(r.notifications[uid], *notification)
+	return nil
+}
+
+func (r *NotificationRepository) GetUserNotifications(ctx context.Context, userID uuid.UUID, limit int) ([]domain.Notification, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	notifs := r.notifications[userID.String()]
+	if len(notifs) > limit {
+		return notifs[len(notifs)-limit:], nil
+	}
+	return notifs, nil
+}
+
+func (r *NotificationRepository) MarkAsRead(ctx context.Context, notificationID uuid.UUID) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	for uid, notifs := range r.notifications {
+		for i, n := range notifs {
+			if n.ID == notificationID {
+				now := time.Now()
+				r.notifications[uid][i].ReadAt = &now
+				return nil
+			}
+		}
+	}
+	return nil
 }

@@ -46,6 +46,7 @@ func NewHandler(
 	paymentGateway ports.PaymentGateway,
 	referralService ports.ReferralService,
 	notificationService ports.NotificationService,
+	userRepo ports.UserRepository,
 ) *Handler {
 	return &Handler{
 		authService:         authService,
@@ -60,7 +61,7 @@ func NewHandler(
 		mealService:         mealService,
 		recipeService:       recipeService,
 		tribeService:        tribeService,
-		paymentHandler:      NewPaymentHandler(paymentGateway, referralService),
+		paymentHandler:      NewPaymentHandler(paymentGateway, referralService, userRepo),
 		tribeHandler:        NewTribeHandler(tribeService),
 		notificationService: notificationService,
 	}
@@ -590,6 +591,9 @@ func (h *Handler) LogMeal(c *gin.Context) {
 	userID := userIDVal.(uuid.UUID)
 
 	var req struct {
+		Name        string `json:"name"`
+		Calories    int    `json:"calories"`
+		MealType    string `json:"meal_type"`
 		Image       string `json:"image"`
 		Description string `json:"description"`
 	}
@@ -598,7 +602,7 @@ func (h *Handler) LogMeal(c *gin.Context) {
 		return
 	}
 
-	meal, err := h.mealService.LogMeal(c.Request.Context(), userID, req.Image, req.Description)
+	meal, err := h.mealService.LogMeal(c.Request.Context(), userID, req.Name, req.Calories, req.MealType, req.Image, req.Description)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

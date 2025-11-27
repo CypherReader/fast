@@ -1,257 +1,158 @@
-import { useState } from "react";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Clock, Trophy, Heart } from "lucide-react";
-import { api } from "@/services/api";
-import TribesTab from "@/components/TribesTab";
+import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, Users, MessageSquare, Heart, Trophy, Flame, Search } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { useUser } from '@/hooks/use-user';
+
+// Mock Data
+const tribes = [
+    { id: 1, name: 'OMAD Warriors', members: 1240, description: 'One Meal A Day support group' },
+    { id: 2, name: '72h Fast Club', members: 850, description: 'Extended fasting challenges' },
+    { id: 3, name: 'Keto Fasters', members: 2100, description: 'Combining Keto with IF' },
+];
+
+const feed = [
+    { id: 1, user: 'Sarah J.', action: 'completed a 18h fast', time: '2h ago', likes: 12, comments: 3 },
+    { id: 2, user: 'Mike T.', action: 'joined the OMAD Warriors', time: '4h ago', likes: 24, comments: 5 },
+    { id: 3, user: 'Jessica L.', action: 'reached a 7-day streak!', time: '5h ago', likes: 45, comments: 8 },
+];
+
+const leaderboard = [
+    { rank: 1, user: 'David K.', score: 98, streak: 45 },
+    { rank: 2, user: 'Anna M.', score: 96, streak: 32 },
+    { rank: 3, user: 'Tom R.', score: 94, streak: 28 },
+];
 
 const Community = () => {
-  const [activeTab, setActiveTab] = useState("feed");
-  const [feedItems, setFeedItems] = useState<any[]>([]);
+    const navigate = useNavigate();
+    const { user } = useUser();
 
-  const fetchFeed = async () => {
-    try {
-      const res = await api.get('/social/feed');
-      // Transform backend events to UI format
-      const items = res.data.map((event: any) => ({
-        id: event.id,
-        user: event.user_name || "Unknown User",
-        initials: (event.user_name || "U").substring(0, 2).toUpperCase(),
-        action: formatAction(event),
-        time: new Date(event.created_at).toLocaleString(), // Simple formatting
-        likes: 0, // Mock for now
-      }));
-      setFeedItems(items);
-    } catch (e) {
-      console.error("Failed to fetch feed", e);
-    }
-  };
-
-  const [leaderboardItems, setLeaderboardItems] = useState<any[]>([]);
-  const fetchLeaderboard = async () => {
-    try {
-      const res = await api.get('/leaderboard/');
-      // Transform
-      const items = res.data.map((entry: any) => ({
-        rank: entry.rank,
-        name: entry.user_name || "Unknown",
-        hours: Math.round(entry.total_fasting_hours),
-        badge: entry.rank === 1 ? "🏆" : entry.rank === 2 ? "🥈" : entry.rank === 3 ? "🥉" : "",
-        highlight: false // TODO: Check if current user
-      }));
-      setLeaderboardItems(items);
-    } catch (e) {
-      console.error("Failed to fetch leaderboard", e);
-    }
-  };
-
-  const [gamificationProfile, setGamificationProfile] = useState<any>(null);
-  const fetchGamificationProfile = async () => {
-    try {
-      const res = await api.get('/gamification/profile');
-      setGamificationProfile(res.data);
-    } catch (e) {
-      console.error("Failed to fetch gamification profile", e);
-    }
-  };
-
-  const formatAction = (event: any) => {
-    switch (event.type) {
-      case "fast_completed":
-        const data = JSON.parse(JSON.stringify(event.data)); // data is already object from axios
-        return `completed a ${data.duration_hours || '?'}h fast`;
-      case "keto_logged":
-        return "logged keto metrics";
-      case "tribe_joined":
-        return "joined a tribe";
-      default:
-        return "did something awesome";
-    }
-  };
-
-  if (activeTab === "feed" && feedItems.length === 0) {
-    fetchFeed();
-  }
-
-  if (activeTab === "leaderboard" && leaderboardItems.length === 0) {
-    fetchLeaderboard();
-  }
-
-  if (activeTab === "progress" && !gamificationProfile) {
-    fetchGamificationProfile();
-  }
-
-
-
-
-
-
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="animate-fade-in">
-        <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-          Community
-        </h1>
-        <p className="text-sm text-muted-foreground">Connect with fellow fasters</p>
-      </div>
-
-      {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="feed">Feed</TabsTrigger>
-          <TabsTrigger value="tribes">Tribes</TabsTrigger>
-          <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
-          <TabsTrigger value="progress">My Progress</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="feed" className="space-y-4 mt-6">
-          {feedItems.map((item, index) => (
-            <Card
-              key={item.id}
-              className="border-primary/20 animate-fade-in-up hover:border-primary/40 transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 hover:scale-[1.02]"
-              style={{ animationDelay: `${index * 0.1}s` }}
-            >
-              <CardHeader className="pb-3">
-                <div className="flex items-start gap-3">
-                  <Avatar>
-                    <AvatarFallback className="bg-primary/20 text-primary">
-                      {item.initials}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-sm">{item.user}</span>
-                      <Badge variant="secondary" className="text-xs">
-                        <Clock className="h-3 w-3 mr-1" />
-                        {item.time}
-                      </Badge>
+    return (
+        <div className="min-h-screen bg-background">
+            {/* Header */}
+            <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-40">
+                <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                        <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')}>
+                            <ArrowLeft className="w-5 h-5" />
+                        </Button>
+                        <h1 className="font-bold text-lg text-foreground">Community</h1>
                     </div>
-                    <p className="text-sm text-muted-foreground mt-1">{item.action}</p>
-                  </div>
-                </div>
-              </CardHeader>
-              {item.image && (
-                <div className="px-4 pb-3">
-                  <div className="h-48 bg-muted rounded-lg flex items-center justify-center">
-                    <span className="text-sm text-muted-foreground">Meal Photo</span>
-                  </div>
-                </div>
-              )}
-              <CardContent className="pt-0">
-                <button className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors">
-                  <Heart className="h-4 w-4" />
-                  {item.likes} likes
-                </button>
-              </CardContent>
-            </Card>
-          ))}
-        </TabsContent>
-
-        <TabsContent value="tribes" className="mt-6">
-          <TribesTab />
-        </TabsContent>
-
-        <TabsContent value="leaderboard" className="space-y-3 mt-6">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-sm font-semibold">This Week</h3>
-            <Badge variant="outline" className="text-xs">
-              <Trophy className="h-3 w-3 mr-1" />
-              Global
-            </Badge>
-          </div>
-
-          {leaderboardItems.map((user, index) => (
-            <Card
-              key={user.rank}
-              className={`border-primary/20 animate-fade-in-up hover:border-primary/40 transition-all duration-300 hover:shadow-lg hover:scale-[1.02] ${user.highlight ? "bg-primary/5 border-primary/40 glow-primary" : ""
-                }`}
-              style={{ animationDelay: `${index * 0.05}s` }}
-            >
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div
-                      className={`text-lg font-bold w-8 text-center ${user.rank <= 3 ? "text-primary" : "text-muted-foreground"
-                        }`}
-                    >
-                      {user.badge || `#${user.rank}`}
+                    <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+                        <span className="text-sm font-medium text-primary">
+                            {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                        </span>
                     </div>
-                    <div>
-                      <div className="font-semibold text-sm">{user.name}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {user.hours} hours fasted
-                      </div>
-                    </div>
-                  </div>
-                  {user.highlight && (
-                    <Badge variant="secondary" className="text-xs">
-                      You
-                    </Badge>
-                  )}
                 </div>
-              </CardContent>
-            </Card>
-          ))}
-        </TabsContent>
+            </header>
 
-        <TabsContent value="progress" className="space-y-6 mt-6">
-          {gamificationProfile ? (
-            <>
-              {/* Streak Section */}
-              <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
-                <CardHeader>
-                  <h3 className="text-lg font-semibold flex items-center gap-2">
-                    <Trophy className="h-5 w-5 text-yellow-500" />
-                    Current Streak
-                  </h3>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-end gap-2">
-                    <span className="text-4xl font-bold text-primary">
-                      {gamificationProfile.streak?.current_streak || 0}
-                    </span>
-                    <span className="text-muted-foreground mb-1">days</span>
-                  </div>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    Longest streak: {gamificationProfile.streak?.longest_streak || 0} days
-                  </p>
-                </CardContent>
-              </Card>
+            <main className="container mx-auto px-4 py-6 max-w-4xl space-y-8">
+                {/* Search */}
+                <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input placeholder="Find tribes or people..." className="pl-10 bg-card border-border" />
+                </div>
 
-              {/* Badges Section */}
-              <div>
-                <h3 className="text-lg font-semibold mb-4">My Badges</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {gamificationProfile.badges?.map((badge: any) => (
-                    <Card key={badge.badge_id} className="border-primary/20 hover:border-primary/40 transition-all">
-                      <CardContent className="p-4 flex flex-col items-center text-center gap-2">
-                        <div className="text-4xl mb-2">{badge.badge_info?.icon || "🏅"}</div>
-                        <div className="font-semibold text-sm">{badge.badge_info?.name || badge.badge_id}</div>
-                        <div className="text-xs text-muted-foreground">{badge.badge_info?.description}</div>
-                        <div className="text-[10px] text-muted-foreground mt-1">
-                          Earned: {new Date(badge.earned_at).toLocaleDateString()}
+                <div className="grid md:grid-cols-3 gap-6">
+                    {/* Main Feed - Left Side */}
+                    <div className="md:col-span-2 space-y-6">
+                        <h2 className="font-semibold text-foreground flex items-center gap-2">
+                            <Flame className="w-5 h-5 text-orange-500" />
+                            Activity Feed
+                        </h2>
+
+                        <div className="space-y-4">
+                            {feed.map((item, index) => (
+                                <motion.div
+                                    key={item.id}
+                                    className="bg-card border border-border rounded-xl p-4"
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: index * 0.1 }}
+                                >
+                                    <div className="flex items-start gap-3">
+                                        <div className="w-10 h-10 rounded-full bg-secondary/20 flex items-center justify-center text-secondary font-bold">
+                                            {item.user.charAt(0)}
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className="text-sm text-foreground">
+                                                <span className="font-semibold">{item.user}</span> {item.action}
+                                            </p>
+                                            <p className="text-xs text-muted-foreground mt-1">{item.time}</p>
+
+                                            <div className="flex items-center gap-4 mt-3">
+                                                <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors">
+                                                    <Heart className="w-4 h-4" />
+                                                    {item.likes}
+                                                </button>
+                                                <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors">
+                                                    <MessageSquare className="w-4 h-4" />
+                                                    {item.comments}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            ))}
                         </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                  {(!gamificationProfile.badges || gamificationProfile.badges.length === 0) && (
-                    <div className="col-span-full text-center text-muted-foreground py-8">
-                      No badges earned yet. Keep fasting to unlock them!
                     </div>
-                  )}
+
+                    {/* Sidebar - Right Side */}
+                    <div className="space-y-8">
+                        {/* Featured Tribes */}
+                        <div>
+                            <h2 className="font-semibold text-foreground flex items-center gap-2 mb-4">
+                                <Users className="w-5 h-5 text-primary" />
+                                Featured Tribes
+                            </h2>
+                            <div className="space-y-3">
+                                {tribes.map((tribe) => (
+                                    <div key={tribe.id} className="bg-card border border-border rounded-xl p-3 hover:border-primary/50 transition-colors cursor-pointer">
+                                        <h3 className="font-medium text-foreground">{tribe.name}</h3>
+                                        <p className="text-xs text-muted-foreground mb-2">{tribe.description}</p>
+                                        <div className="flex items-center gap-1 text-xs text-secondary">
+                                            <Users className="w-3 h-3" />
+                                            {tribe.members} members
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Leaderboard */}
+                        <div>
+                            <h2 className="font-semibold text-foreground flex items-center gap-2 mb-4">
+                                <Trophy className="w-5 h-5 text-yellow-500" />
+                                Top Fasters
+                            </h2>
+                            <div className="bg-card border border-border rounded-xl overflow-hidden">
+                                {leaderboard.map((entry, index) => (
+                                    <div
+                                        key={entry.rank}
+                                        className="flex items-center justify-between p-3 border-b border-border last:border-0"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <span className={`w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold ${index === 0 ? 'bg-yellow-500/20 text-yellow-500' :
+                                                    index === 1 ? 'bg-gray-400/20 text-gray-400' :
+                                                        'bg-orange-700/20 text-orange-700'
+                                                }`}>
+                                                {entry.rank}
+                                            </span>
+                                            <span className="text-sm font-medium text-foreground">{entry.user}</span>
+                                        </div>
+                                        <div className="text-xs text-muted-foreground">
+                                            {entry.streak} day streak
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
                 </div>
-              </div>
-            </>
-          ) : (
-            <div className="text-center py-8">Loading profile...</div>
-          )}
-        </TabsContent>
-      </Tabs>
-    </div>
-  );
+            </main>
+        </div>
+    );
 };
 
 export default Community;

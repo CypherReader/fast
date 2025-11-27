@@ -9,7 +9,9 @@ import (
 type Meal struct {
 	ID          uuid.UUID `json:"id"`
 	UserID      uuid.UUID `json:"user_id"`
-	Image       string    `json:"image"` // Base64 string
+	Name        string    `json:"name"`
+	MealType    string    `json:"meal_type"` // breakfast, lunch, dinner, snack
+	Image       string    `json:"image"`     // Base64 string
 	Description string    `json:"description"`
 	LoggedAt    time.Time `json:"logged_at"`
 	Calories    int       `json:"calories,omitempty"`

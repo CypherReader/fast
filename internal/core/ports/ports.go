@@ -88,7 +88,7 @@ type MealRepository interface {
 }
 
 type MealService interface {
-	LogMeal(ctx context.Context, userID uuid.UUID, image, description string) (*domain.Meal, error)
+	LogMeal(ctx context.Context, userID uuid.UUID, name string, calories int, mealType string, image, description string) (*domain.Meal, error)
 	GetMeals(ctx context.Context, userID uuid.UUID) ([]domain.Meal, error)
 }
 

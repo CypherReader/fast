@@ -45,6 +45,8 @@ func main() {
 	var socialRepo ports.SocialRepository
 	var leaderboardRepo ports.LeaderboardRepository
 	var gamificationRepo ports.GamificationRepository
+	var referralRepo ports.ReferralRepository
+	var notificationRepo ports.NotificationRepository
 
 	// Check for DB connection string
 	dsn := os.Getenv("DSN")
@@ -62,33 +64,58 @@ func main() {
 		}
 	}
 
-	if dsn == "" {
-		log.Fatal("DSN environment variable not set")
+	var db *sql.DB
+	var err error
+	useMemory := false
+
+	if dsn != "" {
+		log.Println("Connecting to PostgreSQL...")
+		db, err = sql.Open("postgres", dsn)
+		if err != nil {
+			log.Printf("Failed to open DB: %v. Switching to IN-MEMORY mode.", err)
+			useMemory = true
+		} else {
+			if err := db.Ping(); err != nil {
+				log.Printf("Failed to ping DB: %v. Switching to IN-MEMORY mode.", err)
+				useMemory = true
+			}
+		}
+	} else {
+		log.Println("DSN not set. Switching to IN-MEMORY mode.")
+		useMemory = true
 	}
 
-	log.Println("Connecting to PostgreSQL...")
-	db, err := sql.Open("postgres", dsn)
-	if err != nil {
-		log.Fatalf("Failed to open DB: %v", err)
-	}
-	if err := db.Ping(); err != nil {
-		log.Fatalf("Failed to ping DB: %v", err)
-	}
-
-	// Run Migrations
-	log.Println("Running database migrations...")
-	if err := postgres.RunMigrations(db, "migrations"); err != nil {
-		log.Fatalf("Failed to run migrations: %v", err)
+	if !useMemory {
+		// Run Migrations
+		log.Println("Running database migrations...")
+		if err := postgres.RunMigrations(db, "migrations"); err != nil {
+			log.Printf("Failed to run migrations: %v. Switching to IN-MEMORY mode.", err)
+			useMemory = true
+		}
 	}
 
-	userRepo = postgres.NewPostgresUserRepository(db)
-	fastingRepo = postgres.NewPostgresFastingRepository(db)
-	ketoRepo = postgres.NewPostgresKetoRepository(db)
-	tribeRepo = postgres.NewPostgresTribeRepository(db)
-	socialRepo = postgres.NewPostgresSocialRepository(db)
-	leaderboardRepo = postgres.NewPostgresLeaderboardRepository(db)
-	gamificationRepo = postgres.NewPostgresGamificationRepository(db)
-	referralRepo := postgres.NewPostgresReferralRepository(db)
+	if !useMemory {
+		userRepo = postgres.NewPostgresUserRepository(db)
+		fastingRepo = postgres.NewPostgresFastingRepository(db)
+		ketoRepo = postgres.NewPostgresKetoRepository(db)
+		tribeRepo = postgres.NewPostgresTribeRepository(db)
+		socialRepo = postgres.NewPostgresSocialRepository(db)
+		leaderboardRepo = postgres.NewPostgresLeaderboardRepository(db)
+		gamificationRepo = postgres.NewPostgresGamificationRepository(db)
+		referralRepo = postgres.NewPostgresReferralRepository(db)
+		notificationRepo = postgres.NewPostgresNotificationRepository(db)
+	} else {
+		log.Println("!!! RUNNING IN IN-MEMORY MODE (DATA WILL BE LOST ON RESTART) !!!")
+		userRepo = memory.NewUserRepository()
+		fastingRepo = memory.NewFastingRepository()
+		ketoRepo = memory.NewKetoRepository()
+		tribeRepo = memory.NewTribeRepository()
+		socialRepo = memory.NewSocialRepository()
+		leaderboardRepo = memory.NewLeaderboardRepository()
+		gamificationRepo = memory.NewGamificationRepository()
+		referralRepo = memory.NewReferralRepository()
+		notificationRepo = memory.NewNotificationRepository()
+	}
 
 	// Activity Repo (Memory only for now)
 	activityRepo := memory.NewActivityRepository()
@@ -139,7 +166,7 @@ func main() {
 	if firebaseServiceAccountPath == "" {
 		log.Println("Warning: FIREBASE_SERVICE_ACCOUNT_PATH not set, notifications will be disabled")
 	}
-	notificationRepo := postgres.NewPostgresNotificationRepository(db)
+	// notificationRepo is already initialized above
 	notificationService, err := services.NewNotificationService(notificationRepo, firebaseServiceAccountPath)
 	if err != nil {
 		log.Printf("Warning: Failed to initialize notification service: %v", err)
@@ -162,6 +189,7 @@ func main() {
 		paymentAdapter,
 		referralService,
 		notificationService,
+		userRepo,
 	)
 
 	// 4. Setup Router
