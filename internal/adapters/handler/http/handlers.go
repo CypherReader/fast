@@ -121,6 +121,7 @@ func (h *Handler) RegisterRoutes(router *gin.Engine) {
 	user := protected.Group("/user")
 	{
 		user.GET("/profile", h.GetUserProfile)
+		user.GET("/stats", h.GetUserStats)
 	}
 
 	fasting := protected.Group("/fasting")
@@ -252,7 +253,7 @@ func (h *Handler) GetInsight(c *gin.Context) {
 
 	insight, err := h.cortexService.GenerateInsight(c.Request.Context(), userID, req.FastingHours)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusOK, gin.H{"insight": "Stay hydrated and keep going! (AI insights unavailable)"})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"insight": insight})
@@ -718,4 +719,49 @@ func (h *Handler) GetUserProfile(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, user)
+}
+
+func (h *Handler) GetUserStats(c *gin.Context) {
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	userID := userIDVal.(uuid.UUID)
+
+	user, err := h.authService.(*services.AuthService).GetUserByID(c.Request.Context(), userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch user"})
+		return
+	}
+
+	history, _ := h.fastingService.GetFastingHistory(c.Request.Context(), userID)
+	streak, _, _ := h.gamificationService.GetUserGamificationProfile(c.Request.Context(), userID)
+
+	fastsCompleted := 0
+	totalHours := 0.0
+	for _, f := range history {
+		if f.Status == domain.StatusCompleted {
+			fastsCompleted++
+			if f.EndTime != nil {
+				totalHours += f.EndTime.Sub(f.StartTime).Hours()
+			}
+		}
+	}
+
+	currentStreak := 0
+	longestStreak := 0
+	if streak != nil {
+		currentStreak = streak.CurrentStreak
+		longestStreak = streak.LongestStreak
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"fasts_completed":     fastsCompleted,
+		"total_fasting_hours": totalHours,
+		"current_streak":      currentStreak,
+		"longest_streak":      longestStreak,
+		"vault_balance":       user.EarnedRefund,
+		"vault_total":         user.VaultDeposit,
+	})
 }

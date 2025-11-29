@@ -57,7 +57,7 @@ export const useFasting = () => {
 
     const stopFastMutation = useMutation({
         mutationFn: async () => {
-            const response = await api.post('/fasting/end');
+            const response = await api.post('/fasting/stop');
             return response.data;
         },
         onSuccess: (data) => {

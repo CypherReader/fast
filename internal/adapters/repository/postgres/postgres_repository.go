@@ -29,7 +29,12 @@ func (r *PostgresUserRepository) Save(ctx context.Context, user *domain.User) er
 			subscription_tier = EXCLUDED.subscription_tier,
 			referral_code = EXCLUDED.referral_code
 	`
-	_, err := r.db.ExecContext(ctx, query, user.ID, user.Email, user.PasswordHash, user.SubscriptionTier, user.ReferralCode, user.CreatedAt)
+	var refCode sql.NullString
+	if user.ReferralCode != "" {
+		refCode = sql.NullString{String: user.ReferralCode, Valid: true}
+	}
+
+	_, err := r.db.ExecContext(ctx, query, user.ID, user.Email, user.PasswordHash, user.SubscriptionTier, refCode, user.CreatedAt)
 	return err
 }
 

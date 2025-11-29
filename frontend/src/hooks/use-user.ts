@@ -22,7 +22,7 @@ export const useUser = () => {
     const { data: user, isLoading: isUserLoading } = useQuery({
         queryKey: ['user'],
         queryFn: async () => {
-            const response = await api.get<User>('/auth/me');
+            const response = await api.get<User>('/user/profile');
             return response.data;
         },
     });
@@ -33,7 +33,7 @@ export const useUser = () => {
             // TODO: Implement /users/stats endpoint in backend or use mock for now if not available
             // For now, we'll try to fetch it, but fallback to mock if 404
             try {
-                const response = await api.get<UserStats>('/users/stats');
+                const response = await api.get<UserStats>('/user/stats');
                 return response.data;
             } catch (error) {
                 console.warn('Failed to fetch user stats, using defaults');

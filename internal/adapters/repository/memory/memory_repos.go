@@ -340,11 +340,14 @@ func (r *TelemetryRepository) GetWeeklyStats(ctx context.Context, userID uuid.UU
 		if d.UserID == userID && d.Type == metricType {
 			dateStr := d.Timestamp.Format("2006-01-02")
 			if _, exists := statsMap[dateStr]; exists {
-				// For steps, we might want max or sum depending on how we log.
-				// Assuming we log cumulative or discrete chunks, let's sum for now.
-				// If we logged "total steps at time X", we'd want MAX.
-				// Let's assume discrete chunks for manual entry (e.g. +5000 steps).
-				statsMap[dateStr] += d.Value
+				// For weight, we want the latest value for the day.
+				// Since we iterate through the slice (chronological order), overwriting ensures we get the latest.
+				if metricType == domain.MetricWeight {
+					statsMap[dateStr] = d.Value
+				} else {
+					// For other metrics (like steps), we sum them up.
+					statsMap[dateStr] += d.Value
+				}
 			}
 		}
 	}
