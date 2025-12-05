@@ -63,7 +63,7 @@ func TestAuthService_Register_HashesPassword(t *testing.T) {
 		assert.NotEmpty(t, user.PasswordHash, "Password hash should not be empty")
 	}).Return(nil)
 
-	user, err := authService.Register(ctx, email, password, "")
+	user, err := authService.Register(ctx, email, password, "Test User", "")
 
 	assert.NoError(t, err)
 	assert.NotNil(t, user)
@@ -88,7 +88,7 @@ func TestAuthService_Login_Success(t *testing.T) {
 
 	mockRepo.On("FindByEmail", ctx, email).Return(existingUser, nil)
 
-	token, _, err := authService.Login(ctx, email, password)
+	token, _, _, err := authService.Login(ctx, email, password)
 
 	assert.NoError(t, err)
 	assert.NotEmpty(t, token)
@@ -114,7 +114,7 @@ func TestAuthService_Login_WrongPassword(t *testing.T) {
 
 	mockRepo.On("FindByEmail", ctx, email).Return(existingUser, nil)
 
-	token, _, err := authService.Login(ctx, email, wrongPassword)
+	token, _, _, err := authService.Login(ctx, email, wrongPassword)
 
 	assert.Error(t, err)
 	assert.Empty(t, token)

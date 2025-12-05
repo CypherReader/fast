@@ -1,14 +1,14 @@
 package http
 
 import (
-	"fastinghero/internal/core/services"
+	"fastinghero/internal/core/ports"
 	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 )
 
-func AuthMiddleware(authService *services.AuthService) gin.HandlerFunc {
+func AuthMiddleware(authService ports.AuthService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {

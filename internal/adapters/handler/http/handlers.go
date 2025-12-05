@@ -16,7 +16,6 @@ type Handler struct {
 	authService         ports.AuthService
 	fastingService      ports.FastingService
 	ketoService         ports.KetoService
-	socialService       ports.SocialService
 	leaderboardService  ports.LeaderboardService
 	gamificationService ports.GamificationService
 	cortexService       ports.CortexService
@@ -24,17 +23,17 @@ type Handler struct {
 	telemetryService    ports.TelemetryService
 	mealService         ports.MealService
 	recipeService       ports.RecipeService
-	tribeService        ports.TribeService
 	paymentHandler      *PaymentHandler
-	tribeHandler        *TribeHandler
+	onboardingHandler   *OnboardingHandler
 	notificationService ports.NotificationService
+	socialService       ports.SocialService
+	progressService     ports.ProgressService
 }
 
 func NewHandler(
 	authService ports.AuthService,
 	fastingService ports.FastingService,
 	ketoService ports.KetoService,
-	socialService ports.SocialService,
 	leaderboardService ports.LeaderboardService,
 	gamificationService ports.GamificationService,
 	cortexService ports.CortexService,
@@ -42,17 +41,17 @@ func NewHandler(
 	telemetryService ports.TelemetryService,
 	mealService ports.MealService,
 	recipeService ports.RecipeService,
-	tribeService ports.TribeService,
-	paymentGateway ports.PaymentGateway,
+	paymentService ports.PaymentService,
 	referralService ports.ReferralService,
 	notificationService ports.NotificationService,
+	socialService ports.SocialService,
+	progressService ports.ProgressService,
 	userRepo ports.UserRepository,
 ) *Handler {
 	return &Handler{
 		authService:         authService,
 		fastingService:      fastingService,
 		ketoService:         ketoService,
-		socialService:       socialService,
 		leaderboardService:  leaderboardService,
 		gamificationService: gamificationService,
 		cortexService:       cortexService,
@@ -60,26 +59,26 @@ func NewHandler(
 		telemetryService:    telemetryService,
 		mealService:         mealService,
 		recipeService:       recipeService,
-		tribeService:        tribeService,
-		paymentHandler:      NewPaymentHandler(paymentGateway, referralService, userRepo),
-		tribeHandler:        NewTribeHandler(tribeService),
+		paymentHandler:      NewPaymentHandler(paymentService, referralService, userRepo),
+		onboardingHandler:   NewOnboardingHandler(services.NewOnboardingService(userRepo)),
 		notificationService: notificationService,
+		socialService:       socialService,
+		progressService:     progressService,
 	}
 }
-
-// ... (skip to RegisterRoutes if needed, but replace_file_content handles chunks)
 
 func (h *Handler) Register(c *gin.Context) {
 	var req struct {
 		Email        string `json:"email"`
 		Password     string `json:"password"`
+		Name         string `json:"name"`
 		ReferralCode string `json:"referral_code"`
 	}
 	if err := c.BindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	user, err := h.authService.Register(c.Request.Context(), req.Email, req.Password, req.ReferralCode)
+	user, err := h.authService.Register(c.Request.Context(), req.Email, req.Password, req.Name, req.ReferralCode)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -94,14 +93,13 @@ func (h *Handler) Login(c *gin.Context) {
 	}
 	if err := c.BindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
 	}
-	token, refresh, err := h.authService.Login(c.Request.Context(), req.Email, req.Password)
+	token, refresh, user, err := h.authService.Login(c.Request.Context(), req.Email, req.Password)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"token": token, "refresh_token": refresh})
+	c.JSON(http.StatusOK, gin.H{"token": token, "refresh_token": refresh, "user": user})
 }
 
 func (h *Handler) RegisterRoutes(router *gin.Engine) {
@@ -113,9 +111,16 @@ func (h *Handler) RegisterRoutes(router *gin.Engine) {
 		auth.POST("/login", h.Login)
 	}
 
+	onboarding := api.Group("/onboarding")
+	onboarding.Use(AuthMiddleware(h.authService))
+	{
+		onboarding.PUT("/profile", h.onboardingHandler.UpdateProfile)
+		onboarding.POST("/complete", h.onboardingHandler.CompleteOnboarding)
+	}
+
 	// Middleware for protected routes
 	protected := api.Group("/")
-	protected.Use(AuthMiddleware(h.authService.(*services.AuthService)))
+	protected.Use(AuthMiddleware(h.authService))
 
 	// User routes
 	user := protected.Group("/user")
@@ -171,17 +176,25 @@ func (h *Handler) RegisterRoutes(router *gin.Engine) {
 		recipes.GET("/", h.GetRecipes)
 	}
 
-	tribes := protected.Group("/tribes")
+	progress := protected.Group("/progress")
 	{
-		tribes.POST("/", h.tribeHandler.CreateTribe)
-		tribes.GET("/", h.tribeHandler.ListTribes)
-		tribes.POST("/:id/join", h.tribeHandler.JoinTribe)
-		tribes.POST("/:id/leave", h.tribeHandler.LeaveTribe)
+		progress.POST("/weight", h.LogWeight)
+		progress.GET("/weight", h.GetWeightHistory)
+		progress.POST("/hydration", h.LogHydration)
+		progress.GET("/hydration/daily", h.GetDailyHydration)
 	}
 
-	socialGroup := protected.Group("/social")
+	// Social Routes
+	social := protected.Group("/social")
 	{
-		socialGroup.GET("/feed", h.GetFeed)
+		social.POST("/friends/add", h.AddFriend)
+		social.GET("/friends", h.GetFriends)
+		social.POST("/tribes", h.CreateTribe)
+		social.GET("/tribes", h.ListTribes)
+		social.GET("/tribes/:id", h.GetTribe)
+		social.POST("/challenges", h.CreateChallenge)
+		social.GET("/challenges", h.GetChallenges)
+		social.GET("/feed", h.GetFeed)
 	}
 
 	leaderboardGroup := protected.Group("/leaderboard")
@@ -259,13 +272,91 @@ func (h *Handler) GetInsight(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"insight": insight})
 }
 
-func (h *Handler) GetFeed(c *gin.Context) {
-	feed, err := h.socialService.GetFeed(c.Request.Context())
+func (h *Handler) LogWeight(c *gin.Context) {
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	userID := userIDVal.(uuid.UUID)
+
+	var req struct {
+		Weight float64 `json:"weight"`
+		Unit   string  `json:"unit"`
+	}
+	if err := c.BindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	log, err := h.progressService.LogWeight(c.Request.Context(), userID, req.Weight, req.Unit)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, feed)
+	c.JSON(http.StatusOK, log)
+}
+
+func (h *Handler) GetWeightHistory(c *gin.Context) {
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	userID := userIDVal.(uuid.UUID)
+
+	logs, err := h.progressService.GetWeightHistory(c.Request.Context(), userID, 30) // Default 30 days
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, logs)
+}
+
+func (h *Handler) LogHydration(c *gin.Context) {
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	userID := userIDVal.(uuid.UUID)
+
+	var req struct {
+		Amount float64 `json:"amount"`
+		Unit   string  `json:"unit"`
+	}
+	if err := c.BindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	log, err := h.progressService.LogHydration(c.Request.Context(), userID, req.Amount, req.Unit)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, log)
+}
+
+func (h *Handler) GetDailyHydration(c *gin.Context) {
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	userID := userIDVal.(uuid.UUID)
+
+	log, err := h.progressService.GetDailyHydration(c.Request.Context(), userID)
+	if err != nil {
+		// Return empty or zero if not found, or error
+		c.JSON(http.StatusOK, gin.H{"glasses_count": 0})
+		return
+	}
+	if log == nil {
+		c.JSON(http.StatusOK, gin.H{"glasses_count": 0})
+		return
+	}
+	c.JSON(http.StatusOK, log)
 }
 
 func (h *Handler) GetLeaderboard(c *gin.Context) {
@@ -693,15 +784,19 @@ func (h *Handler) UnregisterFCMToken(c *gin.Context) {
 }
 
 func (h *Handler) GetNotificationHistory(c *gin.Context) {
-	_, exists := c.Get("user_id")
+	userIDVal, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
 	}
+	userID := userIDVal.(uuid.UUID)
 
-	// This is a placeholder - the actual implementation would call the repository
-	// For now, return empty array
-	c.JSON(http.StatusOK, []interface{}{})
+	notifications, err := h.notificationService.GetHistory(c.Request.Context(), userID, 50) // Default limit 50
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, notifications)
 }
 
 func (h *Handler) GetUserProfile(c *gin.Context) {

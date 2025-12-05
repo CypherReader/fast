@@ -96,21 +96,29 @@ const OnboardingPayment = () => {
       const registerResponse = await api.post<{ token: string }>('/auth/register', {
         email: state.email,
         password: state.password,
+        name: state.name,
       });
 
       // 2. Store Token
       localStorage.setItem('token', registerResponse.data.token);
 
-      // 3. Process Deposit (Mock payment, real backend update)
+      // 3. Update Profile (Goal & Plan)
+      await api.put('/onboarding/profile', {
+        goal: state.goal,
+        fasting_plan: state.fastingPlan,
+      });
+
+      // 4. Process Deposit (Mock payment, real backend update)
       await api.post('/payments/deposit', {
         amount: 20,
         payment_method_id: 'pm_card_visa', // Mock Stripe ID
       });
 
       navigate('/onboarding/success');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Payment/Registration failed:', err);
-      setError(err.response?.data?.error || 'Failed to process payment. Please try again.');
+      const error = err as { response?: { data?: { error?: string } } };
+      setError(error.response?.data?.error || 'Failed to process payment. Please try again.');
     } finally {
       setIsProcessing(false);
     }

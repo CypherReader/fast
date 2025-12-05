@@ -1,0 +1,1750 @@
+# 🚀 FastingHero: Complete Implementation Plan for AI Coding Assistant
+
+Based on your GitHub repository review, here's a detailed step-by-step plan to complete FastingHero.
+
+---
+
+## 📊 **What You Have (Based on README)**
+
+✅ **Design System Documented:**
+- Color palette (Emerald, Purple, Gold, Black theme)
+- Typography (Inter, Crimson Pro, Roboto Mono)
+- Component library (shadcn/ui)
+- Page structure patterns
+- Animation specifications
+
+✅ **Pages Outlined:**
+- Dashboard
+- Progress
+- Activity
+- Community
+- Resources
+- Profile
+
+✅ **Tech Stack Defined:**
+- React 18+ with TypeScript
+- Vite build tool
+- Tailwind CSS 3+
+- shadcn/ui components
+- React Router v6
+
+---
+
+## ❌ **What's Missing (What Needs to Be Built)**
+
+Based on our conversation, you need:
+
+1. **Backend API & Database**
+2. **Authentication System**
+3. **Onboarding Flow (11 steps)**
+4. **Vault Challenge System**
+5. **Friend Network Pots**
+6. **Payment Integration (Stripe)**
+7. **Email System**
+8. **Core App Features**
+
+---
+
+## 🎯 **Implementation Plan for AI Assistant**
+
+---
+
+## **PHASE 1: Backend Foundation (Week 1)**
+
+### Task 1.1: Database Schema Setup
+
+**Instruction for AI:**
+```
+Create a PostgreSQL database schema with the following tables:
+
+1. users table:
+   - id (UUID, primary key)
+   - email (VARCHAR 255, unique, not null)
+   - password_hash (VARCHAR 255)
+   - name (VARCHAR 100)
+   - created_at (TIMESTAMP)
+   - onboarding_completed (BOOLEAN, default false)
+   - goal (VARCHAR 50) - options: 'weight_loss', 'metabolic', 'discipline', 'longevity', 'mental_clarity', 'save_money'
+   - fasting_plan (VARCHAR 10) - options: '16:8', '18:6', 'omad'
+   - sex (VARCHAR 20)
+   - height_cm (DECIMAL 5,2)
+   - current_weight_lbs (DECIMAL 5,2)
+   - target_weight_lbs (DECIMAL 5,2)
+   - timezone (VARCHAR 50, default 'America/New_York')
+   - units (VARCHAR 10, default 'imperial') - options: 'imperial', 'metric'
+   - stripe_customer_id (VARCHAR 100)
+   - subscription_status (VARCHAR 50, default 'trial') - options: 'trial', 'active', 'canceled', 'past_due'
+   - subscription_id (VARCHAR 100)
+   - vault_enabled (BOOLEAN, default false)
+   - trial_ends_at (TIMESTAMP)
+   - created_at (TIMESTAMP)
+   - updated_at (TIMESTAMP)
+
+2. subscriptions table:
+   - id (UUID, primary key)
+   - user_id (UUID, foreign key → users.id)
+   - plan_type (VARCHAR 20, default 'core') - only 'core' for now
+   - subscription_price (DECIMAL 10,2, default 12.00)
+   - stripe_subscription_id (VARCHAR 100)
+   - status (VARCHAR 20) - options: 'active', 'canceled', 'past_due', 'trialing'
+   - current_period_start (DATE)
+   - current_period_end (DATE)
+   - cancel_at_period_end (BOOLEAN, default false)
+   - created_at (TIMESTAMP)
+   - updated_at (TIMESTAMP)
+
+3. vault_participations table (monthly opt-in vault challenges):
+   - id (UUID, primary key)
+   - user_id (UUID, foreign key → users.id)
+   - month_start (DATE, not null)
+   - month_end (DATE, not null)
+   - deposit_amount (DECIMAL 10,2, default 20.00)
+   - fasts_completed (INT, default 0)
+   - amount_recovered (DECIMAL 10,2, default 0.00)
+   - refund_processed (BOOLEAN, default false)
+   - refund_date (TIMESTAMP)
+   - opted_in (BOOLEAN, default true)
+   - forfeited_amount (DECIMAL 10,2, default 0.00)
+   - created_at (TIMESTAMP)
+   - updated_at (TIMESTAMP)
+   - UNIQUE constraint on (user_id, month_start)
+
+4. fasts table:
+   - id (UUID, primary key)
+   - user_id (UUID, foreign key → users.id)
+   - vault_participation_id (UUID, foreign key → vault_participations.id, nullable)
+   - start_time (TIMESTAMP, not null)
+   - end_time (TIMESTAMP, nullable)
+   - planned_duration_hours (INT) - options: 16, 18, 23
+   - actual_duration_hours (DECIMAL 5,2)
+   - completed (BOOLEAN, default false)
+   - recovery_amount (DECIMAL 10,2, default 2.00)
+   - phase_reached (VARCHAR 20) - options: 'digestion', 'glycogen', 'ketosis', 'autophagy'
+   - created_at (TIMESTAMP)
+   - updated_at (TIMESTAMP)
+
+5. friend_networks table:
+   - id (UUID, primary key)
+   - user_id (UUID, foreign key → users.id)
+   - friend_id (UUID, foreign key → users.id)
+   - status (VARCHAR 20, default 'connected') - options: 'pending', 'connected', 'blocked'
+   - connected_at (TIMESTAMP)
+   - created_at (TIMESTAMP)
+   - UNIQUE constraint on (user_id, friend_id)
+
+6. friend_network_pots table (forfeited money from friends):
+   - id (UUID, primary key)
+   - owner_id (UUID, foreign key → users.id) - person whose forfeited money this is
+   - month_start (DATE, not null)
+   - month_end (DATE, not null)
+   - total_pot_amount (DECIMAL 10,2, default 0.00)
+   - winner_id (UUID, foreign key → users.id, nullable)
+   - winner_fasts (INT, default 0)
+   - payout_processed (BOOLEAN, default false)
+   - payout_date (TIMESTAMP)
+   - created_at (TIMESTAMP)
+   - updated_at (TIMESTAMP)
+   - UNIQUE constraint on (owner_id, month_start)
+
+7. friend_network_pot_participants table:
+   - id (UUID, primary key)
+   - pot_id (UUID, foreign key → friend_network_pots.id)
+   - user_id (UUID, foreign key → users.id)
+   - fasts_completed (INT, default 0)
+   - rank (INT)
+   - created_at (TIMESTAMP)
+   - updated_at (TIMESTAMP)
+   - UNIQUE constraint on (pot_id, user_id)
+
+8. friend_challenges table (1v1 betting):
+   - id (UUID, primary key)
+   - challenger_id (UUID, foreign key → users.id)
+   - challenged_id (UUID, foreign key → users.id)
+   - month_start (DATE, not null)
+   - month_end (DATE, not null)
+   - pot_amount (DECIMAL 10,2, default 40.00) - $20 each
+   - challenger_deposit (DECIMAL 10,2, default 20.00)
+   - challenged_deposit (DECIMAL 10,2, default 20.00)
+   - challenger_fasts (INT, default 0)
+   - challenged_fasts (INT, default 0)
+   - winner_id (UUID, foreign key → users.id, nullable)
+   - status (VARCHAR 20) - options: 'pending', 'accepted', 'declined', 'active', 'completed', 'canceled'
+   - payout_amount (DECIMAL 10,2)
+   - payout_processed (BOOLEAN, default false)
+   - payout_date (TIMESTAMP)
+   - created_at (TIMESTAMP)
+   - updated_at (TIMESTAMP)
+
+9. tribes table:
+   - id (UUID, primary key)
+   - name (VARCHAR 100, not null)
+   - description (TEXT)
+   - created_by (UUID, foreign key → users.id)
+   - member_count (INT, default 0)
+   - is_private (BOOLEAN, default false)
+   - created_at (TIMESTAMP)
+   - updated_at (TIMESTAMP)
+
+10. tribe_members table:
+    - id (UUID, primary key)
+    - tribe_id (UUID, foreign key → tribes.id)
+    - user_id (UUID, foreign key → users.id)
+    - is_admin (BOOLEAN, default false)
+    - joined_at (TIMESTAMP)
+    - UNIQUE constraint on (tribe_id, user_id)
+
+11. tribe_pools table (monthly tribe betting pools):
+    - id (UUID, primary key)
+    - tribe_id (UUID, foreign key → tribes.id)
+    - month_start (DATE, not null)
+    - month_end (DATE, not null)
+    - total_pot (DECIMAL 10,2, default 0.00)
+    - participant_count (INT, default 0)
+    - status (VARCHAR 20) - options: 'open', 'active', 'completed'
+    - first_place_payout (DECIMAL 10,2)
+    - second_place_payout (DECIMAL 10,2)
+    - third_place_payout (DECIMAL 10,2)
+    - created_at (TIMESTAMP)
+    - updated_at (TIMESTAMP)
+    - UNIQUE constraint on (tribe_id, month_start)
+
+12. tribe_pool_participants table:
+    - id (UUID, primary key)
+    - pool_id (UUID, foreign key → tribe_pools.id)
+    - user_id (UUID, foreign key → users.id)
+    - deposit_amount (DECIMAL 10,2, default 20.00)
+    - fasts_completed (INT, default 0)
+    - final_rank (INT)
+    - payout_amount (DECIMAL 10,2, default 0.00)
+    - payout_processed (BOOLEAN, default false)
+    - created_at (TIMESTAMP)
+    - updated_at (TIMESTAMP)
+    - UNIQUE constraint on (pool_id, user_id)
+
+13. weight_logs table:
+    - id (UUID, primary key)
+    - user_id (UUID, foreign key → users.id)
+    - weight_lbs (DECIMAL 5,2, not null)
+    - weight_kg (DECIMAL 5,2, not null)
+    - logged_at (TIMESTAMP, default NOW())
+    - created_at (TIMESTAMP)
+
+14. meals table (food logging):
+    - id (UUID, primary key)
+    - user_id (UUID, foreign key → users.id)
+    - meal_type (VARCHAR 20) - options: 'breakfast', 'lunch', 'dinner'
+    - image_url (VARCHAR 500)
+    - is_keto (BOOLEAN)
+    - calories (INT)
+    - logged_at (TIMESTAMP, default NOW())
+    - created_at (TIMESTAMP)
+
+15. hydration_logs table:
+    - id (UUID, primary key)
+    - user_id (UUID, foreign key → users.id)
+    - glasses_count (INT, default 0)
+    - logged_date (DATE, not null)
+    - created_at (TIMESTAMP)
+    - UNIQUE constraint on (user_id, logged_date)
+
+16. activity_logs table (steps tracking):
+    - id (UUID, primary key)
+    - user_id (UUID, foreign key → users.id)
+    - steps (INT, default 0)
+    - distance_km (DECIMAL 5,2)
+    - calories_burned (INT)
+    - logged_date (DATE, not null)
+    - created_at (TIMESTAMP)
+    - UNIQUE constraint on (user_id, logged_date)
+
+17. notifications table:
+    - id (UUID, primary key)
+    - user_id (UUID, foreign key → users.id)
+    - type (VARCHAR 50) - options: 'fast_complete', 'vault_refund', 'challenge_invite', 'pot_winner', etc.
+    - title (VARCHAR 200)
+    - message (TEXT)
+    - read (BOOLEAN, default false)
+    - link (VARCHAR 500, nullable)
+    - created_at (TIMESTAMP)
+
+18. commitment_contracts table (self-contract from onboarding):
+    - id (UUID, primary key)
+    - user_id (UUID, foreign key → users.id)
+    - commitment_text (TEXT) - "My WHY" text
+    - goals (JSONB) - structured goals data
+    - signed_at (TIMESTAMP)
+
+Create all tables with proper indexes:
+- Index on users.email
+- Index on users.stripe_customer_id
+- Index on fasts.user_id, fasts.start_time
+- Index on vault_participations.user_id, vault_participations.month_start
+- Index on friend_challenges.status
+- Index on notifications.user_id, notifications.read
+
+Use Prisma ORM or SQLAlchemy depending on backend language (Node.js/Python).
+```
+
+---
+
+### Task 1.2: API Structure Setup
+
+**Instruction for AI:**
+```
+Create a REST API with the following structure:
+
+Backend Framework Options:
+- Option A: Node.js + Express + TypeScript
+- Option B: Python + FastAPI
+
+Choose Option A (Node.js) for consistency with frontend.
+
+Project Structure:
+```
+/backend
+  /src
+    /routes
+      /auth.ts
+      /users.ts
+      /fasts.ts
+      /vault.ts
+      /challenges.ts
+      /tribes.ts
+      /progress.ts
+      /notifications.ts
+    /controllers
+      /authController.ts
+      /fastController.ts
+      /vaultController.ts
+      etc.
+    /models (Prisma models)
+    /middleware
+      /auth.ts (JWT verification)
+      /errorHandler.ts
+    /services
+      /stripeService.ts
+      /emailService.ts
+      /vaultService.ts
+    /utils
+      /validators.ts
+      /helpers.ts
+    server.ts
+  prisma/
+    schema.prisma
+  .env.example
+  package.json
+```
+
+Required Environment Variables (.env):
+```
+DATABASE_URL="postgresql://user:password@localhost:5432/fastinghero"
+JWT_SECRET="your-jwt-secret-here"
+STRIPE_SECRET_KEY="sk_test_..."
+STRIPE_WEBHOOK_SECRET="whsec_..."
+SENDGRID_API_KEY="SG...."
+FRONTEND_URL="http://localhost:5173"
+NODE_ENV="development"
+PORT=3001
+```
+
+Install Dependencies:
+```bash
+npm install express cors dotenv bcrypt jsonwebtoken
+npm install @prisma/client stripe nodemailer
+npm install --save-dev @types/express @types/node @types/bcrypt @types/jsonwebtoken typescript ts-node
+npm install --save-dev prisma
+```
+
+Initialize Prisma:
+```bash
+npx prisma init
+npx prisma generate
+npx prisma migrate dev --name init
+```
+```
+
+---
+
+### Task 1.3: Authentication Endpoints
+
+**Instruction for AI:**
+```
+Create authentication system with the following endpoints:
+
+POST /api/auth/signup
+Request body:
+{
+  "email": "user@example.com",
+  "password": "securepassword123",
+  "name": "John Doe"
+}
+Response:
+{
+  "user": {
+    "id": "uuid",
+    "email": "user@example.com",
+    "name": "John Doe",
+    "onboardingCompleted": false
+  },
+  "token": "jwt-token-here"
+}
+
+POST /api/auth/login
+Request body:
+{
+  "email": "user@example.com",
+  "password": "securepassword123"
+}
+Response:
+{
+  "user": {
+    "id": "uuid",
+    "email": "user@example.com",
+    "name": "John Doe",
+    "onboardingCompleted": true
+  },
+  "token": "jwt-token-here"
+}
+
+GET /api/auth/me (requires JWT token in Authorization header)
+Response:
+{
+  "user": {
+    "id": "uuid",
+    "email": "user@example.com",
+    "name": "John Doe",
+    "subscriptionStatus": "active",
+    "vaultEnabled": true
+  }
+}
+
+POST /api/auth/forgot-password
+Request body:
+{
+  "email": "user@example.com"
+}
+Response:
+{
+  "message": "Password reset email sent"
+}
+
+POST /api/auth/reset-password
+Request body:
+{
+  "token": "reset-token-from-email",
+  "newPassword": "newsecurepassword123"
+}
+Response:
+{
+  "message": "Password reset successful"
+}
+
+Implementation Requirements:
+- Use bcrypt for password hashing (saltRounds: 10)
+- Use JWT for token generation (expiresIn: '7d')
+- Validate email format
+- Enforce password requirements: minimum 8 characters, 1 uppercase, 1 number
+- Return proper HTTP status codes: 201 (created), 200 (success), 401 (unauthorized), 400 (bad request)
+- Include error handling middleware
+```
+
+---
+
+## **PHASE 2: Stripe Integration (Week 1)**
+
+### Task 2.1: Stripe Subscription Setup
+
+**Instruction for AI:**
+```
+Integrate Stripe for subscription management:
+
+1. Create Stripe Products & Prices (via Stripe Dashboard or API):
+   - Product: "FastingHero Core"
+   - Price: $12/month recurring (price_id: price_xxx)
+   
+2. Create Subscription Endpoint:
+
+POST /api/subscriptions/create
+Headers: Authorization: Bearer {jwt-token}
+Request body:
+{
+  "paymentMethodId": "pm_xxx",  // From Stripe.js on frontend
+  "priceId": "price_xxx"
+}
+
+Logic:
+- Get user from JWT
+- Create Stripe customer if doesn't exist
+- Attach payment method to customer
+- Create subscription
+- Update user record:
+  * stripe_customer_id
+  * subscription_status = 'active'
+  * subscription_id
+- Create subscription record in database
+
+Response:
+{
+  "subscription": {
+    "id": "sub_xxx",
+    "status": "active",
+    "currentPeriodEnd": "2025-12-29T00:00:00Z"
+  }
+}
+
+3. Create Webhook Handler:
+
+POST /api/webhooks/stripe
+Raw body (for signature verification)
+
+Handle Events:
+- customer.subscription.created
+- customer.subscription.updated  
+- customer.subscription.deleted
+- invoice.payment_succeeded
+- invoice.payment_failed
+
+For each event:
+- Verify webhook signature
+- Update database accordingly
+- Send email notifications
+
+4. Vault Deposit Handling:
+
+POST /api/vault/enable
+Headers: Authorization: Bearer {jwt-token}
+Request body:
+{
+  "paymentMethodId": "pm_xxx"
+}
+
+Logic:
+- Create $20 PaymentIntent (one-time charge)
+- Hold funds in Stripe
+- Create vault_participation record
+- Set user.vault_enabled = true
+- Track deposit in database
+
+Response:
+{
+  "vaultParticipation": {
+    "id": "uuid",
+    "monthStart": "2025-11-01",
+    "monthEnd": "2025-11-30",
+    "depositAmount": 20.00,
+    "amountRecovered": 0.00
+  }
+}
+
+5. Monthly Vault Refund Logic:
+
+Create cron job (runs 1st of each month):
+- Find all vault_participations where month_end = yesterday
+- Calculate refund amount: fasts_completed × $2.00
+- Create Stripe refund for calculated amount
+- Update vault_participation:
+  * amount_recovered = calculated amount
+  * forfeited_amount = 20 - calculated amount
+  * refund_processed = true
+  * refund_date = NOW()
+- Create friend_network_pot entry if forfeited_amount > 0
+- Send email notification to user
+```
+
+---
+
+### Task 2.2: Payment Method Management
+
+**Instruction for AI:**
+```
+Create payment method management endpoints:
+
+GET /api/payment-methods
+Headers: Authorization: Bearer {jwt-token}
+Response:
+{
+  "paymentMethods": [
+    {
+      "id": "pm_xxx",
+      "brand": "visa",
+      "last4": "4242",
+      "expMonth": 12,
+      "expYear": 2025,
+      "isDefault": true
+    }
+  ]
+}
+
+POST /api/payment-methods/add
+Request body:
+{
+  "paymentMethodId": "pm_xxx"
+}
+Response:
+{
+  "paymentMethod": {...}
+}
+
+DELETE /api/payment-methods/:id
+Response:
+{
+  "message": "Payment method removed"
+}
+
+POST /api/payment-methods/:id/set-default
+Response:
+{
+  "message": "Default payment method updated"
+}
+```
+
+---
+
+## **PHASE 3: Onboarding Flow (Week 2)**
+
+### Task 3.1: Onboarding State Management
+
+**Instruction for AI:**
+```
+Create onboarding endpoints to save progress:
+
+POST /api/onboarding/step1
+Request body:
+{
+  "name": "John Doe",
+  "experience": "beginner" // or "experienced" or "struggled"
+}
+Updates: users.name, creates metadata
+
+POST /api/onboarding/step2
+Request body:
+{
+  "goal": "weight_loss" // or "metabolic", "discipline", "longevity", "mental_clarity", "save_money"
+}
+Updates: users.goal
+
+POST /api/onboarding/step3
+Request body:
+{
+  "sex": "male",
+  "heightCm": 175,
+  "currentWeightLbs": 180,
+  "targetWeightLbs": 160
+}
+Updates: users.sex, users.height_cm, users.current_weight_lbs, users.target_weight_lbs
+
+POST /api/onboarding/step4
+Request body:
+{
+  "fastingPlan": "16:8" // or "18:6" or "omad"
+}
+Updates: users.fasting_plan
+
+POST /api/onboarding/step5
+Request body:
+{
+  "email": "user@example.com", // confirmation
+  "notifications": true
+}
+Updates: notification preferences
+
+POST /api/onboarding/step9
+Request body:
+{
+  "commitmentText": "I'm doing this because I want to feel healthier and more energetic",
+  "goals": {
+    "fasting": true,
+    "weightTracking": true,
+    "mealLogging": true,
+    "stayAccountable": true
+  }
+}
+Creates: commitment_contract record
+
+POST /api/onboarding/complete
+Request body:
+{
+  "vaultEnabled": true,
+  "subscriptionPaymentMethodId": "pm_xxx",
+  "vaultPaymentMethodId": "pm_xxx"
+}
+Logic:
+- Create Stripe subscription ($12/month)
+- Create Stripe PaymentIntent for vault deposit ($20) if vaultEnabled
+- Create subscription record
+- Create vault_participation record if vaultEnabled
+- Update users.onboarding_completed = true
+- Return success
+
+Response:
+{
+  "onboardingComplete": true,
+  "subscription": {...},
+  "vaultParticipation": {...} // if enabled
+}
+```
+
+---
+
+### Task 3.2: Onboarding UI Pages
+
+**Instruction for AI:**
+```
+Create React pages for 11-step onboarding flow in /frontend/src/pages/onboarding/:
+
+Files to create:
+1. OnboardingLayout.tsx (wrapper with progress bar)
+2. Step1Welcome.tsx
+3. Step2Goals.tsx
+4. Step3Biometrics.tsx
+5. Step4FastingPlan.tsx
+6. Step5Email.tsx
+7. Step6Education.tsx (3-slide carousel)
+8. Step7Calculate.tsx
+9. Step8VaultOption.tsx
+10. Step9Contract.tsx
+11. Step10Payment.tsx
+12. Step11Success.tsx
+
+Each page should:
+- Use Tailwind CSS with design system colors
+- Match design specifications from README
+- Include form validation
+- Save data to backend API on "Continue"
+- Show loading state during API calls
+- Handle errors gracefully
+- Mobile responsive
+
+Use React Router v6 for navigation:
+/onboarding/1 → Step1Welcome
+/onboarding/2 → Step2Goals
+...
+/onboarding/11 → Step11Success
+
+After Step 11, redirect to /dashboard?firstVisit=true
+
+Include progress bar component:
+- Shows "Step X of 11"
+- Visual progress indicator (filled bar)
+- Percentage: (currentStep / 11) × 100
+
+Use zustand or React Context for state management across steps.
+```
+
+---
+
+## **PHASE 4: Core Fasting Features (Week 2-3)**
+
+### Task 4.1: Fasting Timer Backend
+
+**Instruction for AI:**
+```
+Create fasting tracking endpoints:
+
+POST /api/fasts/start
+Headers: Authorization: Bearer {jwt-token}
+Request body:
+{
+  "plannedDurationHours": 16 // or 18, 23
+}
+Logic:
+- Get current user
+- Create fast record:
+  * user_id = current user
+  * start_time = NOW()
+  * planned_duration_hours = from request
+  * completed = false
+- Find active vault_participation for current month
+- Link fast to vault_participation_id if exists
+
+Response:
+{
+  "fast": {
+    "id": "uuid",
+    "startTime": "2025-11-29T14:00:00Z",
+    "plannedDurationHours": 16,
+    "status": "active"
+  }
+}
+
+POST /api/fasts/:id/complete
+Headers: Authorization: Bearer {jwt-token}
+Logic:
+- Get fast by ID
+- Verify belongs to current user
+- Calculate actual_duration_hours = (NOW() - start_time) in hours
+- Determine phase_reached:
+  * 0-4h: "digestion"
+  * 4-12h: "glycogen"
+  * 12-16h: "ketosis"
+  * 16+h: "autophagy"
+- Update fast:
+  * end_time = NOW()
+  * actual_duration_hours = calculated
+  * completed = true
+  * phase_reached = determined phase
+- If vault enabled:
+  * Increment vault_participation.fasts_completed
+  * Add $2 to vault_participation.amount_recovered
+- If in friend_challenge:
+  * Increment challenge fasts count
+- If in tribe_pool:
+  * Increment pool fasts count
+- If in friend_network_pot competition:
+  * Increment pot participant fasts count
+- Create notification
+- Send push notification
+
+Response:
+{
+  "fast": {
+    "id": "uuid",
+    "startTime": "2025-11-29T14:00:00Z",
+    "endTime": "2025-11-30T06:00:00Z",
+    "actualDurationHours": 16.0,
+    "completed": true,
+    "phaseReached": "ketosis",
+    "recoveryAmount": 2.00
+  },
+  "vaultUpdate": {
+    "fastsCompleted": 7,
+    "amountRecovered": 14.00,
+    "remainingFasts": 3
+  }
+}
+
+GET /api/fasts/active
+Response:
+{
+  "activeFast": {
+    "id": "uuid",
+    "startTime": "2025-11-29T14:00:00Z",
+    "elapsedHours": 2.5,
+    "currentPhase": "digestion",
+    "plannedDurationHours": 16
+  } // or null if no active fast
+}
+
+GET /api/fasts/history?page=1&limit=20
+Response:
+{
+  "fasts": [...],
+  "pagination": {
+    "total": 45,
+    "page": 1,
+    "pages": 3
+  }
+}
+```
+
+---
+
+### Task 4.2: Dashboard UI
+
+**Instruction for AI:**
+```
+Create Dashboard page at /frontend/src/pages/Dashboard.tsx:
+
+Components needed:
+
+1. FastingTimer Component (/components/FastingTimer.tsx):
+   - Large circular timer display
+   - Shows elapsed time (HH:MM:SS)
+   - Circular progress ring (fills as time progresses)
+   - Current phase indicator ("Ketosis")
+   - Phase progress bar
+   - Color gradient: emerald → gold based on progress
+   - Real-time updates every second
+   - "Start Fast" button (if no active fast)
+   - "Complete Fast" button (if active fast)
+   - Pulsing glow effect
+
+2. VaultStatus Component (/components/VaultStatus.tsx):
+   - Shows current month vault
+   - Deposit amount: $20.00
+   - Recovered: $14.00 (7 fasts)
+   - Progress bar: 70%
+   - "3 more fasts = Full refund"
+   - Option to enable vault if not enabled
+   
+3. QuickStats Component (/components/QuickStats.tsx):
+   - 4-column grid (responsive: 2 cols mobile, 4 cols desktop)
+   - Discipline Score (0-100)
+   - Current Streak (days)
+   - This Month Fasts (count)
+   - Vault Balance ($X recovered)
+   - Each stat as animated counter
+
+4. ActiveChallenges Component (/components/ActiveChallenges.tsx):
+   - List active vault challenges:
+     * Personal vault
+     * Friend battles (1v1)
+     * Tribe pools
+     * Friend network pots
+   - Show current rank/status
+   - Quick access buttons
+
+5. BioNarrativeTimeline Component (/components/BioNarrativeTimeline.tsx):
+   - 4 phases: Digestion → Glycogen → Ketosis → Autophagy
+   - Visual progress indicator
+   - Highlight current phase
+   - Description of what's happening
+
+Layout:
+- If first visit (?firstVisit=true): Show welcome banner
+- Timer at top (hero section)
+- Vault status card below
+- Quick stats grid
+- Active challenges
+- Bio-narrative timeline
+- Bottom navigation
+
+Use React hooks:
+- useState for local state
+- useEffect to poll active fast every 10 seconds
+- Custom hook: useFastingTimer for timer logic
+
+Fetch data:
+- GET /api/fasts/active
+- GET /api/vault/current
+- GET /api/challenges/active
+- GET /api/users/stats
+```
+
+---
+
+## **PHASE 5: Friend Network Pots (Week 3)**
+
+### Task 5.1: Friend Network Backend
+
+**Instruction for AI:**
+```
+Create friend network endpoints:
+
+POST /api/friends/connect
+Request body:
+{
+  "friendId": "uuid" // or "email": "friend@example.com"
+}
+Logic:
+- Create friend_network record
+- Send notification to friend
+- If both users have each other: status = 'connected'
+- Else: status = 'pending'
+
+Response:
+{
+  "connection": {
+    "userId": "uuid1",
+    "friendId": "uuid2",
+    "status": "connected"
+  }
+}
+
+GET /api/friends
+Response:
+{
+  "friends": [
+    {
+      "id": "uuid",
+      "name": "Mike Johnson",
+      "email": "mike@example.com",
+      "status": "connected",
+      "connectedAt": "2025-11-01T00:00:00Z"
+    }
+  ]
+}
+
+POST /api/friends/invite
+Request body:
+{
+  "email": "friend@example.com",
+  "message": "Join me on FastingHero!"
+}
+Logic:
+- Send email invite
+- Include referral link
+- Track invite in database
+
+GET /api/friend-pots/mine
+Response:
+{
+  "myPot": {
+    "id": "uuid",
+    "monthStart": "2025-11-01",
+    "monthEnd": "2025-11-30",
+    "totalPotAmount": 12.00, // Your forfeited money
+    "participants": [
+      {
+        "userId": "uuid",
+        "name": "Alex",
+        "fastsCompleted": 11,
+        "rank": 1
+      },
+      {
+        "userId": "uuid2",
+        "name": "Jordan",
+        "fastsCompleted": 10,
+        "rank": 2
+      }
+    ],
+    "currentLeader": "Alex"
+  }
+}
+
+GET /api/friend-pots/competing
+Response:
+{
+  "competingPots": [
+    {
+      "potId": "uuid",
+      "ownerName": "Sarah",
+      "potAmount": 10.00,
+      "yourFasts": 8,
+      "yourRank": 2,
+      "totalParticipants": 5,
+      "currentLeader": "Mike"
+    },
+    {
+      "potId": "uuid2",
+      "ownerName": "Lisa",
+      "potAmount": 15.00,
+      "yourFasts": 8,
+      "yourRank": 1,
+      "totalParticipants": 4,
+      "currentLeader": "You"
+    }
+  ]
+}
+
+Monthly Cron Job (runs on 1st of month):
+- For each friend_network_pot:
+  * Find participant with most fasts
+  * Set winner_id
+  * Create Stripe payout/transfer to winner
+  * Update payout_processed = true
+  * Send notifications to all participants
+```
+
+---
+
+### Task 5.2: Friend Challenges (1v1 Betting)
+
+**Instruction for AI:**
+```
+Create 1v1 challenge endpoints:
+
+POST /api/challenges/create
+Request body:
+{
+  "challengedUserId": "uuid",
+  "depositAmount": 20.00,
+  "monthStart": "2025-12-01",
+  "monthEnd": "2025-12-31"
+}
+Logic:
+- Create friend_challenge record
+- status = 'pending'
+- Send notification to challenged user
+- Don't charge yet (wait for acceptance)
+
+Response:
+{
+  "challenge": {
+    "id": "uuid",
+    "challengerId": "uuid1",
+    "challengedId": "uuid2",
+    "potAmount": 40.00,
+    "status": "pending"
+  }
+}
+
+POST /api/challenges/:id/accept
+Logic:
+- Update status = 'active'
+- Charge both users $20 via Stripe
+- Create PaymentIntents for both
+- Send confirmation emails
+
+POST /api/challenges/:id/decline
+Logic:
+- Update status = 'declined'
+- Send notification to challenger
+
+GET /api/challenges/active
+Response:
+{
+  "challenges": [
+    {
+      "id": "uuid",
+      "opponentName": "Mike",
+      "yourFasts": 7,
+      "opponentFasts": 6,
+      "potAmount": 40.00,
+      "status": "winning",
+      "daysRemaining": 14
+    }
+  ]
+}
+
+Monthly Cron Job (end of month):
+- Find completed challenges
+- Determine winner (most fasts)
+- If tie: refund both $20
+- If winner: payout $40 to winner
+- Update challenge status = 'completed'
+- Send notifications
+```
+
+---
+
+## **PHASE 6: Additional Features (Week 4)**
+
+### Task 6.1: Progress Page
+
+**Instruction for AI:**
+```
+Create Progress page (/pages/Progress.tsx) with:
+
+1. Weight Tracker Component:
+   - Display current weight
+   - Week trend (-2 lbs this week)
+   - Chart showing weight over time (Recharts LineChart)
+   - "Log Weight" button → modal with input
+   - Unit toggle (lbs/kg)
+
+API endpoints:
+POST /api/weight/log
+Request body:
+{
+  "weightLbs": 175.5
+}
+Calculates kg automatically (lbs × 0.453592)
+
+GET /api/weight/history?days=30
+Response:
+{
+  "logs": [
+    {
+      "date": "2025-11-29",
+      "weightLbs": 175.5,
+      "weightKg": 79.6
+    }
+  ]
+}
+
+2. Hydration Tracker Component:
+   - 8 water glasses (visual)
+   - Click to fill/unfill
+   - Progress: "6 / 8 glasses"
+   - Auto-saves to API
+
+API endpoints:
+POST /api/hydration/log
+Request body:
+{
+  "glassesCount": 6,
+  "date": "2025-11-29"
+}
+
+GET /api/hydration/today
+Response:
+{
+  "glassesCount": 6,
+  "date": "2025-11-29"
+}
+
+3. Food Logging Component:
+   - "Log Meal" button
+   - Opens modal with:
+     * Meal type dropdown (breakfast, lunch, dinner)
+     * Photo upload
+     * Keto toggle
+     * Calories input
+   - Shows recent meals (carousel)
+
+API endpoints:
+POST /api/meals/log
+Request body (multipart/form-data):
+{
+  "mealType": "lunch",
+  "image": File,
+  "isKeto": true,
+  "calories": 450
+}
+
+GET /api/meals/recent?limit=10
+Response:
+{
+  "meals": [...]
+}
+
+4. Charts Component:
+   - Weekly fasts chart (bar chart)
+   - Weight trend line chart
+   - Use Recharts library
+```
+
+---
+
+### Task 6.2: Activity Page
+
+**Instruction for AI:**
+```
+Create Activity page (/pages/Activity.tsx) with:
+
+1. Telemetry Input Component:
+   - Tabs: Steps / Weight
+   - Manual input fields
+   - "Submit" button (cyan accent)
+   - Trust score display
+
+API endpoints:
+POST /api/activity/log
+Request body:
+{
+  "steps": 8500,
+  "date": "2025-11-29"
+}
+Auto-calculates:
+- distance_km = steps × 0.000762
+- calories_burned = steps × 0.04
+
+GET /api/activity/stats?days=7
+Response:
+{
+  "totalSteps": 52000,
+  "avgStepsPerDay": 7428,
+  "totalDistance": 39.6,
+  "totalCalories": 2080
+}
+
+2. Quick Stats Grid:
+   - Total steps (with thousands separator)
+   - Current weight (from latest log)
+   - Distance (km)
+   - Calories burned
+
+3. Weekly Steps Chart:
+   - Bar chart (lime green #adfa1d)
+   - Shows last 7 days
+   - Use Recharts BarChart
+```
+
+---
+
+### Task 6.3: Community Page
+
+**Instruction for AI:**
+```
+Create Community page (/pages/Community.tsx) with 4 tabs:
+
+Tab 1: Feed
+- Activity feed showing recent fasts, achievements
+- Like functionality
+- User avatars (initials if no photo)
+
+API:
+GET /api/feed?page=1&limit=20
+Response:
+{
+  "activities": [
+    {
+      "id": "uuid",
+      "userId": "uuid",
+      "userName": "Alex",
+      "type": "fast_complete",
+      "message": "completed 16h fast",
+      "createdAt": "2025-11-29T06:00:00Z",
+      "likes": 5
+    }
+  ]
+}
+
+Tab 2: Tribes
+- List of tribes
+- Join/Leave buttons
+- Create tribe button
+- Tribe detail pages
+
+API:
+GET /api/tribes
+POST /api/tribes/create
+POST /api/tribes/:id/join
+POST /api/tribes/:id/leave
+
+Tab 3: Leaderboard
+- Ranked list of top fasters
+- Medal emojis for top 3
+- Current user highlighted
+- Metric: Hours fasted this month
+
+API:
+GET /api/leaderboard?metric=hours_fasted&period=month
+Response:
+{
+  "rankings": [
+    {
+      "rank": 1,
+      "userId": "uuid",
+      "userName": "Alex",
+      "hoursFasted": 280,
+      "isCurrentUser": false
+    }
+  ]
+}
+
+Tab 4: My Progress
+- Current streak
+- Badge showcase
+- Personal achievements
+```
+
+---
+
+### Task 6.4: Resources Page
+
+**Instruction for AI:**
+```
+Create Resources page (/pages/Resources.tsx) with 2 tabs:
+
+Tab 1: Recipes
+- Diet filter buttons (All, Keto, Regular, Vegetarian, Vegan)
+- Recipe grid (3 columns desktop, 1 mobile)
+- Recipe cards with:
+  * Image
+  * Title
+  * Diet badge
+  * Macros (protein, carbs, fat)
+  * Prep time, difficulty
+  * "View Recipe" button
+- Recipe detail modal with:
+  * Full image
+  * Ingredients list (with checkboxes)
+  * Instructions (numbered steps)
+  * Nutrition facts
+  * Tips section
+
+Create static JSON file with 50+ recipes:
+/src/data/recipes.json
+
+Tab 2: Fasting Science (YouTube Videos)
+- Category filters (Science, Benefits, Getting Started, etc.)
+- Video grid (2 columns)
+- Video cards with:
+  * Thumbnail
+  * Title
+  * Channel name
+  * Duration badge
+  * View count
+- Click opens modal with embedded YouTube player
+
+Create static JSON file with curated videos:
+/src/data/videos.json
+```
+
+---
+
+## **PHASE 7: Email & Notifications (Week 4)**
+
+### Task 7.1: Email Templates
+
+**Instruction for AI:**
+```
+Create email templates using SendGrid or Resend:
+
+Templates needed:
+
+1. welcome_email.html
+Subject: "Welcome to FastingHero! 🎉"
+Content:
+- Welcome message
+- Quick start guide
+- CTA: "Start Your First Fast"
+
+2. fast_complete.html
+Subject: "Fast Complete! You recovered $2.00 💰"
+Content:
+- Congratulations
+- Stats (duration, phase reached)
+- Progress toward vault refund
+- CTA: "View Your Progress"
+
+3. vault_refund.html
+Subject: "Your $20 vault refund is processing! 🎊"
+Content:
+- Celebration message
+- Month summary (fasts completed, weight lost)
+- Refund amount
+- CTA: "See Your Results"
+
+4. challenge_invite.html
+Subject: "Mike challenged you to a $40 fasting bet!"
+Content:
+- Challenge details
+- Opponent stats
+- CTA: "Accept Challenge" / "Decline"
+
+5. pot_winner.html
+Subject: "You won $43 from your friend network pot! 🏆"
+Content:
+- Congratulations
+- Winner announcement
+- Payout details
+- CTA: "View Leaderboard"
+
+6. weekly_digest.html
+Subject: "Your Week in Review - FastingHero"
+Content:
+- Fasts completed this week
+- Weight progress
+- Vault status
+- Active challenges
+- CTA: "View Dashboard"
+
+7. streak_warning.html
+Subject: "Don't lose your 15-day streak! ⚡"
+Content:
+- Streak count
+- Encouragement
+- CTA: "Start a Fast"
+
+8. payment_failed.html
+Subject: "Payment Issue - Action Required"
+Content:
+- Payment failed message
+- Update payment method link
+- CTA: "Update Payment Method"
+
+Email Service Setup:
+Use SendGrid or Resend API
+
+Create service: /backend/src/services/emailService.ts
+
+Functions:
+- sendWelcomeEmail(user)
+- sendFastCompleteEmail(user, fast)
+- sendVaultRefundEmail(user, vaultParticipation)
+- sendChallengeInvite(challenger, challenged, challenge)
+- sendPotWinnerEmail(winner, pot)
+- sendWeeklyDigest(user, weekStats)
+- sendStreakWarning(user, streak)
+- sendPaymentFailed(user)
+```
+
+---
+
+### Task 7.2: Push Notifications
+
+**Instruction for AI:**
+```
+Add push notification support:
+
+1. Frontend - Request Permission:
+In /frontend/src/App.tsx:
+
+useEffect(() => {
+  if ('Notification' in window && Notification.permission === 'default') {
+    // Request permission
+    Notification.requestPermission().then(permission => {
+      if (permission === 'granted') {
+        // Save to backend
+      }
+    });
+  }
+}, []);
+
+2. Backend - Store Notification Preferences:
+Add to users table:
+- push_notifications_enabled (BOOLEAN)
+- notification_token (VARCHAR)
+
+3. Send Notifications:
+Use Firebase Cloud Messaging or OneSignal
+
+Notification Types:
+- Fast complete
+- Vault refund processed
+- Challenge accepted
+- Challenge result
+- Pot winner announcement
+- Streak reminder
+- Friend invite
+
+Create service: /backend/src/services/pushService.ts
+```
+
+---
+
+## **PHASE 8: Testing & Polish (Week 5)**
+
+### Task 8.1: Testing
+
+**Instruction for AI:**
+```
+Add testing:
+
+1. Backend Tests:
+Use Jest + Supertest
+
+Test files:
+- /backend/tests/auth.test.ts
+- /backend/tests/fasts.test.ts
+- /backend/tests/vault.test.ts
+- /backend/tests/challenges.test.ts
+
+Test coverage:
+- Authentication flows
+- Fast creation/completion
+- Vault calculations
+- Challenge logic
+- Stripe webhooks
+
+Run: npm test
+
+2. Frontend Tests:
+Use Vitest + React Testing Library
+
+Test files:
+- /frontend/tests/Dashboard.test.tsx
+- /frontend/tests/FastingTimer.test.tsx
+- /frontend/tests/Onboarding.test.tsx
+
+Test coverage:
+- Component rendering
+- User interactions
+- API calls
+- State management
+
+Run: npm run test
+
+3. E2E Tests:
+Use Playwright or Cypress
+
+Test flows:
+- Complete onboarding
+- Start and complete fast
+- Enable vault
+- Create friend challenge
+- Complete month and get refund
+
+Run: npm run e2e
+```
+
+---
+
+### Task 8.2: Error Handling & Loading States
+
+**Instruction for AI:**
+```
+Add comprehensive error handling:
+
+1. Frontend:
+- Create ErrorBoundary component
+- Add error toast notifications
+- Show loading spinners during API calls
+- Handle network errors gracefully
+- Retry failed requests (with exponential backoff)
+
+2. Backend:
+- Global error handler middleware
+- Validate all inputs
+- Return proper HTTP status codes
+- Log errors to monitoring service
+- Rate limiting on endpoints
+
+3. Monitoring:
+- Integrate Sentry for error tracking
+- Set up logging (Winston or Pino)
+- Track API response times
+- Monitor Stripe webhook failures
+```
+
+---
+
+## **PHASE 9: Deployment (Week 5)**
+
+### Task 9.1: Production Deployment
+
+**Instruction for AI:**
+```
+Deploy to production:
+
+1. Backend Deployment (Railway or Render):
+- Create account on Railway.app or Render.com
+- Connect GitHub repository
+- Set environment variables:
+  * DATABASE_URL
+  * JWT_SECRET
+  * STRIPE_SECRET_KEY
+  * STRIPE_WEBHOOK_SECRET
+  * SENDGRID_API_KEY
+  * FRONTEND_URL
+  * NODE_ENV=production
+- Deploy backend
+- Set up Postgres database
+- Run migrations: npx prisma migrate deploy
+
+2. Frontend Deployment (Vercel or Netlify):
+- Connect GitHub repository
+- Set build command: npm run build
+- Set environment variables:
+  * VITE_API_URL=https://api.fastinghero.com
+  * VITE_STRIPE_PUBLISHABLE_KEY=pk_live_xxx
+- Deploy frontend
+- Set up custom domain
+
+3. Database:
+- Use Supabase, Neon, or Railway Postgres
+- Enable connection pooling
+- Set up automated backups
+- Configure read replicas (if needed)
+
+4. Stripe:
+- Switch to live mode
+- Update webhook endpoints
+- Configure production products/prices
+- Test live payments
+
+5. Domain Setup:
+- Purchase domain (fastinghero.com)
+- Configure DNS:
+  * api.fastinghero.com → Backend
+  * www.fastinghero.com → Frontend
+- Set up SSL certificates (automatic with Vercel/Railway)
+
+6. Monitoring:
+- Set up Sentry for error tracking
+- Configure Stripe dashboard alerts
+- Set up uptime monitoring (UptimeRobot)
+- Configure log aggregation
+```
+
+---
+
+## **PHASE 10: Launch Checklist (Week 6)**
+
+### Task 10.1: Pre-Launch
+
+**Instruction for AI:**
+```
+Complete these before public launch:
+
+1. Legal:
+- [ ] Terms of Service page (/terms)
+- [ ] Privacy Policy page (/privacy)
+- [ ] Cookie consent banner
+- [ ] GDPR compliance (for EU users)
+- [ ] Stripe compliance review
+
+2. SEO:
+- [ ] Add meta tags (title, description, og:image)
+- [ ] Create sitemap.xml
+- [ ] Add robots.txt
+- [ ] Set up Google Analytics
+- [ ] Add structured data (JSON-LD)
+
+3. Performance:
+- [ ] Optimize images (WebP format)
+- [ ] Enable compression (gzip/brotli)
+- [ ] Add CDN for static assets
+- [ ] Lazy load images
+- [ ] Code splitting
+- [ ] Target Lighthouse score: 90+
+
+4. Security:
+- [ ] Enable CORS properly
+- [ ] Add rate limiting
+- [ ] Sanitize user inputs
+- [ ] Add CSRF protection
+- [ ] Enable HTTPS only
+- [ ] Add security headers
+- [ ] Run security audit
+
+5. User Testing:
+- [ ] Beta test with 100 users
+- [ ] Collect feedback
+- [ ] Fix critical bugs
+- [ ] Test all payment flows
+- [ ] Test email deliverability
+- [ ] Test on multiple devices/browsers
+
+6. Documentation:
+- [ ] API documentation (Swagger/OpenAPI)
+- [ ] User help center/FAQ
+- [ ] Admin documentation
+- [ ] Deployment runbook
+```
+
+---
+
+## 📋 **Summary: Complete Task List**
+
+### Backend (Node.js + Express + Prisma + PostgreSQL):
+1. ✅ Database schema (18 tables)
+2. ✅ Authentication system (JWT)
+3. ✅ Stripe integration (subscriptions + vault deposits)
+4. ✅ Fasting tracking endpoints
+5. ✅ Vault management endpoints
+6. ✅ Friend network endpoints
+7. ✅ Friend challenges (1v1 betting)
+8. ✅ Tribe pools
+9. ✅ Progress tracking (weight, meals, hydration, activity)
+10. ✅ Notifications system
+11. ✅ Email service (SendGrid/Resend)
+12. ✅ Cron jobs (monthly vault refunds, challenge payouts)
+13. ✅ Error handling & logging
+14. ✅ Testing (Jest + Supertest)
+
+### Frontend (React + TypeScript + Tailwind + shadcn/ui):
+1. ✅ Onboarding flow (11 steps)
+2. ✅ Dashboard page
+3. ✅ Progress page
+4. ✅ Activity page
+5. ✅ Community page
+6. ✅ Resources page (recipes + videos)
+7. ✅ Profile page
+8. ✅ Authentication pages (login, signup, forgot password)
+9. ✅ Fasting timer component
+10. ✅ Vault status component
+11. ✅ Challenge components (friend battles, tribe pools, network pots)
+12. ✅ Charts & data visualization
+13. ✅ Mobile responsive design
+14. ✅ Error boundaries & loading states
+15. ✅ Testing (Vitest + React Testing Library)
+
+### DevOps:
+1. ✅ Backend deployment (Railway/Render)
+2. ✅ Frontend deployment (Vercel/Netlify)
+3. ✅ Database hosting (Supabase/Neon)
+4. ✅ Domain & SSL setup
+5. ✅ Monitoring & logging (Sentry)
+6. ✅ CI/CD pipeline
+
+---
+
+## 🎯 **Estimated Timeline**
+
+- **Week 1:** Backend foundation + Stripe
+- **Week 2:** Onboarding flow + Core fasting
+- **Week 3:** Friend features + Vault
+- **Week 4:** Additional pages + Email
+- **Week 5:** Testing + Deployment
+- **Week 6:** Launch prep + Beta testing
+
+**Total: 6 weeks to MVP launch**
+
+---
+
+## 💬 **Instructions Format for Google Antigravity**
+
+You can copy each "Task X.X" section exactly as written and paste it to your AI coding assistant. Each task is:
+- Self-contained with clear requirements
+- Includes code structure/examples
+- Specifies API endpoints with request/response formats
+- Lists all dependencies needed
+- Provides file paths and naming conventions
+
+Start with Phase 1, Task 1.1 and work sequentially through all phases.
+
+Want me to expand on any specific task or create more detailed implementation guides for particular features?

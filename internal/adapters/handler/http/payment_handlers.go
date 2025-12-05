@@ -11,14 +11,14 @@ import (
 )
 
 type PaymentHandler struct {
-	paymentGateway  ports.PaymentGateway
+	paymentService  ports.PaymentService
 	referralService ports.ReferralService
 	userRepo        ports.UserRepository
 }
 
-func NewPaymentHandler(paymentGateway ports.PaymentGateway, referralService ports.ReferralService, userRepo ports.UserRepository) *PaymentHandler {
+func NewPaymentHandler(paymentService ports.PaymentService, referralService ports.ReferralService, userRepo ports.UserRepository) *PaymentHandler {
 	return &PaymentHandler{
-		paymentGateway:  paymentGateway,
+		paymentService:  paymentService,
 		referralService: referralService,
 		userRepo:        userRepo,
 	}
@@ -50,7 +50,7 @@ func (h *PaymentHandler) HandleDeposit(c *gin.Context) {
 	}
 
 	// 1. Create Customer
-	customerID, err := h.paymentGateway.CreateCustomer(user.Email, "User "+user.ID.String())
+	customerID, err := h.paymentService.CreateCustomer(c.Request.Context(), user)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create customer"})
 		return
@@ -90,15 +90,11 @@ func (h *PaymentHandler) HandleWebhook(c *gin.Context) {
 		return
 	}
 
-	event, err := h.paymentGateway.ConstructEvent(payload, c.GetHeader("Stripe-Signature"))
+	err = h.paymentService.HandleWebhook(c.Request.Context(), payload, c.GetHeader("Stripe-Signature"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid signature"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid signature or event processing failed"})
 		return
 	}
-
-	// Handle event (simplified)
-	// In real implementation, we would switch on event type
-	_ = event
 
 	c.Status(http.StatusOK)
 }

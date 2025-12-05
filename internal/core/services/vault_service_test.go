@@ -6,7 +6,7 @@ import (
 )
 
 func TestVaultService_CalculateVaultStatus(t *testing.T) {
-	service := NewVaultService(nil, nil)
+	service := NewVaultService(nil, nil, nil)
 
 	tests := []struct {
 		name            string
@@ -64,7 +64,7 @@ func TestVaultService_CalculateVaultStatus(t *testing.T) {
 }
 
 func TestVaultService_CalculateDailyEarning(t *testing.T) {
-	service := NewVaultService(nil, nil)
+	service := NewVaultService(nil, nil, nil)
 
 	tests := []struct {
 		name            string

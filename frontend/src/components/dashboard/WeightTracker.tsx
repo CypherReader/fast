@@ -21,7 +21,7 @@ import {
   ReferenceLine,
   TooltipProps,
 } from 'recharts';
-import { useTelemetry } from '@/hooks/use-telemetry';
+import { useProgress } from '@/hooks/use-progress';
 import { format } from 'date-fns';
 
 interface WeightTrackerProps {
@@ -29,7 +29,7 @@ interface WeightTrackerProps {
 }
 
 const WeightTracker = ({ onWeightChange }: WeightTrackerProps) => {
-  const { latestMetric, history, logMetric, isLoading } = useTelemetry('weight');
+  const { weightHistory, logWeight, isWeightLoading } = useProgress();
 
   const [currentWeight, setCurrentWeight] = useState<number | null>(null);
   const [goalWeight, setGoalWeight] = useState(170); // TODO: Fetch from user profile
@@ -39,16 +39,18 @@ const WeightTracker = ({ onWeightChange }: WeightTrackerProps) => {
   const [showGoalModal, setShowGoalModal] = useState(false);
 
   useEffect(() => {
-    if (latestMetric) {
-      setCurrentWeight(latestMetric.value);
-      onWeightChange?.(latestMetric.value);
+    if (weightHistory && weightHistory.length > 0) {
+      const latest = weightHistory[0]; // Assuming sorted DESC from backend, but let's check
+      // Actually backend sorts DESC, so [0] is latest
+      setCurrentWeight(latest.weight_lbs);
+      onWeightChange?.(latest.weight_lbs);
     }
-  }, [latestMetric, onWeightChange]);
+  }, [weightHistory, onWeightChange]);
 
   const handleAddWeight = () => {
     const weight = parseFloat(newWeight);
     if (!isNaN(weight) && weight > 0) {
-      logMetric({ value: weight, unit: 'lbs' }); // Assuming lbs for now
+      logWeight({ weight, unit: 'lbs' }); // Assuming lbs for now
       setNewWeight('');
       setShowAddModal(false);
     }
@@ -65,11 +67,12 @@ const WeightTracker = ({ onWeightChange }: WeightTrackerProps) => {
   };
 
   // Process history for chart
-  const chartData = history?.map(entry => ({
-    date: entry.date,
-    weight: entry.value,
-    displayDate: format(new Date(entry.date), 'MMM d'),
-  })) || [];
+  // Backend returns DESC, chart needs ASC
+  const chartData = weightHistory ? [...weightHistory].reverse().map(entry => ({
+    date: entry.logged_at,
+    weight: entry.weight_lbs,
+    displayDate: format(new Date(entry.logged_at), 'MMM d'),
+  })) : [];
 
   const startWeight = chartData[0]?.weight || currentWeight || 0;
   const totalToLose = startWeight - goalWeight;

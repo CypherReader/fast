@@ -41,7 +41,7 @@ const Resources = () => {
   // Filtered recipes
   const filteredRecipes = useMemo(() => {
     return recipes.filter(recipe => {
-      const matchesSearch = recipeSearch === '' || 
+      const matchesSearch = recipeSearch === '' ||
         recipe.name.toLowerCase().includes(recipeSearch.toLowerCase()) ||
         recipe.description.toLowerCase().includes(recipeSearch.toLowerCase()) ||
         recipe.tags.some(tag => tag.toLowerCase().includes(recipeSearch.toLowerCase()));
@@ -90,11 +90,11 @@ const Resources = () => {
       {/* Header */}
       <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-40">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <button 
+          <button
             onClick={() => navigate('/dashboard')}
             className="flex items-center gap-2"
           >
-            <BookOpen className="w-6 h-6 text-primary" />
+            <img src="/fasthero.png" alt="FastingHero" className="w-8 h-8 rounded-lg" />
             <span className="font-bold text-lg text-foreground">Resources</span>
           </button>
           <Button variant="ghost" onClick={() => navigate('/dashboard')}>

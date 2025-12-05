@@ -54,10 +54,11 @@ export function useMeals() {
                 description: 'Your meal has been successfully logged.',
             });
         },
-        onError: (error: any) => {
+        onError: (error: unknown) => {
+            const axiosError = error as { response?: { data?: { error?: string } } };
             toast({
                 title: 'Error',
-                description: error.response?.data?.error || 'Failed to log meal',
+                description: axiosError.response?.data?.error || 'Failed to log meal',
                 variant: 'destructive',
             });
         },

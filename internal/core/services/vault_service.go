@@ -5,6 +5,9 @@ import (
 	"fastinghero/internal/core/domain"
 	"fastinghero/internal/core/ports"
 	"math"
+	"time"
+
+	"github.com/google/uuid"
 )
 
 const (
@@ -16,12 +19,14 @@ const (
 
 type VaultService struct {
 	userRepo       ports.UserRepository
+	vaultRepo      ports.VaultRepository
 	paymentGateway ports.PaymentGateway
 }
 
-func NewVaultService(userRepo ports.UserRepository, paymentGateway ports.PaymentGateway) *VaultService {
+func NewVaultService(userRepo ports.UserRepository, vaultRepo ports.VaultRepository, paymentGateway ports.PaymentGateway) *VaultService {
 	return &VaultService{
 		userRepo:       userRepo,
+		vaultRepo:      vaultRepo,
 		paymentGateway: paymentGateway,
 	}
 }
@@ -63,11 +68,39 @@ func (s *VaultService) AddDailyEarnings(ctx context.Context, user *domain.User, 
 		return
 	}
 
+	// 1. Update User Record
 	user.EarnedRefund += amount
-
-	// Hard cap at vault deposit
 	if user.EarnedRefund > user.VaultDeposit {
 		user.EarnedRefund = user.VaultDeposit
+	}
+
+	// 2. Update VaultParticipation Record
+	// Find current month's participation
+	now := time.Now()
+	monthStart := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
+
+	vault, err := s.vaultRepo.FindByUserIDAndMonth(ctx, user.ID, monthStart)
+	if err == nil && vault != nil {
+		vault.AmountRecovered += amount
+		if vault.AmountRecovered > vault.DepositAmount {
+			vault.AmountRecovered = vault.DepositAmount
+		}
+		vault.UpdatedAt = time.Now()
+		_ = s.vaultRepo.Save(ctx, vault)
+	} else {
+		// Create if not exists (lazy creation)
+		vault = &domain.VaultParticipation{
+			ID:              uuid.New(),
+			UserID:          user.ID,
+			MonthStart:      monthStart,
+			MonthEnd:        monthStart.AddDate(0, 1, 0).Add(-time.Second),
+			DepositAmount:   user.VaultDeposit,
+			AmountRecovered: amount, // Start with this amount
+			OptedIn:         true,
+			CreatedAt:       time.Now(),
+			UpdatedAt:       time.Now(),
+		}
+		_ = s.vaultRepo.Save(ctx, vault)
 	}
 }
 
@@ -79,10 +112,10 @@ func (s *VaultService) CalculatePrice(ctx context.Context, user *domain.User) fl
 
 func (s *VaultService) UpdateDisciplineIndex(ctx context.Context, user *domain.User, completedFast bool, verifiedKetosis bool) {
 	if completedFast {
-		user.DisciplineIndex += 1
+		user.DisciplineIndex += 1.0
 	}
 	if verifiedKetosis {
-		user.DisciplineIndex += 2
+		user.DisciplineIndex += 2.0
 	}
 
 	if user.DisciplineIndex > 100 {
@@ -91,9 +124,21 @@ func (s *VaultService) UpdateDisciplineIndex(ctx context.Context, user *domain.U
 	if user.DisciplineIndex < 0 {
 		user.DisciplineIndex = 0
 	}
+
+	// Calculate and add earnings if user is a vault member
+	if user.IsVaultMember() {
+		earning := s.CalculateDailyEarning(int(user.DisciplineIndex))
+		s.AddDailyEarnings(ctx, user, earning)
+	}
 }
 
 func (s *VaultService) ProcessMonthlyRefunds(ctx context.Context) error {
 	// Logic to process refunds at the end of the billing cycle
 	return nil
+}
+
+func (s *VaultService) GetCurrentParticipation(ctx context.Context, userID uuid.UUID) (*domain.VaultParticipation, error) {
+	now := time.Now()
+	monthStart := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
+	return s.vaultRepo.FindByUserIDAndMonth(ctx, userID, monthStart)
 }

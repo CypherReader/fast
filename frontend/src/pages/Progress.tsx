@@ -49,7 +49,10 @@ const Progress = () => {
                         <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')}>
                             <ArrowLeft className="w-5 h-5" />
                         </Button>
-                        <h1 className="font-bold text-lg text-foreground">Your Progress</h1>
+                        <div className="flex items-center gap-2">
+                            <img src="/fasthero.png" alt="FastingHero" className="w-6 h-6 rounded-lg" />
+                            <h1 className="font-bold text-lg text-foreground">Your Progress</h1>
+                        </div>
                     </div>
                     <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
                         <span className="text-sm font-medium text-primary">

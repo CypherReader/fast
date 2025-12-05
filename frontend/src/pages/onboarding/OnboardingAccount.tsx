@@ -14,12 +14,18 @@ const OnboardingAccount = () => {
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [name, setName] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
+
+        if (!name || name.length < 2) {
+            setError('Please enter your full name');
+            return;
+        }
 
         if (!email || !email.includes('@')) {
             setError('Please enter a valid email address');
@@ -32,7 +38,7 @@ const OnboardingAccount = () => {
         }
 
         // Store credentials in context
-        setCredentials({ email, password });
+        setCredentials({ email, password, name });
 
         // Navigate to payment
         navigate('/onboarding/payment');
@@ -56,6 +62,21 @@ const OnboardingAccount = () => {
                     className="bg-card border border-border rounded-2xl p-6 md:p-8"
                 >
                     <form onSubmit={handleSubmit} className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="name">Full Name</Label>
+                            <div className="relative">
+                                <Input
+                                    id="name"
+                                    type="text"
+                                    placeholder="John Doe"
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                    className="pl-10"
+                                />
+                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                            </div>
+                        </div>
+
                         <div className="space-y-2">
                             <Label htmlFor="email">Email</Label>
                             <div className="relative">

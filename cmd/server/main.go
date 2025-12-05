@@ -41,12 +41,14 @@ func main() {
 	var userRepo ports.UserRepository
 	var fastingRepo ports.FastingRepository
 	var ketoRepo ports.KetoRepository
-	var tribeRepo ports.TribeRepository
-	var socialRepo ports.SocialRepository
 	var leaderboardRepo ports.LeaderboardRepository
 	var gamificationRepo ports.GamificationRepository
 	var referralRepo ports.ReferralRepository
 	var notificationRepo ports.NotificationRepository
+	var subscriptionRepo ports.SubscriptionRepository
+	var vaultRepo ports.VaultRepository
+	var socialRepo ports.SocialRepository
+	var progressRepo ports.ProgressRepository
 
 	// Check for DB connection string
 	dsn := os.Getenv("DSN")
@@ -98,23 +100,27 @@ func main() {
 		userRepo = postgres.NewPostgresUserRepository(db)
 		fastingRepo = postgres.NewPostgresFastingRepository(db)
 		ketoRepo = postgres.NewPostgresKetoRepository(db)
-		tribeRepo = postgres.NewPostgresTribeRepository(db)
-		socialRepo = postgres.NewPostgresSocialRepository(db)
 		leaderboardRepo = postgres.NewPostgresLeaderboardRepository(db)
 		gamificationRepo = postgres.NewPostgresGamificationRepository(db)
 		referralRepo = postgres.NewPostgresReferralRepository(db)
 		notificationRepo = postgres.NewPostgresNotificationRepository(db)
+		subscriptionRepo = postgres.NewPostgresSubscriptionRepository(db)
+		vaultRepo = postgres.NewPostgresVaultRepository(db)
+		socialRepo = postgres.NewPostgresSocialRepository(db)
+		progressRepo = postgres.NewPostgresProgressRepository(db)
 	} else {
 		log.Println("!!! RUNNING IN IN-MEMORY MODE (DATA WILL BE LOST ON RESTART) !!!")
 		userRepo = memory.NewUserRepository()
 		fastingRepo = memory.NewFastingRepository()
 		ketoRepo = memory.NewKetoRepository()
-		tribeRepo = memory.NewTribeRepository()
-		socialRepo = memory.NewSocialRepository()
 		leaderboardRepo = memory.NewLeaderboardRepository()
 		gamificationRepo = memory.NewGamificationRepository()
 		referralRepo = memory.NewReferralRepository()
 		notificationRepo = memory.NewNotificationRepository()
+		subscriptionRepo = memory.NewSubscriptionRepository()
+		vaultRepo = memory.NewVaultRepository()
+		socialRepo = memory.NewSocialRepository()
+		progressRepo = memory.NewProgressRepository()
 	}
 
 	// Activity Repo (Memory only for now)
@@ -123,8 +129,13 @@ func main() {
 	mealRepo := memory.NewMealRepository()
 	recipeRepo := memory.NewRecipeRepository()
 
+	// Payment Adapter
+	stripeKey := os.Getenv("STRIPE_SECRET_KEY")
+	stripeWebhookSecret := os.Getenv("STRIPE_WEBHOOK_SECRET")
+	paymentAdapter := payment.NewStripeAdapter(stripeKey, stripeWebhookSecret)
+
 	// 2. Initialize Services (Core)
-	vaultService := services.NewVaultService(userRepo, nil) // Payment gateway injected later if needed for refunds
+	vaultService := services.NewVaultService(userRepo, vaultRepo, paymentAdapter)
 	referralService := services.NewReferralService(referralRepo, userRepo, vaultService)
 
 	jwtSecret := os.Getenv("JWT_SECRET")
@@ -138,11 +149,12 @@ func main() {
 	authService := services.NewAuthService(userRepo, referralService, jwtSecret)
 	fastingService := services.NewFastingService(fastingRepo, vaultService, userRepo)
 	ketoService := services.NewKetoService(ketoRepo, userRepo)
-	socialService := services.NewSocialService(socialRepo, userRepo)
 	leaderboardService := services.NewLeaderboardService(leaderboardRepo)
 	gamificationService := services.NewGamificationService(gamificationRepo, fastingRepo)
 	activityService := services.NewActivityService(activityRepo)
 	telemetryService := services.NewTelemetryService(telemetryRepo)
+	socialService := services.NewSocialService(socialRepo)
+	progressService := services.NewProgressService(progressRepo)
 
 	// Initialize LLM Adapter
 	apiKey := os.Getenv("DEEPSEEK_API_KEY")
@@ -154,12 +166,8 @@ func main() {
 
 	mealService := services.NewMealService(mealRepo, cortexService)
 	recipeService := services.NewRecipeService(recipeRepo)
-	tribeService := services.NewTribeService(tribeRepo, userRepo)
 
-	// Payment Adapter
-	stripeKey := os.Getenv("STRIPE_SECRET_KEY")
-	stripeWebhookSecret := os.Getenv("STRIPE_WEBHOOK_SECRET")
-	paymentAdapter := payment.NewStripeAdapter(stripeKey, stripeWebhookSecret)
+	stripeService := services.NewStripeService(paymentAdapter, subscriptionRepo, userRepo)
 
 	// Notification Service
 	firebaseServiceAccountPath := os.Getenv("FIREBASE_SERVICE_ACCOUNT_PATH")
@@ -167,17 +175,19 @@ func main() {
 		log.Println("Warning: FIREBASE_SERVICE_ACCOUNT_PATH not set, notifications will be disabled")
 	}
 	// notificationRepo is already initialized above
-	notificationService, err := services.NewNotificationService(notificationRepo, firebaseServiceAccountPath)
+	var notificationService ports.NotificationService
+	realNotificationService, err := services.NewNotificationService(notificationRepo, firebaseServiceAccountPath)
 	if err != nil {
-		log.Printf("Warning: Failed to initialize notification service: %v", err)
-		notificationService = nil // Continue without notifications
+		log.Printf("Warning: Failed to initialize notification service: %v. Using NoOp service.", err)
+		notificationService = services.NewNoOpNotificationService()
+	} else {
+		notificationService = realNotificationService
 	}
 
 	handler := http.NewHandler(
 		authService,
 		fastingService,
 		ketoService,
-		socialService,
 		leaderboardService,
 		gamificationService,
 		cortexService,
@@ -185,10 +195,11 @@ func main() {
 		telemetryService,
 		mealService,
 		recipeService,
-		tribeService,
-		paymentAdapter,
+		stripeService,
 		referralService,
 		notificationService,
+		socialService,
+		progressService,
 		userRepo,
 	)
 

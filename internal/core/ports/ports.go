@@ -11,9 +11,14 @@ import (
 // Primary Ports (Services)
 
 type AuthService interface {
-	Register(ctx context.Context, email, password string, referralCode string) (*domain.User, error)
-	Login(ctx context.Context, email, password string) (string, string, error) // token, refresh, error
+	Register(ctx context.Context, email, password, name, referralCode string) (*domain.User, error)
+	Login(ctx context.Context, email, password string) (string, string, *domain.User, error) // token, refresh, user, error
 	ValidateToken(ctx context.Context, token string) (*domain.User, error)
+}
+
+type OnboardingService interface {
+	UpdateProfile(ctx context.Context, userID uuid.UUID, profile domain.UserProfileUpdate) (*domain.User, error)
+	CompleteOnboarding(ctx context.Context, userID uuid.UUID) (*domain.User, error)
 }
 
 type FastingService interface {
@@ -34,6 +39,13 @@ type VaultService interface {
 	AddDailyEarnings(ctx context.Context, user *domain.User, amount float64)
 	CalculatePrice(ctx context.Context, user *domain.User) float64
 	UpdateDisciplineIndex(ctx context.Context, user *domain.User, completedFast bool, verifiedKetosis bool)
+	GetCurrentParticipation(ctx context.Context, userID uuid.UUID) (*domain.VaultParticipation, error)
+}
+
+type PaymentService interface {
+	CreateCustomer(ctx context.Context, user *domain.User) (string, error)
+	CreateSubscription(ctx context.Context, userID uuid.UUID, priceID string) (*domain.Subscription, error)
+	HandleWebhook(ctx context.Context, payload []byte, signature string) error
 }
 
 // Secondary Ports (Repositories)
@@ -105,13 +117,64 @@ type NotificationService interface {
 	SendBatchNotification(ctx context.Context, userIDs []uuid.UUID, title, body string, notifType domain.NotificationType, data map[string]string) error
 	RegisterFCMToken(ctx context.Context, userID uuid.UUID, token, deviceType string) error
 	UnregisterFCMToken(ctx context.Context, userID uuid.UUID, token string) error
+	GetHistory(ctx context.Context, userID uuid.UUID, limit int) ([]domain.Notification, error)
 }
 
 type NotificationRepository interface {
 	SaveToken(ctx context.Context, token *domain.FCMToken) error
 	GetUserTokens(ctx context.Context, userID uuid.UUID) ([]domain.FCMToken, error)
 	DeleteToken(ctx context.Context, tokenString string) error
-	SaveNotification(ctx context.Context, notification *domain.Notification) error
-	GetUserNotifications(ctx context.Context, userID uuid.UUID, limit int) ([]domain.Notification, error)
+	Save(ctx context.Context, notification *domain.Notification) error
+	FindByUserID(ctx context.Context, userID uuid.UUID, limit int) ([]domain.Notification, error)
 	MarkAsRead(ctx context.Context, notificationID uuid.UUID) error
+	MarkAllAsRead(ctx context.Context, userID uuid.UUID) error
+}
+
+type SubscriptionRepository interface {
+	Save(ctx context.Context, sub *domain.Subscription) error
+	FindByUserID(ctx context.Context, userID uuid.UUID) (*domain.Subscription, error)
+	FindByStripeSubscriptionID(ctx context.Context, stripeSubID string) (*domain.Subscription, error)
+}
+
+type VaultRepository interface {
+	Save(ctx context.Context, vault *domain.VaultParticipation) error
+	FindByUserIDAndMonth(ctx context.Context, userID uuid.UUID, monthStart time.Time) (*domain.VaultParticipation, error)
+}
+type SocialService interface {
+	AddFriend(ctx context.Context, userID, friendID uuid.UUID) error
+	GetFriends(ctx context.Context, userID uuid.UUID) ([]domain.FriendNetwork, error)
+	CreateTribe(ctx context.Context, userID uuid.UUID, name, description string, isPublic bool) (*domain.Tribe, error)
+	GetTribe(ctx context.Context, tribeID uuid.UUID) (*domain.Tribe, error)
+	CreateChallenge(ctx context.Context, userID uuid.UUID, name string, challengeType domain.ChallengeType, goal int, startDate, endDate time.Time) (*domain.FriendChallenge, error)
+	GetChallenges(ctx context.Context, userID uuid.UUID) ([]domain.FriendChallenge, error)
+	ListTribes(ctx context.Context, limit, offset int) ([]domain.Tribe, error)
+	GetFeed(ctx context.Context, userID uuid.UUID, limit, offset int) ([]domain.SocialEvent, error)
+}
+
+type SocialRepository interface {
+	SaveFriendNetwork(ctx context.Context, fn *domain.FriendNetwork) error
+	FindFriends(ctx context.Context, userID uuid.UUID) ([]domain.FriendNetwork, error)
+	SaveTribe(ctx context.Context, tribe *domain.Tribe) error
+	FindTribeByID(ctx context.Context, id uuid.UUID) (*domain.Tribe, error)
+	SaveChallenge(ctx context.Context, c *domain.FriendChallenge) error
+	FindChallengesByUserID(ctx context.Context, userID uuid.UUID) ([]domain.FriendChallenge, error)
+	FindAllTribes(ctx context.Context, limit, offset int) ([]domain.Tribe, error)
+	GetFeed(ctx context.Context, userID uuid.UUID, limit, offset int) ([]domain.SocialEvent, error)
+	SaveEvent(ctx context.Context, event *domain.SocialEvent) error
+}
+
+type ProgressService interface {
+	LogWeight(ctx context.Context, userID uuid.UUID, weight float64, unit string) (*domain.WeightLog, error)
+	GetWeightHistory(ctx context.Context, userID uuid.UUID, days int) ([]domain.WeightLog, error)
+	LogHydration(ctx context.Context, userID uuid.UUID, amount float64, unit string) (*domain.HydrationLog, error)
+	GetDailyHydration(ctx context.Context, userID uuid.UUID) (*domain.HydrationLog, error)
+}
+
+type ProgressRepository interface {
+	SaveWeightLog(ctx context.Context, log *domain.WeightLog) error
+	GetWeightHistory(ctx context.Context, userID uuid.UUID, days int) ([]domain.WeightLog, error)
+	SaveHydrationLog(ctx context.Context, log *domain.HydrationLog) error
+	GetHydrationLog(ctx context.Context, userID uuid.UUID, date time.Time) (*domain.HydrationLog, error)
+	SaveActivityLog(ctx context.Context, log *domain.ActivityLog) error
+	GetActivityStats(ctx context.Context, userID uuid.UUID, days int) ([]domain.ActivityLog, error)
 }

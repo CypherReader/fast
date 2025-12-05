@@ -26,7 +26,7 @@ func NewAuthService(userRepo ports.UserRepository, referralService ports.Referra
 	}
 }
 
-func (s *AuthService) Register(ctx context.Context, email, password string, referralCode string) (*domain.User, error) {
+func (s *AuthService) Register(ctx context.Context, email, password, name, referralCode string) (*domain.User, error) {
 	// 1. Check if user exists
 	if _, err := s.userRepo.FindByEmail(ctx, email); err == nil {
 		return nil, errors.New("email already in use")
@@ -42,6 +42,7 @@ func (s *AuthService) Register(ctx context.Context, email, password string, refe
 	user := &domain.User{
 		ID:               uuid.New(),
 		Email:            email,
+		Name:             name,
 		PasswordHash:     string(hashedBytes),
 		SubscriptionTier: domain.TierFree,
 		DisciplineIndex:  0,
@@ -65,16 +66,16 @@ func (s *AuthService) Register(ctx context.Context, email, password string, refe
 	return user, nil
 }
 
-func (s *AuthService) Login(ctx context.Context, email, password string) (string, string, error) {
+func (s *AuthService) Login(ctx context.Context, email, password string) (string, string, *domain.User, error) {
 	// 1. Find User
 	user, err := s.userRepo.FindByEmail(ctx, email)
 	if err != nil {
-		return "", "", errors.New("invalid credentials")
+		return "", "", nil, errors.New("invalid credentials")
 	}
 
 	// 2. Check Password
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
-		return "", "", errors.New("invalid credentials")
+		return "", "", nil, errors.New("invalid credentials")
 	}
 
 	// 3. Generate JWT
@@ -85,10 +86,10 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (string
 
 	tokenString, err := token.SignedString(s.jwtSecret)
 	if err != nil {
-		return "", "", err
+		return "", "", nil, err
 	}
 
-	return tokenString, "mock_refresh_token", nil
+	return tokenString, "mock_refresh_token", user, nil
 }
 
 func (s *AuthService) ValidateToken(ctx context.Context, tokenString string) (*domain.User, error) {

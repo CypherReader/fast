@@ -25,7 +25,7 @@ interface MealTrackerProps {
   dailyCalorieGoal?: number;
 }
 
-const mealTypeConfig: Record<string, { icon: any; label: string; color: string; bg: string }> = {
+const mealTypeConfig: Record<string, { icon: React.ElementType; label: string; color: string; bg: string }> = {
   breakfast: { icon: Coffee, label: 'Breakfast', color: 'text-orange-400', bg: 'bg-orange-500/20' },
   lunch: { icon: Sandwich, label: 'Lunch', color: 'text-green-400', bg: 'bg-green-500/20' },
   dinner: { icon: Pizza, label: 'Dinner', color: 'text-blue-400', bg: 'bg-blue-500/20' },

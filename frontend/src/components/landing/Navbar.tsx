@@ -8,9 +8,7 @@ export const Navbar = () => {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-gold flex items-center justify-center">
-              <span className="font-display font-bold text-slate-darker">F</span>
-            </div>
+            <img src="/fasthero.png" alt="FastingHero" className="w-8 h-8 rounded-lg" />
             <span className="font-bold text-lg">FastingHero</span>
           </div>
 

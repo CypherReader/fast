@@ -3,9 +3,7 @@ package postgres
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fastinghero/internal/core/domain"
-	"time"
 
 	"github.com/google/uuid"
 )
@@ -22,30 +20,16 @@ func (r *PostgresNotificationRepository) SaveToken(ctx context.Context, token *d
 	query := `
 		INSERT INTO fcm_tokens (id, user_id, token, device_type, created_at, last_used_at)
 		VALUES ($1, $2, $3, $4, $5, $6)
-		ON CONFLICT (token) DO UPDATE 
-		SET last_used_at = EXCLUDED.last_used_at
+		ON CONFLICT (token) DO UPDATE SET
+			last_used_at = EXCLUDED.last_used_at,
+			updated_at = NOW()
 	`
-
-	_, err := r.db.ExecContext(ctx, query,
-		token.ID,
-		token.UserID,
-		token.Token,
-		token.DeviceType,
-		token.CreatedAt,
-		token.LastUsedAt,
-	)
-
+	_, err := r.db.ExecContext(ctx, query, token.ID, token.UserID, token.Token, token.DeviceType, token.CreatedAt, token.LastUsedAt)
 	return err
 }
 
 func (r *PostgresNotificationRepository) GetUserTokens(ctx context.Context, userID uuid.UUID) ([]domain.FCMToken, error) {
-	query := `
-		SELECT id, user_id, token, device_type, created_at, last_used_at
-		FROM fcm_tokens
-		WHERE user_id = $1
-		ORDER BY last_used_at DESC
-	`
-
+	query := `SELECT id, user_id, token, device_type, created_at FROM fcm_tokens WHERE user_id = $1`
 	rows, err := r.db.QueryContext(ctx, query, userID)
 	if err != nil {
 		return nil, err
@@ -54,22 +38,13 @@ func (r *PostgresNotificationRepository) GetUserTokens(ctx context.Context, user
 
 	var tokens []domain.FCMToken
 	for rows.Next() {
-		var token domain.FCMToken
-		err := rows.Scan(
-			&token.ID,
-			&token.UserID,
-			&token.Token,
-			&token.DeviceType,
-			&token.CreatedAt,
-			&token.LastUsedAt,
-		)
-		if err != nil {
+		var t domain.FCMToken
+		if err := rows.Scan(&t.ID, &t.UserID, &t.Token, &t.DeviceType, &t.CreatedAt); err != nil {
 			return nil, err
 		}
-		tokens = append(tokens, token)
+		tokens = append(tokens, t)
 	}
-
-	return tokens, rows.Err()
+	return tokens, nil
 }
 
 func (r *PostgresNotificationRepository) DeleteToken(ctx context.Context, tokenString string) error {
@@ -78,40 +53,23 @@ func (r *PostgresNotificationRepository) DeleteToken(ctx context.Context, tokenS
 	return err
 }
 
-func (r *PostgresNotificationRepository) SaveNotification(ctx context.Context, notification *domain.Notification) error {
-	dataJSON, err := json.Marshal(notification.Data)
-	if err != nil {
-		return err
-	}
-
+func (r *PostgresNotificationRepository) Save(ctx context.Context, n *domain.Notification) error {
 	query := `
-		INSERT INTO notifications (id, user_id, title, body, type, data, sent_at, read_at)
+		INSERT INTO notifications (id, user_id, type, title, message, read, link, created_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 	`
-
-	_, err = r.db.ExecContext(ctx, query,
-		notification.ID,
-		notification.UserID,
-		notification.Title,
-		notification.Body,
-		notification.Type,
-		dataJSON,
-		notification.SentAt,
-		notification.ReadAt,
-	)
-
+	_, err := r.db.ExecContext(ctx, query, n.ID, n.UserID, n.Type, n.Title, n.Message, n.Read, n.Link, n.CreatedAt)
 	return err
 }
 
-func (r *PostgresNotificationRepository) GetUserNotifications(ctx context.Context, userID uuid.UUID, limit int) ([]domain.Notification, error) {
+func (r *PostgresNotificationRepository) FindByUserID(ctx context.Context, userID uuid.UUID, limit int) ([]domain.Notification, error) {
 	query := `
-		SELECT id, user_id, title, body, type, data, sent_at, read_at
+		SELECT id, user_id, type, title, message, read, link, created_at
 		FROM notifications
 		WHERE user_id = $1
-		ORDER BY sent_at DESC
+		ORDER BY created_at DESC
 		LIMIT $2
 	`
-
 	rows, err := r.db.QueryContext(ctx, query, userID, limit)
 	if err != nil {
 		return nil, err
@@ -120,43 +78,27 @@ func (r *PostgresNotificationRepository) GetUserNotifications(ctx context.Contex
 
 	var notifications []domain.Notification
 	for rows.Next() {
-		var notification domain.Notification
-		var dataJSON []byte
-		var readAt sql.NullTime
-
-		err := rows.Scan(
-			&notification.ID,
-			&notification.UserID,
-			&notification.Title,
-			&notification.Body,
-			&notification.Type,
-			&dataJSON,
-			&notification.SentAt,
-			&readAt,
-		)
-		if err != nil {
+		var n domain.Notification
+		var link sql.NullString
+		if err := rows.Scan(&n.ID, &n.UserID, &n.Type, &n.Title, &n.Message, &n.Read, &link, &n.CreatedAt); err != nil {
 			return nil, err
 		}
-
-		if readAt.Valid {
-			notification.ReadAt = &readAt.Time
+		if link.Valid {
+			n.Link = link.String
 		}
-
-		if len(dataJSON) > 0 {
-			var data map[string]string
-			if err := json.Unmarshal(dataJSON, &data); err == nil {
-				notification.Data = data
-			}
-		}
-
-		notifications = append(notifications, notification)
+		notifications = append(notifications, n)
 	}
-
-	return notifications, rows.Err()
+	return notifications, nil
 }
 
-func (r *PostgresNotificationRepository) MarkAsRead(ctx context.Context, notificationID uuid.UUID) error {
-	query := `UPDATE notifications SET read_at = $1 WHERE id = $2`
-	_, err := r.db.ExecContext(ctx, query, time.Now(), notificationID)
+func (r *PostgresNotificationRepository) MarkAsRead(ctx context.Context, id uuid.UUID) error {
+	query := `UPDATE notifications SET read = true WHERE id = $1`
+	_, err := r.db.ExecContext(ctx, query, id)
+	return err
+}
+
+func (r *PostgresNotificationRepository) MarkAllAsRead(ctx context.Context, userID uuid.UUID) error {
+	query := `UPDATE notifications SET read = true WHERE user_id = $1`
+	_, err := r.db.ExecContext(ctx, query, userID)
 	return err
 }

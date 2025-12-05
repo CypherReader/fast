@@ -10,6 +10,7 @@ interface OnboardingState {
   completed: boolean;
   email?: string;
   password?: string;
+  name?: string;
 }
 
 interface OnboardingContextType {
@@ -17,7 +18,7 @@ interface OnboardingContextType {
   setStep: (step: number) => void;
   setGoal: (goal: GoalType) => void;
   setFastingPlan: (plan: FastingPlan) => void;
-  setCredentials: (credentials: { email?: string; password?: string }) => void;
+  setCredentials: (credentials: { email?: string; password?: string; name?: string }) => void;
   completeOnboarding: () => void;
   resetOnboarding: () => void;
 }
@@ -37,7 +38,7 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
   const setStep = (step: number) => setState(prev => ({ ...prev, step }));
   const setGoal = (goal: GoalType) => setState(prev => ({ ...prev, goal }));
   const setFastingPlan = (fastingPlan: FastingPlan) => setState(prev => ({ ...prev, fastingPlan }));
-  const setCredentials = (credentials: { email?: string; password?: string }) =>
+  const setCredentials = (credentials: { email?: string; password?: string; name?: string }) =>
     setState(prev => ({ ...prev, ...credentials }));
   const completeOnboarding = () => setState(prev => ({ ...prev, completed: true }));
   const resetOnboarding = () => setState(initialState);

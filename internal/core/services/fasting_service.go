@@ -37,6 +37,13 @@ func (s *FastingService) StartFast(ctx context.Context, userID uuid.UUID, plan d
 	}
 
 	session := domain.NewFastingSession(userID, plan, goalHours, st)
+
+	// Link to Vault Participation if exists
+	vault, err := s.vaultService.GetCurrentParticipation(ctx, userID)
+	if err == nil && vault != nil {
+		session.VaultParticipationID = &vault.ID
+	}
+
 	if err := s.repo.Save(ctx, session); err != nil {
 		return nil, err
 	}
@@ -59,7 +66,23 @@ func (s *FastingService) StopFast(ctx context.Context, userID uuid.UUID) (*domai
 
 	// 2. Calculate Duration
 	duration := session.EndTime.Sub(session.StartTime).Hours()
+	session.ActualDurationHours = duration
 	goalMet := duration >= float64(session.GoalHours)
+
+	// Calculate Phase Reached
+	if duration >= 72 {
+		session.PhaseReached = "Immune Regeneration"
+	} else if duration >= 48 {
+		session.PhaseReached = "Deep Autophagy"
+	} else if duration >= 24 {
+		session.PhaseReached = "Autophagy"
+	} else if duration >= 18 {
+		session.PhaseReached = "Ketosis"
+	} else if duration >= 12 {
+		session.PhaseReached = "Catabolic"
+	} else {
+		session.PhaseReached = "Anabolic"
+	}
 
 	// 3. Update Discipline & Price
 	user, err := s.userRepo.FindByID(ctx, userID)

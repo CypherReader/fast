@@ -131,7 +131,7 @@ const Dashboard = () => {
       <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-40">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Lock className="w-6 h-6 text-primary" />
+            <img src="/fasthero.png" alt="FastingHero" className="w-8 h-8 rounded-lg" />
             <span className="font-bold text-lg text-foreground">FastingHero</span>
           </div>
           <nav className="hidden md:flex items-center gap-6 text-sm">

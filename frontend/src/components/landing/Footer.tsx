@@ -5,9 +5,7 @@ export const Footer = () => {
         <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-8">
           {/* Logo */}
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-gold flex items-center justify-center">
-              <span className="font-display font-bold text-slate-darker">F</span>
-            </div>
+            <img src="/fasthero.png" alt="FastingHero" className="w-8 h-8 rounded-lg" />
             <span className="font-bold text-lg">FastingHero</span>
           </div>
 
@@ -33,10 +31,10 @@ export const Footer = () => {
         {/* Legal disclaimer */}
         <div className="border-t border-border pt-6">
           <p className="text-xs text-muted-foreground/70 max-w-3xl mx-auto text-center leading-relaxed">
-            *How the Vault Works: You pay $20/month. Complete 10 fasts = full $20 refunded. 
-            Complete 5 fasts = $10 refunded. Complete 0 fasts = $0 refunded. 
-            Refunds process automatically on the 1st of each month. 
-            Net cost ranges from $0-20/month based on your fasting consistency. 
+            *How the Vault Works: You pay $20/month. Complete 10 fasts = full $20 refunded.
+            Complete 5 fasts = $10 refunded. Complete 0 fasts = $0 refunded.
+            Refunds process automatically on the 1st of each month.
+            Net cost ranges from $0-20/month based on your fasting consistency.
             Average user net cost: $1.80/month.
           </p>
         </div>

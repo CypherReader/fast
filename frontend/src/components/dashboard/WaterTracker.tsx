@@ -4,8 +4,7 @@ import { Droplets, Plus, Minus, Bell, BellOff, GlassWater } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
-import { useTelemetry } from '@/hooks/use-telemetry';
-import { format } from 'date-fns';
+import { useProgress } from '@/hooks/use-progress';
 
 interface WaterTrackerProps {
   dailyGoal?: number; // in ml
@@ -13,14 +12,13 @@ interface WaterTrackerProps {
 }
 
 const WaterTracker = ({ dailyGoal = 2500, glassSize = 250 }: WaterTrackerProps) => {
-  const { history, logMetric, isLoading } = useTelemetry('water');
+  const { dailyHydration, logHydration, isHydrationLoading } = useProgress();
   const [remindersEnabled, setRemindersEnabled] = useState(false);
   const [lastReminderTime, setLastReminderTime] = useState<Date | null>(null);
 
-  // Calculate today's intake from history
-  const today = new Date();
-  const todayStr = format(today, 'yyyy-MM-dd');
-  const intake = history?.find(h => h.date.startsWith(todayStr))?.value || 0;
+  // Get today's intake from backend data
+  const glassesCount = dailyHydration?.glasses_count || 0;
+  const intake = glassesCount * glassSize;
 
   const glasses = Math.floor(intake / glassSize);
   const totalGlassesNeeded = Math.ceil(dailyGoal / glassSize);
@@ -51,7 +49,7 @@ const WaterTracker = ({ dailyGoal = 2500, glassSize = 250 }: WaterTrackerProps) 
   }, [remindersEnabled, isGoalReached, glasses]);
 
   const addWater = (amount: number) => {
-    logMetric({ value: amount, unit: 'ml' });
+    logHydration({ amount, unit: 'ml' });
   };
 
   const toggleReminders = () => {

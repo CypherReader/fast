@@ -90,16 +90,17 @@ func (s *NotificationService) SendNotification(ctx context.Context, userID uuid.
 
 	// Save notification to history
 	notification := &domain.Notification{
-		ID:     uuid.New(),
-		UserID: userID,
-		Title:  title,
-		Body:   body,
-		Type:   notifType,
-		Data:   data,
-		SentAt: time.Now(),
+		ID:        uuid.New(),
+		UserID:    userID,
+		Title:     title,
+		Message:   body,
+		Type:      string(notifType),
+		Link:      "", // TODO: Add link support
+		Read:      false,
+		CreatedAt: time.Now(),
 	}
 
-	return s.repo.SaveNotification(ctx, notification)
+	return s.repo.Save(ctx, notification)
 }
 
 func (s *NotificationService) SendBatchNotification(ctx context.Context, userIDs []uuid.UUID, title, body string, notifType domain.NotificationType, data map[string]string) error {
@@ -129,4 +130,39 @@ func (s *NotificationService) RegisterFCMToken(ctx context.Context, userID uuid.
 
 func (s *NotificationService) UnregisterFCMToken(ctx context.Context, userID uuid.UUID, token string) error {
 	return s.repo.DeleteToken(ctx, token)
+}
+
+func (s *NotificationService) GetHistory(ctx context.Context, userID uuid.UUID, limit int) ([]domain.Notification, error) {
+	return s.repo.FindByUserID(ctx, userID, limit)
+}
+
+// NoOpNotificationService implementation for when Firebase is not configured
+type NoOpNotificationService struct{}
+
+func NewNoOpNotificationService() *NoOpNotificationService {
+	return &NoOpNotificationService{}
+}
+
+func (s *NoOpNotificationService) SendNotification(ctx context.Context, userID uuid.UUID, title, body string, notifType domain.NotificationType, data map[string]string) error {
+	log.Printf("[NoOp] SendNotification to %s: %s - %s", userID, title, body)
+	return nil
+}
+
+func (s *NoOpNotificationService) SendBatchNotification(ctx context.Context, userIDs []uuid.UUID, title, body string, notifType domain.NotificationType, data map[string]string) error {
+	log.Printf("[NoOp] SendBatchNotification to %d users: %s - %s", len(userIDs), title, body)
+	return nil
+}
+
+func (s *NoOpNotificationService) RegisterFCMToken(ctx context.Context, userID uuid.UUID, token, deviceType string) error {
+	log.Printf("[NoOp] RegisterFCMToken for %s: %s", userID, token)
+	return nil
+}
+
+func (s *NoOpNotificationService) UnregisterFCMToken(ctx context.Context, userID uuid.UUID, token string) error {
+	log.Printf("[NoOp] UnregisterFCMToken for %s: %s", userID, token)
+	return nil
+}
+
+func (s *NoOpNotificationService) GetHistory(ctx context.Context, userID uuid.UUID, limit int) ([]domain.Notification, error) {
+	return []domain.Notification{}, nil
 }

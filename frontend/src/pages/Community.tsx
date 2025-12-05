@@ -4,29 +4,14 @@ import { ArrowLeft, Users, MessageSquare, Heart, Trophy, Flame, Search } from 'l
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useUser } from '@/hooks/use-user';
-
-// Mock Data
-const tribes = [
-    { id: 1, name: 'OMAD Warriors', members: 1240, description: 'One Meal A Day support group' },
-    { id: 2, name: '72h Fast Club', members: 850, description: 'Extended fasting challenges' },
-    { id: 3, name: 'Keto Fasters', members: 2100, description: 'Combining Keto with IF' },
-];
-
-const feed = [
-    { id: 1, user: 'Sarah J.', action: 'completed a 18h fast', time: '2h ago', likes: 12, comments: 3 },
-    { id: 2, user: 'Mike T.', action: 'joined the OMAD Warriors', time: '4h ago', likes: 24, comments: 5 },
-    { id: 3, user: 'Jessica L.', action: 'reached a 7-day streak!', time: '5h ago', likes: 45, comments: 8 },
-];
-
-const leaderboard = [
-    { rank: 1, user: 'David K.', score: 98, streak: 45 },
-    { rank: 2, user: 'Anna M.', score: 96, streak: 32 },
-    { rank: 3, user: 'Tom R.', score: 94, streak: 28 },
-];
+import { useLeaderboard } from '@/hooks/use-leaderboard';
+import { useSocial } from '@/hooks/use-social';
 
 const Community = () => {
     const navigate = useNavigate();
     const { user } = useUser();
+    const { leaderboard, isLoading: isLoadingLeaderboard } = useLeaderboard();
+    const { tribes, feed, isLoadingTribes, isLoadingFeed } = useSocial();
 
     return (
         <div className="min-h-screen bg-background">
@@ -37,7 +22,10 @@ const Community = () => {
                         <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')}>
                             <ArrowLeft className="w-5 h-5" />
                         </Button>
-                        <h1 className="font-bold text-lg text-foreground">Community</h1>
+                        <div className="flex items-center gap-2">
+                            <img src="/fasthero.png" alt="FastingHero" className="w-6 h-6 rounded-lg" />
+                            <h1 className="font-bold text-lg text-foreground">Community</h1>
+                        </div>
                     </div>
                     <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
                         <span className="text-sm font-medium text-primary">
@@ -63,38 +51,48 @@ const Community = () => {
                         </h2>
 
                         <div className="space-y-4">
-                            {feed.map((item, index) => (
-                                <motion.div
-                                    key={item.id}
-                                    className="bg-card border border-border rounded-xl p-4"
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: index * 0.1 }}
-                                >
-                                    <div className="flex items-start gap-3">
-                                        <div className="w-10 h-10 rounded-full bg-secondary/20 flex items-center justify-center text-secondary font-bold">
-                                            {item.user.charAt(0)}
-                                        </div>
-                                        <div className="flex-1">
-                                            <p className="text-sm text-foreground">
-                                                <span className="font-semibold">{item.user}</span> {item.action}
-                                            </p>
-                                            <p className="text-xs text-muted-foreground mt-1">{item.time}</p>
+                            {isLoadingFeed ? (
+                                <div className="text-center text-muted-foreground">Loading feed...</div>
+                            ) : feed && feed.length > 0 ? (
+                                feed.map((item, index) => {
+                                    const data = item.data ? JSON.parse(item.data) : {};
+                                    const actionText = item.event_type === 'fast_completed' ? 'completed a fast' : item.event_type === 'tribe_joined' ? `joined ${data.tribe_name || 'a tribe'}` : 'won a challenge';
+                                    return (
+                                        <motion.div
+                                            key={item.id}
+                                            className="bg-card border border-border rounded-xl p-4"
+                                            initial={{ opacity: 0, y: 20 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: index * 0.1 }}
+                                        >
+                                            <div className="flex items-start gap-3">
+                                                <div className="w-10 h-10 rounded-full bg-secondary/20 flex items-center justify-center text-secondary font-bold">
+                                                    {item.user_name.charAt(0)}
+                                                </div>
+                                                <div className="flex-1">
+                                                    <p className="text-sm text-foreground">
+                                                        <span className="font-semibold">{item.user_name}</span> {actionText}
+                                                    </p>
+                                                    <p className="text-xs text-muted-foreground mt-1">{new Date(item.created_at).toLocaleString()}</p>
 
-                                            <div className="flex items-center gap-4 mt-3">
-                                                <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors">
-                                                    <Heart className="w-4 h-4" />
-                                                    {item.likes}
-                                                </button>
-                                                <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors">
-                                                    <MessageSquare className="w-4 h-4" />
-                                                    {item.comments}
-                                                </button>
+                                                    <div className="flex items-center gap-4 mt-3">
+                                                        <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors">
+                                                            <Heart className="w-4 h-4" />
+                                                            {item.likes}
+                                                        </button>
+                                                        <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors">
+                                                            <MessageSquare className="w-4 h-4" />
+                                                            {item.comments}
+                                                        </button>
+                                                    </div>
+                                                </div>
                                             </div>
-                                        </div>
-                                    </div>
-                                </motion.div>
-                            ))}
+                                        </motion.div>
+                                    );
+                                })
+                            ) : (
+                                <div className="text-center text-m uted-foreground">No activity yet. Complete your first fast to see events here!</div>
+                            )}
                         </div>
                     </div>
 
@@ -107,16 +105,22 @@ const Community = () => {
                                 Featured Tribes
                             </h2>
                             <div className="space-y-3">
-                                {tribes.map((tribe) => (
-                                    <div key={tribe.id} className="bg-card border border-border rounded-xl p-3 hover:border-primary/50 transition-colors cursor-pointer">
-                                        <h3 className="font-medium text-foreground">{tribe.name}</h3>
-                                        <p className="text-xs text-muted-foreground mb-2">{tribe.description}</p>
-                                        <div className="flex items-center gap-1 text-xs text-secondary">
-                                            <Users className="w-3 h-3" />
-                                            {tribe.members} members
+                                {isLoadingTribes ? (
+                                    <div className="text-center text-muted-foreground">Loading tribes...</div>
+                                ) : tribes && tribes.length > 0 ? (
+                                    tribes.slice(0, 3).map((tribe) => (
+                                        <div key={tribe.id} className="bg-card border border-border rounded-xl p-3 hover:border-primary/50 transition-colors cursor-pointer">
+                                            <h3 className="font-medium text-foreground">{tribe.name}</h3>
+                                            <p className="text-xs text-muted-foreground mb-2">{tribe.description}</p>
+                                            <div className="flex items-center gap-1 text-xs text-secondary">
+                                                <Users className="w-3 h-3" />
+                                                {tribe.member_count} members
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    ))
+                                ) : (
+                                    <div className="text-center text-muted-foreground">No tribes yet.</div>
+                                )}
                             </div>
                         </div>
 
@@ -127,25 +131,30 @@ const Community = () => {
                                 Top Fasters
                             </h2>
                             <div className="bg-card border border-border rounded-xl overflow-hidden">
-                                {leaderboard.map((entry, index) => (
-                                    <div
-                                        key={entry.rank}
-                                        className="flex items-center justify-between p-3 border-b border-border last:border-0"
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <span className={`w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold ${index === 0 ? 'bg-yellow-500/20 text-yellow-500' :
+                                {isLoadingLeaderboard ? (
+                                    <div className="p-4 text-center text-muted-foreground">Loading leaderboard...</div>
+                                ) : (
+                                    leaderboard?.map((entry, index) => (
+                                        <div
+                                            key={entry.user_id}
+                                            className="flex items-center justify-between p-3 border-b border-border last:border-0"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <span className={`w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold ${index === 0 ? 'bg-yellow-500/20 text-yellow-500' :
                                                     index === 1 ? 'bg-gray-400/20 text-gray-400' :
-                                                        'bg-orange-700/20 text-orange-700'
-                                                }`}>
-                                                {entry.rank}
-                                            </span>
-                                            <span className="text-sm font-medium text-foreground">{entry.user}</span>
+                                                        index === 2 ? 'bg-orange-700/20 text-orange-700' :
+                                                            'bg-muted text-muted-foreground'
+                                                    }`}>
+                                                    {index + 1}
+                                                </span>
+                                                <span className="text-sm font-medium text-foreground">{entry.user_name || 'Anonymous'}</span>
+                                            </div>
+                                            <div className="text-xs text-muted-foreground">
+                                                {entry.discipline_score.toFixed(0)} DS
+                                            </div>
                                         </div>
-                                        <div className="text-xs text-muted-foreground">
-                                            {entry.streak} day streak
-                                        </div>
-                                    </div>
-                                ))}
+                                    ))
+                                )}
                             </div>
                         </div>
                     </div>

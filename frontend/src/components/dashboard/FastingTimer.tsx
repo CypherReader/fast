@@ -111,7 +111,7 @@ const FastingTimer = ({
       triggerCelebration(currentPhase);
     }
     previousPhaseRef.current = currentPhase.id;
-  }, [currentPhase.id, isActive]);
+  }, [currentPhase.id, currentPhase, isActive]);
 
   const triggerCelebration = (phase: FastingPhase) => {
     setCelebrationMessage(phase.celebration);
