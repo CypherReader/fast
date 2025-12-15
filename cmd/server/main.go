@@ -52,7 +52,11 @@ func main() {
 	var progressRepo ports.ProgressRepository
 
 	// Check for DB connection string
-	dsn := os.Getenv("DSN")
+	// Priority: DATABASE_URL (Cloud Run) > DSN > individual env vars
+	dsn := os.Getenv("DATABASE_URL")
+	if dsn == "" {
+		dsn = os.Getenv("DSN")
+	}
 	if dsn == "" {
 		// Default to Postgres DSN if not set, or use a specific env var
 		host := os.Getenv("DB_HOST")
@@ -67,24 +71,36 @@ func main() {
 		}
 	}
 
+	// Log connection attempt (without sensitive data)
+	if dsn != "" {
+		if strings.Contains(dsn, "/cloudsql/") {
+			logger.Info().Msg("Database connection: Cloud SQL Unix socket detected")
+		} else {
+			logger.Info().Msg("Database connection: TCP connection detected")
+		}
+	}
+
 	var db *sql.DB
 	var err error
 	useMemory := false
 
 	if dsn != "" {
-		log.Println("Connecting to PostgreSQL...")
+		logger.Info().Msg("Connecting to PostgreSQL...")
 		db, err = sql.Open("postgres", dsn)
 		if err != nil {
-			log.Printf("Failed to open DB: %v. Switching to IN-MEMORY mode.", err)
+			logger.Error().Err(err).Msg("Failed to open DB connection. Switching to IN-MEMORY mode.")
 			useMemory = true
 		} else {
+			logger.Info().Msg("Database connection opened, testing connectivity...")
 			if err := db.Ping(); err != nil {
-				log.Printf("Failed to ping DB: %v. Switching to IN-MEMORY mode.", err)
+				logger.Error().Err(err).Msg("Failed to ping DB. Switching to IN-MEMORY mode.")
 				useMemory = true
+			} else {
+				logger.Info().Msg("Database connectivity verified successfully")
 			}
 		}
 	} else {
-		log.Println("DSN not set. Switching to IN-MEMORY mode.")
+		logger.Info().Msg("No database configuration found. Using IN-MEMORY mode.")
 		useMemory = true
 	}
 
