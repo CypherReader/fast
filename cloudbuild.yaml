@@ -25,15 +25,12 @@ steps:
       - '--allow-unauthenticated'
       - '--set-env-vars=ENVIRONMENT=uat'
       - '--set-secrets=JWT_SECRET=JWT_SECRET:latest,DATABASE_URL=DATABASE_URL:latest,GOOGLE_CLIENT_ID=GOOGLE_CLIENT_ID:latest,GOOGLE_CLIENT_SECRET=GOOGLE_CLIENT_SECRET:latest,DEEPSEEK_API_KEY=DEEPSEEK_API_KEY:latest'
-      - '--add-cloudsql-instances=$_CLOUD_SQL_INSTANCE'
       - '--memory=512Mi'
       - '--cpu=1'
       - '--timeout=300'
       - '--max-instances=10'
       - '--min-instances=0'
 
-substitutions:
-  _CLOUD_SQL_INSTANCE: 'noted-function-481218-g0:us-central1:fastinghero-uat-db'
 
 options:
   logging: CLOUD_LOGGING_ONLY
