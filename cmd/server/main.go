@@ -284,8 +284,12 @@ func main() {
 	handler.RegisterRoutes(router)
 
 	// 5. Start Server
-	log.Println("Starting FastingHero Server on :8080")
-	if err := router.Run(":8080"); err != nil {
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	log.Printf("Starting FastingHero Server on :%s", port)
+	if err := router.Run(":" + port); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
 }
