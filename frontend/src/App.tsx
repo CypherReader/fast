@@ -14,7 +14,6 @@ import Login from "./pages/Login";
 import OnboardingWelcome from "./pages/onboarding/OnboardingWelcome";
 import OnboardingGoal from "./pages/onboarding/OnboardingGoal";
 import OnboardingPlan from "./pages/onboarding/OnboardingPlan";
-import OnboardingVault from "./pages/onboarding/OnboardingVault";
 import OnboardingAccount from "./pages/onboarding/OnboardingAccount";
 import OnboardingPayment from "./pages/onboarding/OnboardingPayment";
 import OnboardingSuccess from "./pages/onboarding/OnboardingSuccess";
@@ -40,7 +39,6 @@ const App = () => (
             <Route path="/onboarding" element={<OnboardingWelcome />} />
             <Route path="/onboarding/goal" element={<OnboardingGoal />} />
             <Route path="/onboarding/plan" element={<OnboardingPlan />} />
-            <Route path="/onboarding/vault" element={<OnboardingVault />} />
             <Route path="/onboarding/account" element={<OnboardingAccount />} />
             <Route path="/onboarding/payment" element={<OnboardingPayment />} />
             <Route path="/onboarding/success" element={<OnboardingSuccess />} />

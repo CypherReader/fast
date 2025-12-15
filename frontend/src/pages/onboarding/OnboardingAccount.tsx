@@ -45,14 +45,14 @@ const OnboardingAccount = () => {
     };
 
     return (
-        <OnboardingLayout step={5} showBack backPath="/onboarding/vault">
+        <OnboardingLayout step={4} showBack backPath="/onboarding/plan">
             <div className="max-w-md w-full">
                 <div className="text-center mb-8">
                     <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
                         Create Your Account
                     </h1>
                     <p className="text-muted-foreground">
-                        Secure your progress and access your Vault
+                        Secure your fasting journey and track your progress
                     </p>
                 </div>
 

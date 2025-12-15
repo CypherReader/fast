@@ -45,17 +45,17 @@ const plans = [
 const TimelineBar = ({ fastHours, eatHours }: { fastHours: number; eatHours: number }) => {
   const eatPercentage = (eatHours / 24) * 100;
   const fastPercentage = (fastHours / 24) * 100;
-  
+
   return (
     <div className="mt-4">
       <div className="flex h-3 rounded-full overflow-hidden bg-muted">
-        <div 
-          className="bg-muted-foreground/30" 
-          style={{ width: `${fastPercentage}%` }} 
+        <div
+          className="bg-muted-foreground/30"
+          style={{ width: `${fastPercentage}%` }}
         />
-        <div 
-          className="bg-secondary" 
-          style={{ width: `${eatPercentage}%` }} 
+        <div
+          className="bg-secondary"
+          style={{ width: `${eatPercentage}%` }}
         />
       </div>
       <div className="flex justify-between text-xs text-muted-foreground mt-1">
@@ -73,8 +73,8 @@ const OnboardingPlan = () => {
   const navigate = useNavigate();
   const { state, setFastingPlan } = useOnboarding();
 
-  const selectedPlanName = state.fastingPlan 
-    ? plans.find(p => p.id === state.fastingPlan)?.title.split(' - ')[0] 
+  const selectedPlanName = state.fastingPlan
+    ? plans.find(p => p.id === state.fastingPlan)?.title.split(' - ')[0]
     : '';
 
   return (
@@ -100,8 +100,8 @@ const OnboardingPlan = () => {
                 onClick={() => setFastingPlan(plan.id)}
                 className={cn(
                   'relative w-full p-5 rounded-xl border-2 text-left transition-all duration-200',
-                  isSelected 
-                    ? 'border-secondary bg-secondary/10 shadow-emerald-glow' 
+                  isSelected
+                    ? 'border-secondary bg-secondary/10 shadow-emerald-glow'
                     : 'border-border bg-card hover:border-secondary/50'
                 )}
                 initial={{ opacity: 0, y: 20 }}
@@ -138,12 +138,12 @@ const OnboardingPlan = () => {
                   <span className="text-xs text-muted-foreground">Difficulty:</span>
                   <div className="flex gap-0.5">
                     {[1, 2, 3].map(level => (
-                      <Star 
-                        key={level} 
+                      <Star
+                        key={level}
                         className={cn(
                           'w-3.5 h-3.5',
                           level <= plan.difficulty ? 'text-primary fill-primary' : 'text-muted'
-                        )} 
+                        )}
                       />
                     ))}
                   </div>
@@ -171,7 +171,7 @@ const OnboardingPlan = () => {
             size="xl"
             className="w-full md:w-80 bg-gradient-gold hover:scale-105 transition-transform shadow-gold-glow disabled:opacity-50 disabled:hover:scale-100"
             disabled={!state.fastingPlan}
-            onClick={() => navigate('/onboarding/vault')}
+            onClick={() => navigate('/onboarding/account')}
           >
             {selectedPlanName ? `Continue with ${selectedPlanName}` : 'Continue'}
           </Button>

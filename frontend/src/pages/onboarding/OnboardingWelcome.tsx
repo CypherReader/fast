@@ -45,7 +45,7 @@ const OnboardingWelcome = () => {
           Welcome to FastingHero
         </h1>
         <p className="text-lg md:text-xl text-muted-foreground mb-10">
-          Let's set up your Commitment Vault in 2 minutes
+          Let's set up your fasting journey in 2 minutes
         </p>
 
         {/* Value Props */}
@@ -76,7 +76,7 @@ const OnboardingWelcome = () => {
 
         {/* Skip Link */}
         <p className="mt-4">
-          <button 
+          <button
             className="text-sm text-muted-foreground hover:text-foreground hover:underline transition-colors"
             onClick={() => navigate('/')}
           >

@@ -38,7 +38,7 @@ const OnboardingSuccess = () => {
   // Confetti effect on mount
   useEffect(() => {
     completeOnboarding();
-    
+
     const duration = 2000;
     const end = Date.now() + duration;
 
@@ -84,7 +84,7 @@ const OnboardingSuccess = () => {
   };
 
   return (
-    <OnboardingLayout step={6}>
+    <OnboardingLayout step={5}>
       <div className="max-w-xl w-full text-center">
         {/* Success Animation */}
         <motion.div
@@ -103,21 +103,21 @@ const OnboardingSuccess = () => {
         </motion.div>
 
         {/* Headlines */}
-        <motion.h1 
+        <motion.h1
           className="text-4xl md:text-5xl font-extrabold text-foreground mb-3"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
         >
-          Welcome to the Vault!
+          You're All Set!
         </motion.h1>
-        <motion.p 
+        <motion.p
           className="text-lg text-muted-foreground mb-8"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
         >
-          Your $20 is secured. Let&apos;s start earning it back.
+          Your account is ready. Let's start your fasting journey.
         </motion.p>
 
         {/* Summary Card */}
@@ -127,7 +127,7 @@ const OnboardingSuccess = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
         >
-          <h3 className="font-semibold text-foreground mb-4">Your Vault Setup</h3>
+          <h3 className="font-semibold text-foreground mb-4">Your Fasting Plan</h3>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Goal</span>
@@ -142,17 +142,13 @@ const OnboardingSuccess = () => {
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Monthly deposit</span>
-              <span className="text-foreground font-medium">$20.00</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Next refund</span>
-              <span className="text-foreground font-medium">1st of next month</span>
+              <span className="text-muted-foreground">Account</span>
+              <span className="text-foreground font-medium">Ready</span>
             </div>
           </div>
           <div className="border-t border-border mt-4 pt-4">
             <p className="text-sm text-secondary font-medium">
-              Complete 10 fasts this month → Recover full $20
+              Start your first fast to begin your journey
             </p>
           </div>
         </motion.div>
@@ -167,7 +163,7 @@ const OnboardingSuccess = () => {
           <Timer className="w-12 h-12 text-secondary mx-auto mb-3" />
           <h3 className="text-xl font-semibold text-foreground mb-2">Start Your First Fast</h3>
           <p className="text-sm text-muted-foreground mb-4">
-            Begin your journey right now and start recovering your deposit
+            Begin your fasting journey right now and track your progress
           </p>
           <Button
             size="xl"
@@ -177,7 +173,7 @@ const OnboardingSuccess = () => {
             Start Fasting
           </Button>
           <p className="text-sm text-primary mt-3 font-medium">
-            You&apos;ll recover $2.00 when you complete this fast
+            Your first fast starts now!
           </p>
         </motion.div>
 
@@ -188,7 +184,7 @@ const OnboardingSuccess = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.7 }}
         >
-          <button 
+          <button
             className="bg-card border border-border rounded-xl p-4 hover:border-secondary/50 transition-colors text-left"
             onClick={() => navigate('/')}
           >
@@ -196,7 +192,7 @@ const OnboardingSuccess = () => {
             <h4 className="font-medium text-foreground text-sm mb-1">Join a Tribe</h4>
             <p className="text-xs text-muted-foreground">2x more likely to succeed</p>
           </button>
-          <button 
+          <button
             className="bg-card border border-border rounded-xl p-4 hover:border-secondary/50 transition-colors text-left"
             onClick={() => navigate('/')}
           >
@@ -234,13 +230,13 @@ const OnboardingSuccess = () => {
         </motion.div>
 
         {/* Skip Link */}
-        <motion.p 
+        <motion.p
           className="mt-6"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.9 }}
         >
-          <button 
+          <button
             className="text-sm text-muted-foreground hover:text-foreground hover:underline transition-colors"
             onClick={() => navigate('/')}
           >
