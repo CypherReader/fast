@@ -31,7 +31,7 @@ steps:
       - '--timeout=600'
       - '--max-instances=10'
       - '--min-instances=0'
-      - '--startup-cpu-boost'
+      - '--cpu-boost'
 
 
 options:
