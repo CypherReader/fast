@@ -187,14 +187,14 @@ func main() {
 	socialService := services.NewSocialService(socialRepo)
 	progressService := services.NewProgressService(progressRepo)
 
-	// Initialize LLM Adapter
 	apiKey := os.Getenv("DEEPSEEK_API_KEY")
 	if apiKey == "" {
 		log.Println("Warning: DEEPSEEK_API_KEY not set, Cortex will fail")
 	} else {
 		// Validate API key format (DeepSeek keys typically start with "sk-")
 		if !strings.HasPrefix(apiKey, "sk-") || len(apiKey) < 20 {
-			log.Fatal("DEEPSEEK_API_KEY appears invalid. Expected format: sk-...")
+			log.Println("Warning: DEEPSEEK_API_KEY appears invalid. Expected format: sk-...")
+			log.Println("Cortex functionality may not work properly")
 		}
 
 		// Check for common placeholder values
@@ -202,7 +202,9 @@ func main() {
 		apiKeyLower := strings.ToLower(apiKey)
 		for _, placeholder := range placeholders {
 			if strings.Contains(apiKeyLower, placeholder) {
-				log.Fatal("DEEPSEEK_API_KEY contains placeholder value. Use a real API key.")
+				log.Println("Warning: DEEPSEEK_API_KEY contains placeholder value. Use a real API key.")
+				log.Println("Cortex functionality may not work properly")
+				break
 			}
 		}
 	}
