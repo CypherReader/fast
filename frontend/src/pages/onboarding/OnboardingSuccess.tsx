@@ -80,7 +80,7 @@ const OnboardingSuccess = () => {
 
   const handleStartFasting = () => {
     // In a real app, this would start a fast and navigate to dashboard
-    navigate('/');
+    navigate('/dashboard');
   };
 
   return (
@@ -186,7 +186,7 @@ const OnboardingSuccess = () => {
         >
           <button
             className="bg-card border border-border rounded-xl p-4 hover:border-secondary/50 transition-colors text-left"
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/dashboard')}
           >
             <Users className="w-8 h-8 text-secondary mb-2" />
             <h4 className="font-medium text-foreground text-sm mb-1">Join a Tribe</h4>
@@ -194,7 +194,7 @@ const OnboardingSuccess = () => {
           </button>
           <button
             className="bg-card border border-border rounded-xl p-4 hover:border-secondary/50 transition-colors text-left"
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/dashboard')}
           >
             <Compass className="w-8 h-8 text-secondary mb-2" />
             <h4 className="font-medium text-foreground text-sm mb-1">Take a Tour</h4>
@@ -238,7 +238,7 @@ const OnboardingSuccess = () => {
         >
           <button
             className="text-sm text-muted-foreground hover:text-foreground hover:underline transition-colors"
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/dashboard')}
           >
             I&apos;ll start fasting later
           </button>
