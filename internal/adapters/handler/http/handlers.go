@@ -6,6 +6,7 @@ import (
 	"fastinghero/internal/core/ports"
 	"fastinghero/internal/core/services"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -106,6 +107,11 @@ func (h *Handler) Login(c *gin.Context) {
 }
 
 func (h *Handler) RegisterRoutes(router *gin.Engine) {
+	// Health check endpoint
+	router.GET("/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"status": "healthy"})
+	})
+
 	api := router.Group("/api/v1")
 
 	auth := api.Group("/auth")
@@ -224,6 +230,20 @@ func (h *Handler) RegisterRoutes(router *gin.Engine) {
 		notifications.POST("/unregister-token", h.UnregisterFCMToken)
 		notifications.GET("/history", h.GetNotificationHistory)
 	}
+
+	// Serve frontend static files
+	router.Static("/assets", "./frontend/dist/assets")
+	router.StaticFile("/favicon.ico", "./frontend/dist/favicon.ico")
+
+	// SPA fallback - serve index.html for all non-API routes
+	router.NoRoute(func(c *gin.Context) {
+		// Don't serve index.html for API routes
+		if !strings.HasPrefix(c.Request.URL.Path, "/api/") {
+			c.File("./frontend/dist/index.html")
+		} else {
+			c.JSON(http.StatusNotFound, gin.H{"error": "endpoint not found"})
+		}
+	})
 }
 
 func (h *Handler) Chat(c *gin.Context) {
