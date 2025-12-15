@@ -1,6 +1,7 @@
 package services
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
 	"encoding/base64"
@@ -84,7 +85,7 @@ func (s *OAuthService) ExchangeCode(ctx context.Context, code string) (string, e
 	}
 
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Body = io.NopCloser([]byte(data))
+	req.Body = io.NopCloser(bytes.NewReader([]byte(data)))
 
 	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Do(req)
