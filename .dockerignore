@@ -1,0 +1,60 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+docs/
+README.md
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+vendor/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/.cache/
+
+# Environment
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# Test files
+*_test.go
+**/*_test.go
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+
+# Build artifacts
+server
+*.log
+
+# Temporary files
+tmp/
+temp/
+*.tmp

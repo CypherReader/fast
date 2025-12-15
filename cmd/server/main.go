@@ -13,6 +13,7 @@ import (
 	"fastinghero/internal/core/services"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -142,8 +143,22 @@ func main() {
 	if jwtSecret == "" {
 		log.Fatal("JWT_SECRET environment variable is not set")
 	}
-	if jwtSecret == "your-secret-key" {
-		log.Fatal("JWT_SECRET must be changed from the default value")
+
+	// Enforce minimum entropy requirements
+	if len(jwtSecret) < 32 {
+		log.Fatal("JWT_SECRET must be at least 32 characters long")
+	}
+
+	// Check for common weak patterns
+	weakPatterns := []string{
+		"your-secret-key", "secret", "password", "123456",
+		"admin", "test", "demo", "changeme",
+	}
+	jwtSecretLower := strings.ToLower(jwtSecret)
+	for _, weak := range weakPatterns {
+		if strings.Contains(jwtSecretLower, weak) {
+			log.Fatal("JWT_SECRET contains weak patterns. Use a cryptographically random string.")
+		}
 	}
 
 	authService := services.NewAuthService(userRepo, referralService, jwtSecret)
@@ -160,6 +175,20 @@ func main() {
 	apiKey := os.Getenv("DEEPSEEK_API_KEY")
 	if apiKey == "" {
 		log.Println("Warning: DEEPSEEK_API_KEY not set, Cortex will fail")
+	} else {
+		// Validate API key format (DeepSeek keys typically start with "sk-")
+		if !strings.HasPrefix(apiKey, "sk-") || len(apiKey) < 20 {
+			log.Fatal("DEEPSEEK_API_KEY appears invalid. Expected format: sk-...")
+		}
+
+		// Check for common placeholder values
+		placeholders := []string{"your-api-key", "test-key", "demo-key", "sk-test"}
+		apiKeyLower := strings.ToLower(apiKey)
+		for _, placeholder := range placeholders {
+			if strings.Contains(apiKeyLower, placeholder) {
+				log.Fatal("DEEPSEEK_API_KEY contains placeholder value. Use a real API key.")
+			}
+		}
 	}
 	llmAdapter := llm.NewDeepSeekAdapter(apiKey)
 	cortexService := services.NewCortexService(llmAdapter, fastingRepo, userRepo)
@@ -206,9 +235,19 @@ func main() {
 	// 4. Setup Router
 	router := gin.Default()
 
-	// Configure CORS
+	// Configure CORS based on environment
+	allowedOrigins := []string{"http://localhost:5173"}
+
+	if prodOrigins := os.Getenv("ALLOWED_ORIGINS"); prodOrigins != "" {
+		// Support multiple origins: "https://app.example.com,https://admin.example.com"
+		allowedOrigins = strings.Split(prodOrigins, ",")
+		for i, origin := range allowedOrigins {
+			allowedOrigins[i] = strings.TrimSpace(origin)
+		}
+	}
+
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:5173"},
+		AllowOrigins:     allowedOrigins,
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},

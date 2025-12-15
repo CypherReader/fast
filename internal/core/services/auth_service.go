@@ -27,18 +27,28 @@ func NewAuthService(userRepo ports.UserRepository, referralService ports.Referra
 }
 
 func (s *AuthService) Register(ctx context.Context, email, password, name, referralCode string) (*domain.User, error) {
-	// 1. Check if user exists
+	// 1. Validate email format
+	if !isValidEmail(email) {
+		return nil, errors.New("invalid email format")
+	}
+
+	// 2. Check if user exists
 	if _, err := s.userRepo.FindByEmail(ctx, email); err == nil {
 		return nil, errors.New("email already in use")
 	}
 
-	// 2. Hash password
+	// 3. Enforce password policy
+	if err := validatePasswordStrength(password); err != nil {
+		return nil, err
+	}
+
+	// 4. Hash password
 	hashedBytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, err
 	}
 
-	// 3. Create User
+	// 5. Create User
 	user := &domain.User{
 		ID:               uuid.New(),
 		Email:            email,
@@ -55,7 +65,7 @@ func (s *AuthService) Register(ctx context.Context, email, password, name, refer
 		return nil, err
 	}
 
-	// 4. Track Referral
+	// 6. Track Referral
 	if referralCode != "" && s.referralService != nil {
 		if err := s.referralService.TrackReferral(ctx, referralCode, user.ID); err != nil {
 			// Log error but don't fail registration
@@ -94,13 +104,18 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (string
 
 func (s *AuthService) ValidateToken(ctx context.Context, tokenString string) (*domain.User, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+		// Strictly enforce HS256 algorithm only
+		if token.Method.Alg() != jwt.SigningMethodHS256.Alg() {
 			return nil, errors.New("unexpected signing method")
 		}
 		return s.jwtSecret, nil
 	})
 
-	if err != nil || !token.Valid {
+	if err != nil {
+		return nil, errors.New("invalid token")
+	}
+
+	if !token.Valid {
 		return nil, errors.New("invalid token")
 	}
 
@@ -109,9 +124,19 @@ func (s *AuthService) ValidateToken(ctx context.Context, tokenString string) (*d
 		return nil, errors.New("invalid token claims")
 	}
 
+	// Validate required claims exist
 	userIDStr, ok := claims["user_id"].(string)
-	if !ok {
+	if !ok || userIDStr == "" {
 		return nil, errors.New("invalid user id in token")
+	}
+
+	// Validate expiration explicitly (defense in depth)
+	if exp, ok := claims["exp"].(float64); ok {
+		if time.Now().Unix() > int64(exp) {
+			return nil, errors.New("token expired")
+		}
+	} else {
+		return nil, errors.New("missing expiration claim")
 	}
 
 	userID, err := uuid.Parse(userIDStr)
@@ -119,8 +144,7 @@ func (s *AuthService) ValidateToken(ctx context.Context, tokenString string) (*d
 		return nil, errors.New("invalid user id format")
 	}
 
-	// Ideally, we might cache this or just trust the token if it contains enough info
-	// For now, let's verify user still exists
+	// Verify user still exists
 	return s.userRepo.FindByID(ctx, userID)
 }
 

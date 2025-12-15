@@ -25,6 +25,7 @@ type Handler struct {
 	recipeService       ports.RecipeService
 	paymentHandler      *PaymentHandler
 	onboardingHandler   *OnboardingHandler
+	oauthHandler        *OAuthHandler
 	notificationService ports.NotificationService
 	socialService       ports.SocialService
 	progressService     ports.ProgressService
@@ -48,6 +49,7 @@ func NewHandler(
 	progressService ports.ProgressService,
 	userRepo ports.UserRepository,
 ) *Handler {
+	// Note: OAuth handler will be initialized in main.go with OAuth credentials
 	return &Handler{
 		authService:         authService,
 		fastingService:      fastingService,
@@ -61,6 +63,7 @@ func NewHandler(
 		recipeService:       recipeService,
 		paymentHandler:      NewPaymentHandler(paymentService, referralService, userRepo),
 		onboardingHandler:   NewOnboardingHandler(services.NewOnboardingService(userRepo)),
+		oauthHandler:        nil, // Will be set in main.go
 		notificationService: notificationService,
 		socialService:       socialService,
 		progressService:     progressService,

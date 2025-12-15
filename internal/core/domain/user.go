@@ -27,6 +27,9 @@ type User struct {
 	Email                    string             `json:"email"`
 	PasswordHash             string             `json:"-"`
 	Name                     string             `json:"name,omitempty"`
+	GoogleID                 string             `json:"google_id,omitempty"`
+	OAuthProvider            string             `json:"oauth_provider,omitempty"`
+	ProfilePictureURL        string             `json:"profile_picture_url,omitempty"`
 	OnboardingCompleted      bool               `json:"onboarding_completed"`
 	Goal                     string             `json:"goal,omitempty"`
 	FastingPlan              string             `json:"fasting_plan,omitempty"`

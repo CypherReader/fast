@@ -81,3 +81,11 @@ func (rl *RateLimiter) Middleware() gin.HandlerFunc {
 		c.Next()
 	}
 }
+
+// AuthRateLimiter creates a strict rate limiter for authentication endpoints
+// Allows only 5 requests per minute to prevent brute-force attacks
+func AuthRateLimiter() gin.HandlerFunc {
+	limiter := NewRateLimiter(rate.Limit(5.0/60.0), 5)
+	limiter.CleanupOldVisitors()
+	return limiter.Middleware()
+}

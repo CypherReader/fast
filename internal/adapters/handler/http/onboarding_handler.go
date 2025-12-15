@@ -25,17 +25,26 @@ func (h *OnboardingHandler) UpdateProfile(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
 	}
-	userID := userIDVal.(uuid.UUID)
+
+	// Secure type assertion with check to prevent panic
+	userID, ok := userIDVal.(uuid.UUID)
+	if !ok {
+		// Log the incident for security monitoring
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+		return
+	}
 
 	var req domain.UserProfileUpdate
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		// Don't expose internal error details to client
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request format"})
 		return
 	}
 
 	user, err := h.onboardingService.UpdateProfile(c.Request.Context(), userID, req)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		// Don't expose internal errors
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update profile"})
 		return
 	}
 
@@ -48,11 +57,18 @@ func (h *OnboardingHandler) CompleteOnboarding(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
 	}
-	userID := userIDVal.(uuid.UUID)
+
+	// Secure type assertion with check to prevent panic
+	userID, ok := userIDVal.(uuid.UUID)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+		return
+	}
 
 	user, err := h.onboardingService.CompleteOnboarding(c.Request.Context(), userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		// Don't expose internal errors
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to complete onboarding"})
 		return
 	}
 

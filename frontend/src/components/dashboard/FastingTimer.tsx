@@ -4,6 +4,7 @@ import { Flame, Zap, Sparkles, Utensils, Pause, Square, Trophy } from 'lucide-re
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import confetti from 'canvas-confetti';
+import DOMPurify from 'dompurify';
 
 interface FastingPhase {
   id: string;
@@ -330,7 +331,8 @@ const FastingTimer = ({
           {insight ? (
             <span className="text-primary font-medium flex items-center gap-1 justify-center">
               <Sparkles className="w-3 h-3" />
-              {insight}
+              {/* Sanitize LLM response and limit length to prevent XSS */}
+              {DOMPurify.sanitize(insight.substring(0, 200), { ALLOWED_TAGS: [] })}
             </span>
           ) : (
             currentPhase.description
