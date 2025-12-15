@@ -250,6 +250,33 @@ func main() {
 		userRepo,
 	)
 
+	// Initialize OAuth Service
+	googleClientID := os.Getenv("GOOGLE_CLIENT_ID")
+	googleClientSecret := os.Getenv("GOOGLE_CLIENT_SECRET")
+	googleRedirectURL := os.Getenv("GOOGLE_REDIRECT_URL")
+
+	if googleRedirectURL == "" {
+		// Default redirect URL based on environment
+		env := os.Getenv("ENVIRONMENT")
+		if env == "uat" {
+			googleRedirectURL = "https://fastinghero-uat-537397575496.us-central1.run.app/api/v1/auth/google/callback"
+		} else {
+			googleRedirectURL = "http://localhost:8080/api/v1/auth/google/callback"
+		}
+	}
+
+	oauthService := services.NewOAuthService(
+		userRepo,
+		jwtSecret,
+		googleClientID,
+		googleClientSecret,
+		googleRedirectURL,
+	)
+
+	// Initialize OAuth handler and set it in main handler
+	oauthHandler := http.NewOAuthHandler(oauthService)
+	handler.SetOAuthHandler(oauthHandler)
+
 	// 4. Setup Router
 	router := gin.Default()
 

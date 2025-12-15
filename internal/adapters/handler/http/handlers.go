@@ -71,6 +71,11 @@ func NewHandler(
 	}
 }
 
+// SetOAuthHandler sets the OAuth handler (called from main.go after handler construction)
+func (h *Handler) SetOAuthHandler(oauthHandler *OAuthHandler) {
+	h.oauthHandler = oauthHandler
+}
+
 func (h *Handler) Register(c *gin.Context) {
 	var req struct {
 		Email        string `json:"email"`
@@ -118,6 +123,12 @@ func (h *Handler) RegisterRoutes(router *gin.Engine) {
 	{
 		auth.POST("/register", h.Register)
 		auth.POST("/login", h.Login)
+
+		// Google OAuth routes
+		if h.oauthHandler != nil {
+			auth.GET("/google", h.oauthHandler.HandleGoogleLogin)
+			auth.GET("/google/callback", h.oauthHandler.HandleGoogleCallback)
+		}
 	}
 
 	onboarding := api.Group("/onboarding")
