@@ -40,8 +40,8 @@ const OnboardingAccount = () => {
         // Store credentials in context
         setCredentials({ email, password, name });
 
-        // Navigate to payment
-        navigate('/onboarding/payment');
+        // Navigate directly to success (skip payment for now)
+        navigate('/onboarding/success');
     };
 
     return (
@@ -119,7 +119,7 @@ const OnboardingAccount = () => {
                         )}
 
                         <Button type="submit" size="lg" className="w-full bg-primary hover:bg-primary/90">
-                            Continue to Payment
+                            Complete Signup
                         </Button>
                     </form>
                 </motion.div>

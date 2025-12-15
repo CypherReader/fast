@@ -84,7 +84,7 @@ const OnboardingSuccess = () => {
   };
 
   return (
-    <OnboardingLayout step={5}>
+    <OnboardingLayout step={4}>
       <div className="max-w-xl w-full text-center">
         {/* Success Animation */}
         <motion.div
