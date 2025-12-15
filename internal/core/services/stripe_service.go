@@ -138,9 +138,10 @@ func (s *StripeService) HandleWebhook(ctx context.Context, payload []byte, signa
 		}
 
 		user.SubscriptionStatus = sub.Status
-		if sub.Status == domain.SubStatusActive {
+		switch sub.Status {
+		case domain.SubStatusActive:
 			user.SubscriptionTier = domain.TierVault
-		} else if sub.Status == domain.SubStatusCanceled || sub.Status == domain.SubStatusUnpaid {
+		case domain.SubStatusCanceled, domain.SubStatusUnpaid:
 			// Downgrade if needed, or keep as is until period end
 			// For now, if not active, maybe revert to free?
 			// user.SubscriptionTier = domain.TierFree

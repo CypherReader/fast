@@ -32,9 +32,8 @@ steps:
       - '--max-instances=10'
       - '--min-instances=0'
 
-# Substitution variables (set in trigger or pass via gcloud)
 substitutions:
-  _CLOUD_SQL_INSTANCE: 'noted-function-481218-g0:fastinghero-uat-db'  # Replace with actual values
+  _CLOUD_SQL_INSTANCE: 'noted-function-481218-g0:us-central1:fastinghero-uat-db'
 
 options:
   logging: CLOUD_LOGGING_ONLY

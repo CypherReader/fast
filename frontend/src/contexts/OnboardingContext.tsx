@@ -1,39 +1,20 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
+import {
+  type GoalType,
+  type FastingPlan,
+  type OnboardingState,
+  type OnboardingContextType,
+  initialOnboardingState
+} from './onboarding-types';
 
-export type GoalType = 'weight_loss' | 'metabolic' | 'discipline' | 'longevity' | null;
-export type FastingPlan = '16:8' | '18:6' | 'omad' | null;
+// Re-export types for backward compatibility
+export type { GoalType, FastingPlan, OnboardingState, OnboardingContextType };
 
-interface OnboardingState {
-  step: number;
-  goal: GoalType;
-  fastingPlan: FastingPlan;
-  completed: boolean;
-  email?: string;
-  password?: string;
-  name?: string;
-}
-
-interface OnboardingContextType {
-  state: OnboardingState;
-  setStep: (step: number) => void;
-  setGoal: (goal: GoalType) => void;
-  setFastingPlan: (plan: FastingPlan) => void;
-  setCredentials: (credentials: { email?: string; password?: string; name?: string }) => void;
-  completeOnboarding: () => void;
-  resetOnboarding: () => void;
-}
-
-const initialState: OnboardingState = {
-  step: 1,
-  goal: null,
-  fastingPlan: null,
-  completed: false,
-};
 
 const OnboardingContext = createContext<OnboardingContextType | undefined>(undefined);
 
 export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
-  const [state, setState] = useState<OnboardingState>(initialState);
+  const [state, setState] = useState<OnboardingState>(initialOnboardingState);
 
   const setStep = (step: number) => setState(prev => ({ ...prev, step }));
   const setGoal = (goal: GoalType) => setState(prev => ({ ...prev, goal }));
@@ -41,7 +22,7 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
   const setCredentials = (credentials: { email?: string; password?: string; name?: string }) =>
     setState(prev => ({ ...prev, ...credentials }));
   const completeOnboarding = () => setState(prev => ({ ...prev, completed: true }));
-  const resetOnboarding = () => setState(initialState);
+  const resetOnboarding = () => setState(initialOnboardingState);
 
   return (
     <OnboardingContext.Provider value={{ state, setStep, setGoal, setFastingPlan, setCredentials, completeOnboarding, resetOnboarding }}>

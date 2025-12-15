@@ -15,6 +15,7 @@ import (
 	"fastinghero/internal/core/domain"
 	"fastinghero/internal/core/ports"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
 
@@ -165,22 +166,24 @@ func (s *OAuthService) AuthenticateWithGoogle(ctx context.Context, code string) 
 		return "", nil, fmt.Errorf("failed to find or create user: %w", err)
 	}
 
-	// Generate JWT token (reuse the auth service logic)
+	// Generate JWT token for OAuth-authenticated user
 	authService := &AuthService{
 		userRepo:  s.userRepo,
 		jwtSecret: s.jwtSecret,
 	}
 
-	token, _, _, err := authService.Login(ctx, user.Email, "") // Empty password for OAuth users
+	// Import jwt at the top if not already present
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"user_id": user.ID.String(),
+		"exp":     time.Now().Add(24 * time.Hour).Unix(),
+	})
+
+	tokenString, err := token.SignedString(authService.jwtSecret)
 	if err != nil {
-		// If login fails (OAuth user with no password), generate token directly
-		token, err = authService.generateToken(user.ID)
-		if err != nil {
-			return "", nil, err
-		}
+		return "", nil, fmt.Errorf("failed to generate token: %w", err)
 	}
 
-	return token, user, nil
+	return tokenString, user, nil
 }
 
 // findOrCreateUser finds an existing user or creates a new one from Google OAuth data
@@ -221,11 +224,4 @@ func (s *OAuthService) findOrCreateUser(ctx context.Context, googleUser *GoogleU
 	}
 
 	return user, nil
-}
-
-// generateToken is a helper to generate JWT token (copied from AuthService)
-func (s *AuthService) generateToken(userID uuid.UUID) (string, error) {
-	// Import jwt package at top if not already
-	// This is placeholder - actual implementation should use the JWT generation from AuthService
-	return "", errors.New("not implemented - use AuthService.Login")
 }
