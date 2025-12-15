@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useOnboarding } from '@/contexts/OnboardingContext';
+import { api } from '@/api/client';
 
 const OnboardingAccount = () => {
     const navigate = useNavigate();
@@ -17,31 +18,53 @@ const OnboardingAccount = () => {
     const [name, setName] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
+        setIsLoading(true);
 
         if (!name || name.length < 2) {
             setError('Please enter your full name');
+            setIsLoading(false);
             return;
         }
 
         if (!email || !email.includes('@')) {
             setError('Please enter a valid email address');
+            setIsLoading(false);
             return;
         }
 
         if (!password || password.length < 6) {
             setError('Password must be at least 6 characters');
+            setIsLoading(false);
             return;
         }
 
         // Store credentials in context
         setCredentials({ email, password, name });
 
-        // Navigate directly to success (skip payment for now)
-        navigate('/onboarding/success');
+        // Actually register the user with the backend
+        try {
+            const registerResponse = await api.post<{ token: string; user: any }>('/auth/register', {
+                email,
+                password,
+                name,
+            });
+
+            // Store JWT token
+            const { token, user } = registerResponse.data;
+            localStorage.setItem('token', token);
+            localStorage.setItem('user', JSON.stringify(user));
+
+            // Navigate to success
+            navigate('/onboarding/success');
+        } catch (err: any) {
+            setError(err.response?.data?.error || 'Registration failed. Please try again.');
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -118,8 +141,8 @@ const OnboardingAccount = () => {
                             <p className="text-sm text-destructive">{error}</p>
                         )}
 
-                        <Button type="submit" size="lg" className="w-full bg-primary hover:bg-primary/90">
-                            Complete Signup
+                        <Button type="submit" size="lg" className="w-full bg-primary hover:bg-primary/90" disabled={isLoading}>
+                            {isLoading ? 'Creating account...' : 'Complete Signup'}
                         </Button>
                     </form>
                 </motion.div>
