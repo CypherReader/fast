@@ -48,7 +48,6 @@ jobs:
             --allow-unauthenticated \
             --set-env-vars ENVIRONMENT=uat \
             --set-secrets JWT_SECRET=JWT_SECRET:latest,DATABASE_URL=DATABASE_URL:latest,GOOGLE_CLIENT_ID=GOOGLE_CLIENT_ID:latest,GOOGLE_CLIENT_SECRET=GOOGLE_CLIENT_SECRET:latest,DEEPSEEK_API_KEY=DEEPSEEK_API_KEY:latest \
-            --add-cloudsql-instances ${{ secrets.CLOUD_SQL_INSTANCE }} \
             --memory 512Mi \
             --cpu 1 \
             --timeout 300 \
