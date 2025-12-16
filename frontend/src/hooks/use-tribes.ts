@@ -20,7 +20,7 @@ export function useTribes(filters?: {
 }
 
 // Hook to get a single tribe
-export function use Tribe(id: string | undefined) {
+export function useTribe(id: string | undefined) {
     return useQuery({
         queryKey: ['tribe', id],
         queryFn: () => tribesAPI.getTribe(id!),

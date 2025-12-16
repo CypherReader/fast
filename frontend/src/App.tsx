@@ -17,6 +17,7 @@ import OnboardingPlan from "./pages/onboarding/OnboardingPlan";
 import OnboardingAccount from "./pages/onboarding/OnboardingAccount";
 import OnboardingPayment from "./pages/onboarding/OnboardingPayment";
 import OnboardingSuccess from "./pages/onboarding/OnboardingSuccess";
+import Tribes from "./pages/Tribes";
 
 const queryClient = new QueryClient();
 
@@ -33,6 +34,7 @@ const App = () => (
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/progress" element={<Progress />} />
             <Route path="/community" element={<Community />} />
+            <Route path="/tribes" element={<Tribes />} />
             <Route path="/resources" element={<Resources />} />
             <Route path="/recipes" element={<Navigate to="/resources?tab=recipes" replace />} />
             <Route path="/videos" element={<Navigate to="/resources?tab=videos" replace />} />
