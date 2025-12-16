@@ -19,13 +19,13 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
 
-    --primary: 38 92% 56%;
-    /* Vibrant gold */
+    --primary: 142 76% 36%;
+    /* Emerald green - primary */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 160 84% 42%;
-    /* Fresh emerald */
-    --secondary-foreground: 0 0% 100%;
+    --secondary: 38 92% 50%;
+    /* Vibrant gold - secondary */
+    --secondary-foreground: 224 71% 4%;
 
     --muted: 220 13% 95%;
     /* Soft gray */
@@ -47,13 +47,13 @@
     --radius: 0.5rem;
 
     /* FastingHero Custom Tokens */
-    --gold: 38 92% 56%;
-    --gold-light: 45 93% 58%;
-    --emerald: 160 84% 42%;
-    --emerald-dark: 162 93% 24%;
-    --purple: 271 81% 56%;
-    --slate-light: 220 13% 95%;
-    --slate-lighter: 42 15% 97%;
+    --gold: 38 92% 50%;
+    --gold-light: 45 93% 60%;
+    --emerald: 142 76% 36%;
+    --emerald-dark: 142 76% 28%;
+    --purple: 262 83% 58%;
+    --slate-dark: 224 71% 4%;
+    --slate-lighter: 220 14% 96%;
 
     /* Gradients for Light Mode */
     --gradient-gold: linear-gradient(135deg, hsl(var(--gold)) 0%, hsl(var(--emerald)) 100%);
