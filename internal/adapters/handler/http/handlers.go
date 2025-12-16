@@ -894,3 +894,36 @@ func (h *Handler) GetUserStats(c *gin.Context) {
 		"vault_total":         user.VaultDeposit,
 	})
 }
+
+// GetFastingInsight returns AI-generated insights about the user's current fast
+func (h *Handler) GetFastingInsight(c *gin.Context) {
+	userIDVal, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	userID := userIDVal.(uuid.UUID)
+
+	// Get hours from query parameter
+	hoursStr := c.Query("hours")
+	if hoursStr == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "hours parameter required"})
+		return
+	}
+
+	var hours float64
+	if _, err := fmt.Sscanf(hoursStr, "%f", &hours); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid hours parameter"})
+		return
+	}
+
+	// Call cortex service for insight
+	insight, err := h.cortexService.(*services.CortexService).GetFastingMilestoneInsight(c.Request.Context(), userID, hours)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate insight"})
+		return
+	}
+
+	c.JSON(http.StatusOK, insight)
+}
+
