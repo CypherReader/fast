@@ -178,3 +178,46 @@ type ProgressRepository interface {
 	SaveActivityLog(ctx context.Context, log *domain.ActivityLog) error
 	GetActivityStats(ctx context.Context, userID uuid.UUID, days int) ([]domain.ActivityLog, error)
 }
+
+// TribeRepository defines the interface for tribe data persistence
+type TribeRepository interface {
+	// Tribe CRUD
+	Save(ctx context.Context, tribe *domain.Tribe) error
+	Update(ctx context.Context, tribe *domain.Tribe) error
+	FindByID(ctx context.Context, id string) (*domain.Tribe, error)
+	FindBySlug(ctx context.Context, slug string) (*domain.Tribe, error)
+	List(ctx context.Context, query domain.ListTribesQuery) ([]domain.Tribe, int, error) // tribes, total count, error
+	Delete(ctx context.Context, id string) error
+
+	// Memberships
+	SaveMembership(ctx context.Context, membership *domain.TribeMembership) error
+	UpdateMembership(ctx context.Context, membership *domain.TribeMembership) error
+	FindMembership(ctx context.Context, tribeID, userID string) (*domain.TribeMembership, error)
+	GetMembersByTribeID(ctx context.Context, tribeID string, limit, offset int) ([]domain.TribeMember, error)
+	GetUserTribes(ctx context.Context, userID string, status string) ([]domain.Tribe, error)
+	GetMembershipCount(ctx context.Context, tribeID string) (int, error)
+	DeleteMembership(ctx context.Context, tribeID, userID string) error
+
+	// Stats
+	GetTribeStats(ctx context.Context, tribeID string) (*domain.TribeStats, error)
+	UpdateMemberCounts(ctx context.Context, tribeID string) error
+}
+
+// TribeService defines the business logic for tribe operations
+type TribeService interface {
+	// Tribe management
+	CreateTribe(ctx context.Context, userID string, req domain.CreateTribeRequest) (*domain.Tribe, error)
+	GetTribe(ctx context.Context, tribeID string, currentUserID *string) (*domain.Tribe, error)
+	UpdateTribe(ctx context.Context, tribeID, userID string, req domain.UpdateTribeRequest) (*domain.Tribe, error)
+	DeleteTribe(ctx context.Context, tribeID, userID string) error
+	ListTribes(ctx context.Context, query domain.ListTribesQuery, currentUserID *string) ([]domain.Tribe, int, error)
+
+	// Membership operations
+	JoinTribe(ctx context.Context, tribeID, userID string) error
+	LeaveTribe(ctx context.Context, tribeID, userID string) error
+	GetTribeMembers(ctx context.Context, tribeID string, limit, offset int) ([]domain.TribeMember, error)
+	GetMyTribes(ctx context.Context, userID string) ([]domain.Tribe, error)
+
+	// Stats and analytics
+	GetTribeStats(ctx context.Context, tribeID string) (*domain.TribeStats, error)
+}
