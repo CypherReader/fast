@@ -36,6 +36,19 @@ const Community = () => {
             </header>
 
             <main className="container mx-auto px-4 py-6 max-w-4xl space-y-8">
+                {/* Tribes CTA Banner */}
+                <div className="bg-gradient-to-r from-purple-500/10 to-indigo-600/10 border border-purple-500/20 rounded-2xl p-6">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h2 className="font-bold text-lg mb-1">Join or Create a Tribe</h2>
+                            <p className="text-sm text-muted-foreground">Connect with like-minded fasters and stay accountable together</p>
+                        </div>
+                        <Button onClick={() => navigate('/tribes')} size="lg">
+                            Explore Tribes →
+                        </Button>
+                    </div>
+                </div>
+
                 {/* Search */}
                 <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -91,7 +104,7 @@ const Community = () => {
                                     );
                                 })
                             ) : (
-                                <div className="text-center text-m uted-foreground">No activity yet. Complete your first fast to see events here!</div>
+                                <div className="text-center text-muted-foreground">No activity yet. Complete your first fast to see events here!</div>
                             )}
                         </div>
                     </div>
@@ -100,26 +113,49 @@ const Community = () => {
                     <div className="space-y-8">
                         {/* Featured Tribes */}
                         <div>
-                            <h2 className="font-semibold text-foreground flex items-center gap-2 mb-4">
-                                <Users className="w-5 h-5 text-primary" />
-                                Featured Tribes
-                            </h2>
+                            <div className="flex items-center justify-between mb-4">
+                                <h2 className="font-semibold text-foreground flex items-center gap-2">
+                                    <Users className="w-5 h-5 text-primary" />
+                                    Featured Tribes
+                                </h2>
+                            </div>
                             <div className="space-y-3">
                                 {isLoadingTribes ? (
                                     <div className="text-center text-muted-foreground">Loading tribes...</div>
                                 ) : tribes && tribes.length > 0 ? (
-                                    tribes.slice(0, 3).map((tribe) => (
-                                        <div key={tribe.id} className="bg-card border border-border rounded-xl p-3 hover:border-primary/50 transition-colors cursor-pointer">
-                                            <h3 className="font-medium text-foreground">{tribe.name}</h3>
-                                            <p className="text-xs text-muted-foreground mb-2">{tribe.description}</p>
-                                            <div className="flex items-center gap-1 text-xs text-secondary">
-                                                <Users className="w-3 h-3" />
-                                                {tribe.member_count} members
+                                    <>
+                                        {tribes.slice(0, 3).map((tribe) => (
+                                            <div
+                                                key={tribe.id}
+                                                className="bg-card border border-border rounded-xl p-3 hover:border-primary/50 transition-colors cursor-pointer"
+                                                onClick={() => navigate('/tribes')}
+                                            >
+                                                <h3 className="font-medium text-foreground">{tribe.name}</h3>
+                                                <p className="text-xs text-muted-foreground mb-2">{tribe.description}</p>
+                                                <div className="flex items-center gap-1 text-xs text-secondary">
+                                                    <Users className="w-3 h-3" />
+                                                    {tribe.member_count} members
+                                                </div>
                                             </div>
-                                        </div>
-                                    ))
+                                        ))}
+                                        <Button
+                                            variant="outline"
+                                            className="w-full text-sm"
+                                            onClick={() => navigate('/tribes')}
+                                        >
+                                            View All Tribes →
+                                        </Button>
+                                    </>
                                 ) : (
-                                    <div className="text-center text-muted-foreground">No tribes yet.</div>
+                                    <div className="text-center p-4 border border-dashed rounded-xl">
+                                        <p className="text-sm text-muted-foreground mb-3">No tribes yet.</p>
+                                        <Button
+                                            size="sm"
+                                            onClick={() => navigate('/tribes')}
+                                        >
+                                            Create the First One!
+                                        </Button>
+                                    </div>
                                 )}
                             </div>
                         </div>
