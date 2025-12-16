@@ -13,4 +13,4 @@ CREATE TABLE referrals (
     completed_at TIMESTAMP WITH TIME ZONE,
     UNIQUE(referee_id) -- A user can only be referred once
 );
-CREATE INDEX idx_referrals_referrer_id ON referrals(referrer_id);
+CREATE INDEX IF NOT EXISTS idx_referrals_referrer_id ON referrals(referrer_id);

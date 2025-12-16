@@ -7,4 +7,4 @@ CREATE TABLE IF NOT EXISTS fcm_tokens (
     last_used_at TIMESTAMP WITH TIME ZONE NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE
 );
-CREATE INDEX idx_fcm_tokens_user_id ON fcm_tokens(user_id);
+CREATE INDEX IF NOT EXISTS idx_fcm_tokens_user_id ON fcm_tokens(user_id);

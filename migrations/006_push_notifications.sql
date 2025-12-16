@@ -9,8 +9,8 @@ CREATE TABLE IF NOT EXISTS fcm_tokens (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     last_used_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-CREATE INDEX idx_fcm_tokens_user_id ON fcm_tokens(user_id);
-CREATE INDEX idx_fcm_tokens_token ON fcm_tokens(token);
+CREATE INDEX IF NOT EXISTS idx_fcm_tokens_user_id ON fcm_tokens(user_id);
+CREATE INDEX IF NOT EXISTS idx_fcm_tokens_token ON fcm_tokens(token);
 -- Create notifications history table
 CREATE TABLE IF NOT EXISTS notifications (
     id UUID PRIMARY KEY,
@@ -22,5 +22,5 @@ CREATE TABLE IF NOT EXISTS notifications (
     sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     read_at TIMESTAMP
 );
-CREATE INDEX idx_notifications_user_id ON notifications(user_id);
-CREATE INDEX idx_notifications_sent_at ON notifications(sent_at DESC);
+CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_sent_at ON notifications(sent_at DESC);
