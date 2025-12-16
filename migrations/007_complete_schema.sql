@@ -209,10 +209,12 @@ CREATE TABLE IF NOT EXISTS notifications (
     type VARCHAR(50),
     title VARCHAR(200),
     message TEXT,
-    read BOOLEAN DEFAULT FALSE,
-    link VARCHAR(500),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+-- Add columns that might not exist
+ALTER TABLE notifications
+ADD COLUMN IF NOT EXISTS read BOOLEAN DEFAULT FALSE,
+    ADD COLUMN IF NOT EXISTS link VARCHAR(500);
 CREATE INDEX IF NOT EXISTS idx_notifications_user_read ON notifications(user_id, read);
 -- 18. Commitment Contracts Table
 CREATE TABLE IF NOT EXISTS commitment_contracts (
