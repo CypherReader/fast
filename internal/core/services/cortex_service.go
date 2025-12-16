@@ -124,3 +124,98 @@ func (s *CortexService) AnalyzeMeal(ctx context.Context, imageBase64, descriptio
 
 	return response, isAuthentic, isKeto, nil
 }
+
+// GetFastingMilestoneInsight returns structured insight based on fasting duration
+func (s *CortexService) GetFastingMilestoneInsight(ctx context.Context, userID uuid.UUID, hours float64) (map[string]interface{}, error) {
+	// Determine milestone
+	milestone := getMilestone(hours)
+
+	// Construct prompt for structured response
+	systemPrompt := `You are a fasting science expert. Provide insights about fasting in JSON format.
+	Be scientific but motivating. Keep each field concise.`
+
+	userMessage := fmt.Sprintf(`The user has been fasting for %.1f hours (milestone: %s).
+	Provide a JSON response with:
+	{
+		"insight": "2-3 sentence description of what's happening in the body now",
+		"benefits": ["benefit1", "benefit2", "benefit3"],
+		"motivation": "One powerful motivational quote (under 15 words)"
+	}
+	
+	Focus on the science at this milestone. Be specific about biological processes.`, hours, milestone)
+
+	// Call LLM
+	response, err := s.llm.GenerateResponse(ctx, userMessage, systemPrompt)
+	if err != nil {
+		return nil, fmt.Errorf("llm error: %w", err)
+	}
+
+	// For MVP, return a structured response manually parsed
+	// In production, you'd parse the JSON response from DeepSeek
+	result := map[string]interface{}{
+		"hours":      hours,
+		"milestone":  milestone,
+		"insight":    response,
+		"benefits":   extractBenefits(response, milestone),
+		"motivation": extractMotivation(response),
+	}
+
+	return result, nil
+}
+
+// getMilestone identifies the fasting milestone
+func getMilestone(hours float64) string {
+	switch {
+	case hours < 4:
+		return "Early Stage"
+	case hours >= 4 && hours < 8:
+		return "4h - Glycogen Depletion"
+	case hours >= 8 && hours < 12:
+		return "8h - Fat Adaptation"
+	case hours >= 12 && hours < 16:
+		return "12h - Ketosis Begins"
+	case hours >= 16 && hours < 20:
+		return "16h - Peak Ketosis"
+	case hours >= 20 && hours < 24:
+		return "20h - Deep Autophagy"
+	case hours >= 24:
+		return "24h+ - Extended Fasting"
+	default:
+		return "Active Fasting"
+	}
+}
+
+// extractBenefits extracts or generates benefits based on milestone
+func extractBenefits(response string, milestone string) []string {
+	// For MVP, return milestone-specific benefits
+	// In production, parse from AI response
+	benefitsMap := map[string][]string{
+		"4h - Glycogen Depletion": {"Insulin levels dropping", "Starting fat burning", "Digestive rest"},
+		"8h - Fat Adaptation":     {"Increased fat oxidation", "Stable energy", "Mental clarity"},
+		"12h - Ketosis Begins":    {"Ketone production starts", "Enhanced focus", "Autophagy initiating"},
+		"16h - Peak Ketosis":      {"Maximum fat burning", "Deep autophagy", "HGH boost"},
+		"20h - Deep Autophagy":    {"Cellular renewal peak", "Anti-aging benefits", "Immune system reset"},
+		"24h+ - Extended Fasting": {"Maximum autophagy", "Stem cell activation", "Deep healing"},
+	}
+
+	if benefits, ok := benefitsMap[milestone]; ok {
+		return benefits
+	}
+	return []string{"Fat burning", "Mental clarity", "Cellular repair"}
+}
+
+// extractMotivation generates motivational message
+func extractMotivation(response string) string {
+	// For MVP, return generic but try to extract from response
+	// In production, parse from AI response
+	if strings.Contains(strings.ToLower(response), "keep") || strings.Contains(strings.ToLower(response), "you") {
+		// Try to find a motivational sentence in the response
+		sentences := strings.Split(response, ".")
+		for _, sentence := range sentences {
+			if len(strings.TrimSpace(sentence)) > 10 && len(strings.TrimSpace(sentence)) < 100 {
+				return strings.TrimSpace(sentence)
+			}
+		}
+	}
+	return "Every hour fasting is a victory for your health!"
+}
