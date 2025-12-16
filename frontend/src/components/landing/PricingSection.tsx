@@ -130,7 +130,7 @@ export const PricingSection = () => {
                       >
                         <Check className="w-5 h-5 text-secondary flex-shrink-0" />
                       </motion.div>
-                      <span className="text-foreground">{feature}</span>
+                      <span className="text-gray-100">{feature}</span>
                     </motion.li>
                   ))}
                 </ul>
