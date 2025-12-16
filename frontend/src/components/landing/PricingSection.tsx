@@ -40,7 +40,7 @@ export const PricingSection = () => {
   const isInView = useInView(ref, { once: true, margin: "-100px" });
 
   return (
-    <section className="py-20 md:py-32 bg-gradient-dark relative overflow-hidden" ref={ref}>
+    <section className="py-20 md:py-32 bg-slate-900 dark:bg-gradient-dark relative overflow-hidden" ref={ref}>
       <AnimatedSectionBackground variant="accent" showOrbs showGrid showParticles />
 
       <div className="container px-4 relative z-10">
@@ -49,7 +49,7 @@ export const PricingSection = () => {
             initial={{ opacity: 0, y: 30 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.6 }}
-            className="text-4xl md:text-5xl lg:text-6xl font-bold text-center mb-4"
+            className="text-4xl md:text-5xl lg:text-6xl font-bold text-center mb-4 text-white"
           >
             Simple, transparent pricing
           </motion.h2>
@@ -57,7 +57,7 @@ export const PricingSection = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.6, delay: 0.1 }}
-            className="text-muted-foreground text-center text-lg mb-12"
+            className="text-gray-300 text-center text-lg mb-12"
           >
             Pay to commit. Get it all back if you fast consistently.
           </motion.p>
@@ -75,11 +75,10 @@ export const PricingSection = () => {
                   rotateX: 2,
                   transition: { duration: 0.2 },
                 }}
-                className={`relative rounded-2xl p-8 transition-all duration-300 backdrop-blur ${
-                  plan.popular
-                    ? "bg-gradient-to-br from-accent/20 to-purple/10 border-2 border-accent shadow-purple-glow"
-                    : "bg-card/80 border border-border hover:border-secondary/30"
-                }`}
+                className={`relative rounded-2xl p-8 transition-all duration-300 backdrop-blur ${plan.popular
+                  ? "bg-gradient-to-br from-accent/20 to-purple/10 border-2 border-accent shadow-purple-glow"
+                  : "bg-card/80 border border-border hover:border-secondary/30"
+                  }`}
               >
                 {/* Popular badge */}
                 {plan.popular && (
@@ -94,7 +93,7 @@ export const PricingSection = () => {
                 )}
 
                 {/* Plan name */}
-                <div className="text-sm font-semibold text-muted-foreground tracking-wider mb-2">
+                <div className="text-sm font-semibold text-gray-400 tracking-wider mb-2">
                   {plan.name}
                 </div>
 
@@ -104,15 +103,15 @@ export const PricingSection = () => {
                     initial={{ scale: 0.5 }}
                     animate={isInView ? { scale: 1 } : {}}
                     transition={{ delay: i * 0.2 + 0.3, type: "spring" }}
-                    className="font-display text-5xl font-bold text-foreground"
+                    className="font-display text-5xl font-bold text-white"
                   >
                     {plan.price}
                   </motion.span>
-                  <span className="text-muted-foreground">{plan.period}</span>
+                  <span className="text-gray-300">{plan.period}</span>
                 </div>
 
                 {/* Description */}
-                <p className="text-muted-foreground mb-6">{plan.description}</p>
+                <p className="text-gray-300 mb-6">{plan.description}</p>
 
                 {/* Features */}
                 <ul className="space-y-3 mb-8">
