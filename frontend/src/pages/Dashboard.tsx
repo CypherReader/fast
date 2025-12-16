@@ -16,6 +16,8 @@ import WaterTracker from '@/components/dashboard/WaterTracker';
 import MealTracker from '@/components/dashboard/MealTracker';
 import { useFasting } from '@/hooks/use-fasting';
 import { useUser } from '@/hooks/use-user';
+import { useProgress } from '@/hooks/use-progress';
+import confetti from 'canvas-confetti';
 
 const planNames: Record<string, string> = {
   '16:8': '16:8',
@@ -28,6 +30,7 @@ const checklistItems = [
   { id: 'deposit', label: 'Deposit to Vault', completed: true, icon: Lock },
   { id: 'first_fast', label: 'Start your first fast', completed: false, icon: Timer, action: 'start_fast' },
   { id: 'log_weight', label: 'Log your weight', completed: false, icon: Scale, action: 'log_weight' },
+  { id: 'log_steps', label: 'Log your steps', completed: false, icon: TrendingUp, action: 'log_steps' },
   { id: 'join_tribe', label: 'Join a tribe', completed: false, icon: Users, action: 'join_tribe' },
   { id: 'notifications', label: 'Enable notifications', completed: false, icon: Bell, action: 'notifications' },
 ];
@@ -38,9 +41,12 @@ const Dashboard = () => {
   const [showWelcomeBanner, setShowWelcomeBanner] = useState(true);
   const [checklist, setChecklist] = useState(checklistItems);
   const [isFirstVisit] = useState(true); // In real app, check from user data
+  const [showSetupComplete, setShowSetupComplete] = useState(false);
+  const [setupJustCompleted, setSetupJustCompleted] = useState(false);
 
   const { currentFast, startFast, stopFast, isLoading, getInsight } = useFasting();
   const { user, stats } = useUser();
+  const { weightHistory, dailyHydration } = useProgress();
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [insight, setInsight] = useState<string | null>(null);
 
@@ -109,6 +115,75 @@ const Dashboard = () => {
     stopFast();
   };
 
+  // Update checklist based on actual progress data
+  useEffect(() => {
+    setChecklist(prev => prev.map(item => {
+      // Mark fast complete if there's an active or completed fast
+      if (item.id === 'first_fast' && currentFast) {
+        return { ...item, completed: true };
+      }
+      // Mark weight complete if there's weight history
+      if (item.id === 'log_weight' && weightHistory && weightHistory.length > 0) {
+        return { ...item, completed: true };
+      }
+      // Mark steps complete if there's hydration data (temp, until steps endpoint exists)
+      if (item.id === 'log_steps' && dailyHydration && dailyHydration.glasses_count > 0) {
+        return { ...item, completed: true };
+      }
+      return item;
+    }));
+  }, [currentFast, weightHistory, dailyHydration]);
+
+  // Check for setup completion and trigger celebration
+  useEffect(() => {
+    const completedCount = checklist.filter(item => item.completed).length;
+    const wasComplete = completedCount === checklist.length;
+
+    if (wasComplete && !setupJustCompleted && !showSetupComplete) {
+      setSetupJustCompleted(true);
+      setShowSetupComplete(true);
+
+      // Trigger confetti
+      const duration = 3000;
+      const end = Date.now() + duration;
+
+      const colors = ['#f59e0b', '#10b981', '#a855f7'];
+
+      const frame = () => {
+        confetti({
+          particleCount: 5,
+          angle: 60,
+          spread: 55,
+          origin: { x: 0, y: 0.7 },
+          colors,
+        });
+        confetti({
+          particleCount: 5,
+          angle: 120,
+          spread: 55,
+          origin: { x: 1, y: 0.7 },
+          colors,
+        });
+
+        if (Date.now() < end) {
+          requestAnimationFrame(frame);
+        }
+      };
+
+      frame();
+
+      // Center burst
+      setTimeout(() => {
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors,
+        });
+      }, 200);
+    }
+  }, [checklist, setupJustCompleted, showSetupComplete]);
+
   const handleChecklistAction = (action: string) => {
     if (action === 'start_fast') {
       handleStartFast();
@@ -173,6 +248,51 @@ const Dashboard = () => {
                   </p>
                 </div>
               </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Setup Complete Celebration */}
+        <AnimatePresence>
+          {showSetupComplete && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm"
+              onClick={() => setShowSetupComplete(false)}
+            >
+              <motion.div
+                initial={{ y: 50 }}
+                animate={{ y: 0 }}
+                className="relative bg-gradient-to-br from-primary/20 via-card to-secondary/20 border-2 border-primary/50 rounded-3xl p-8 max-w-md mx-4 text-center shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <motion.div
+                  animate={{ rotate: [0, 10, -10, 10, 0] }}
+                  transition={{ duration: 0.5, repeat: 3 }}
+                  className="text-6xl mb-4"
+                >
+                  🎉
+                </motion.div>
+                <h2 className="text-3xl font-bold text-foreground mb-2">
+                  Setup Complete!
+                </h2>
+                <p className="text-lg text-secondary font-semibold mb-4">
+                  You're all set to begin your journey!
+                </p>
+                <p className="text-muted-foreground mb-6">
+                  "The journey of a thousand miles begins with one step. You've taken yours. Now watch as small daily actions transform into extraordinary results."
+                </p>
+                <div className="flex gap-3">
+                  <Button
+                    onClick={() => setShowSetupComplete(false)}
+                    className="flex-1 bg-gradient-gold hover:scale-105 transition-transform"
+                  >
+                    Let's Go! 🚀
+                  </Button>
+                </div>
+              </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
