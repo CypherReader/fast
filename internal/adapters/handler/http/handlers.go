@@ -154,8 +154,8 @@ func (h *Handler) RegisterRoutes(router *gin.Engine) {
 	{
 		fasting.POST("/start", h.StartFast)
 		fasting.POST("/stop", h.StopFast)
-		fasting.GET("/current", h.GetCurrentFast)`r
-	`tfasting.GET("/insight", h.GetFastingInsight)
+		fasting.GET("/current", h.GetCurrentFast)
+		fasting.GET("/insight", h.GetFastingInsight)
 	}
 
 	keto := protected.Group("/keto")
