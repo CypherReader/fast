@@ -215,7 +215,7 @@ CREATE TABLE IF NOT EXISTS notifications (
 ALTER TABLE notifications
 ADD COLUMN IF NOT EXISTS read BOOLEAN DEFAULT FALSE,
     ADD COLUMN IF NOT EXISTS link VARCHAR(500);
-CREATE INDEX IF NOT EXISTS idx_notifications_user_read ON notifications(user_id, read);
+-- CREATE INDEX IF NOT EXISTS idx_notifications_user_read ON notifications(user_id, read);
 -- 18. Commitment Contracts Table
 CREATE TABLE IF NOT EXISTS commitment_contracts (
     id UUID PRIMARY KEY,
