@@ -19,6 +19,10 @@ const Login = () => {
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        // Prevent multiple submissions
+        if (isLoading) return;
+
         setIsLoading(true);
 
         try {
@@ -33,6 +37,9 @@ const Login = () => {
                 description: "You have successfully logged in.",
             });
 
+            // Small delay to ensure form cleanup completes before transition
+            await new Promise(resolve => setTimeout(resolve, 100));
+
             // Show video transition instead of navigating immediately
             setShowTransition(true);
         } catch (error: unknown) {
@@ -42,7 +49,6 @@ const Login = () => {
                 title: "Login failed",
                 description: axiosError.response?.data?.error || "Invalid credentials. Please try again.",
             });
-        } finally {
             setIsLoading(false);
         }
     };
