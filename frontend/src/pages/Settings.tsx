@@ -27,7 +27,7 @@ const Settings = () => {
                 emailDigest: true,
             },
             preferences: {
-                darkMode: document.documentElement.classList.contains('dark'),
+                lightMode: document.documentElement.classList.contains('light'),
                 language: 'en',
             },
         };
@@ -40,15 +40,6 @@ const Settings = () => {
         localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
     }, [settings]);
 
-    // Apply dark mode on mount
-    useEffect(() => {
-        if (settings.preferences.darkMode) {
-            document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-        }
-    }, []);
-
     const handleToggle = (category: 'notifications' | 'preferences', key: string) => {
         setSettings(prev => {
             const newSettings = {
@@ -59,12 +50,12 @@ const Settings = () => {
                 },
             };
 
-            // Apply dark mode immediately
-            if (category === 'preferences' && key === 'darkMode') {
-                if (newSettings.preferences.darkMode) {
-                    document.documentElement.classList.add('dark');
+            // Apply light mode when toggled (dark is default)
+            if (category === 'preferences' && key === 'lightMode') {
+                if (newSettings.preferences.lightMode) {
+                    document.documentElement.classList.add('light');
                 } else {
-                    document.documentElement.classList.remove('dark');
+                    document.documentElement.classList.remove('light');
                 }
             }
 
@@ -174,27 +165,30 @@ const Settings = () => {
                     >
                         <Card className="p-6">
                             <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
-                                <Globe className="w-5 h-5 text-primary" />
+                                <Moon className="w-5 h-5 text-primary" />
                                 Preferences
                             </h3>
                             <div className="space-y-4">
                                 <div className="flex items-center justify-between py-3 border-b border-border">
                                     <div>
-                                        <Label htmlFor="dark-mode">Dark Mode</Label>
-                                        <p className="text-sm text-muted-foreground">Use dark theme across the app</p>
+                                        <Label htmlFor="light-mode">Light Mode</Label>
+                                        <p className="text-sm text-muted-foreground">Switch between dark and light themes</p>
                                     </div>
                                     <Switch
-                                        id="dark-mode"
-                                        checked={settings.preferences.darkMode}
-                                        onCheckedChange={() => handleToggle('preferences', 'darkMode')}
+                                        id="light-mode"
+                                        checked={settings.preferences.lightMode}
+                                        onCheckedChange={() => handleToggle('preferences', 'lightMode')}
                                     />
                                 </div>
                                 <div className="flex items-center justify-between py-3">
                                     <div>
-                                        <Label>Language</Label>
+                                        <Label htmlFor="language">Language</Label>
                                         <p className="text-sm text-muted-foreground">Choose your preferred language</p>
                                     </div>
-                                    <span className="text-sm font-medium">English</span>
+                                    <div className="flex items-center gap-2">
+                                        <Globe className="w-4 h-4 text-muted-foreground" />
+                                        <span className="text-sm font-medium">English</span>
+                                    </div>
                                 </div>
                             </div>
                         </Card>
@@ -244,9 +238,9 @@ const Settings = () => {
                             </div>
                         </Card>
                     </motion.div>
-                </div>
-            </main>
-        </div>
+                </div >
+            </main >
+        </div >
     );
 };
 
