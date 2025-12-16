@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"fmt"
 	"net/http"
 	"sync"
 	"time"
@@ -59,13 +60,14 @@ func (rl *RateLimiter) CleanupOldVisitors() {
 // Middleware returns a Gin middleware handler for rate limiting
 func (rl *RateLimiter) Middleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Use IP address as the key
-		key := c.ClientIP()
+		var key string
 
-		// Check if user is authenticated - could apply different limits
-		userID, authenticated := c.Get("user_id")
-		if authenticated {
-			key = userID.(string) // Use user ID for authenticated users
+		// If authenticated, use user ID for rate limiting
+		if userID, exists := c.Get("user_id"); exists {
+			key = fmt.Sprintf("user:%v", userID)
+		} else {
+			// Otherwise use IP address for anonymous users
+			key = fmt.Sprintf("ip:%s", c.ClientIP())
 		}
 
 		limiter := rl.GetLimiter(key)
