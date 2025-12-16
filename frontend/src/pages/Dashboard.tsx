@@ -18,6 +18,7 @@ import { useFasting } from '@/hooks/use-fasting';
 import { useUser } from '@/hooks/use-user';
 import { useProgress } from '@/hooks/use-progress';
 import confetti from 'canvas-confetti';
+import UserMenu from '@/components/layout/UserMenu';
 
 const planNames: Record<string, string> = {
   '16:8': '16:8',
@@ -49,6 +50,10 @@ const Dashboard = () => {
   const { weightHistory, dailyHydration } = useProgress();
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [insight, setInsight] = useState<string | null>(null);
+
+  // Dialog control states for Quick Actions
+  const [showMealDialog, setShowMealDialog] = useState(false);
+  const [showWeightDialog, setShowWeightDialog] = useState(false);
 
   // Auto-dismiss welcome banner after 10 seconds
   useEffect(() => {
@@ -215,11 +220,7 @@ const Dashboard = () => {
             <button onClick={() => navigate('/community')} className="text-muted-foreground hover:text-foreground transition-colors">Community</button>
             <button onClick={() => navigate('/resources')} className="text-muted-foreground hover:text-foreground transition-colors">Resources</button>
           </nav>
-          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-            <span className="text-sm font-medium text-primary">
-              {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
-            </span>
-          </div>
+          <UserMenu />
         </div>
       </header>
 
@@ -372,10 +373,10 @@ const Dashboard = () => {
             </div>
 
             {/* Weight Tracker with Chart */}
-            <WeightTracker />
+            <WeightTracker externalOpen={showWeightDialog} externalOnOpenChange={setShowWeightDialog} />
 
             {/* Meal Tracker */}
-            <MealTracker dailyCalorieGoal={1800} />
+            <MealTracker dailyCalorieGoal={1800} externalOpen={showMealDialog} externalOnOpenChange={setShowMealDialog} />
           </div>
 
           {/* Sidebar - Right Side */}
@@ -436,11 +437,17 @@ const Dashboard = () => {
             >
               <h3 className="font-semibold text-foreground mb-4">Quick Actions</h3>
               <div className="space-y-2">
-                <button className="w-full flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+                <button
+                  onClick={() => setShowWeightDialog(true)}
+                  className="w-full flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
+                >
                   <Scale className="w-5 h-5 text-secondary" />
                   <span className="text-sm text-foreground">Log Weight</span>
                 </button>
-                <button className="w-full flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+                <button
+                  onClick={() => setShowMealDialog(true)}
+                  className="w-full flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
+                >
                   <Utensils className="w-5 h-5 text-secondary" />
                   <span className="text-sm text-foreground">Log Meal</span>
                 </button>

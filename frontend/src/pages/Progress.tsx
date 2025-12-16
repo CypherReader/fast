@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Lock, ArrowLeft, TrendingUp, Calendar, Target, Scale } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useUser } from '@/hooks/use-user';
+import UserMenu from '@/components/layout/UserMenu';
 import {
     LineChart,
     Line,
@@ -14,31 +15,31 @@ import {
     AreaChart,
     Area
 } from 'recharts';
-
-// Mock data for charts - in a real app this would come from the backend
-const weightData = [
-    { date: 'Mon', weight: 185 },
-    { date: 'Tue', weight: 184.5 },
-    { date: 'Wed', weight: 184.2 },
-    { date: 'Thu', weight: 183.8 },
-    { date: 'Fri', weight: 183.5 },
-    { date: 'Sat', weight: 183.2 },
-    { date: 'Sun', weight: 182.8 },
-];
-
-const fastingData = [
-    { date: 'Mon', hours: 16 },
-    { date: 'Tue', hours: 16.5 },
-    { date: 'Wed', hours: 15.5 },
-    { date: 'Thu', hours: 17 },
-    { date: 'Fri', hours: 16 },
-    { date: 'Sat', hours: 18 },
-    { date: 'Sun', hours: 16 },
-];
+import { useProgress } from '@/hooks/use-progress';
+import { format, parseISO } from 'date-fns';
 
 const Progress = () => {
     const navigate = useNavigate();
     const { user, stats } = useUser();
+    const { weightHistory } = useProgress();
+
+    // Transform weight history to chart format
+    const weightData = weightHistory && weightHistory.length > 0
+        ? [...weightHistory].reverse().map(entry => ({
+            date: format(parseISO(entry.logged_at), 'EEE'),
+            weight: entry.weight_lbs
+        }))
+        : [];
+
+    const fastingData = [
+        { date: 'Mon', hours: 16 },
+        { date: 'Tue', hours: 16.5 },
+        { date: 'Wed', hours: 15.5 },
+        { date: 'Thu', hours: 17 },
+        { date: 'Fri', hours: 16 },
+        { date: 'Sat', hours: 18 },
+        { date: 'Sun', hours: 16 },
+    ];
 
     return (
         <div className="min-h-screen bg-background">
@@ -54,11 +55,7 @@ const Progress = () => {
                             <h1 className="font-bold text-lg text-foreground">Your Progress</h1>
                         </div>
                     </div>
-                    <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-                        <span className="text-sm font-medium text-primary">
-                            {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
-                        </span>
-                    </div>
+                    <UserMenu />
                 </div>
             </header>
 
@@ -108,37 +105,45 @@ const Progress = () => {
                     </div>
 
                     <div className="h-[300px] w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={weightData}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
-                                <XAxis
-                                    dataKey="date"
-                                    stroke="#666"
-                                    fontSize={12}
-                                    tickLine={false}
-                                    axisLine={false}
-                                />
-                                <YAxis
-                                    stroke="#666"
-                                    fontSize={12}
-                                    tickLine={false}
-                                    axisLine={false}
-                                    domain={['dataMin - 1', 'dataMax + 1']}
-                                />
-                                <Tooltip
-                                    contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #333', borderRadius: '8px' }}
-                                    itemStyle={{ color: '#fff' }}
-                                />
-                                <Line
-                                    type="monotone"
-                                    dataKey="weight"
-                                    stroke="#f59e0b"
-                                    strokeWidth={3}
-                                    dot={{ fill: '#f59e0b', strokeWidth: 2 }}
-                                    activeDot={{ r: 6 }}
-                                />
-                            </LineChart>
-                        </ResponsiveContainer>
+                        {weightData.length === 0 ? (
+                            <div className="h-full flex flex-col items-center justify-center text-center p-6">
+                                <Scale className="w-12 h-12 text-muted-foreground/30 mb-3" />
+                                <p className="text-foreground font-medium mb-1">No weight data yet</p>
+                                <p className="text-sm text-muted-foreground">Log your weight to see your progress chart!</p>
+                            </div>
+                        ) : (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <LineChart data={weightData}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
+                                    <XAxis
+                                        dataKey="date"
+                                        stroke="#666"
+                                        fontSize={12}
+                                        tickLine={false}
+                                        axisLine={false}
+                                    />
+                                    <YAxis
+                                        stroke="#666"
+                                        fontSize={12}
+                                        tickLine={false}
+                                        axisLine={false}
+                                        domain={['dataMin - 1', 'dataMax + 1']}
+                                    />
+                                    <Tooltip
+                                        contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #333', borderRadius: '8px' }}
+                                        itemStyle={{ color: '#fff' }}
+                                    />
+                                    <Line
+                                        type="monotone"
+                                        dataKey="weight"
+                                        stroke="#f59e0b"
+                                        strokeWidth={3}
+                                        dot={{ fill: '#f59e0b', strokeWidth: 2 }}
+                                        activeDot={{ r: 6 }}
+                                    />
+                                </LineChart>
+                            </ResponsiveContainer>
+                        )}
                     </div>
                 </motion.div>
 

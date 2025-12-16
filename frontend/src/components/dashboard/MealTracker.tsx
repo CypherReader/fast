@@ -23,6 +23,8 @@ import { format, parseISO } from 'date-fns';
 
 interface MealTrackerProps {
   dailyCalorieGoal?: number;
+  externalOpen?: boolean;
+  externalOnOpenChange?: (open: boolean) => void;
 }
 
 const mealTypeConfig: Record<string, { icon: React.ElementType; label: string; color: string; bg: string }> = {
@@ -41,9 +43,13 @@ const quickMeals = [
   { name: 'Almonds (1oz)', calories: 160, type: 'snack' as const },
 ];
 
-const MealTracker = ({ dailyCalorieGoal = 1800 }: MealTrackerProps) => {
+const MealTracker = ({ dailyCalorieGoal = 1800, externalOpen, externalOnOpenChange }: MealTrackerProps) => {
   const { meals, logMeal, isLoading } = useMeals();
-  const [showAddModal, setShowAddModal] = useState(false);
+  const [internalShowModal, setInternalShowModal] = useState(false);
+
+  // Use external control if provided, otherwise use internal state
+  const showAddModal = externalOpen ?? internalShowModal;
+  const setShowAddModal = externalOnOpenChange ?? setInternalShowModal;
   const [newMealName, setNewMealName] = useState('');
   const [newMealCalories, setNewMealCalories] = useState('');
   const [newMealType, setNewMealType] = useState<'breakfast' | 'lunch' | 'dinner' | 'snack'>('lunch');

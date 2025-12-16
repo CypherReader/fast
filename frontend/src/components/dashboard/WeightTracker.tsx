@@ -26,17 +26,23 @@ import { format } from 'date-fns';
 
 interface WeightTrackerProps {
   onWeightChange?: (weight: number) => void;
+  externalOpen?: boolean;
+  externalOnOpenChange?: (open: boolean) => void;
 }
 
-const WeightTracker = ({ onWeightChange }: WeightTrackerProps) => {
+const WeightTracker = ({ onWeightChange, externalOpen, externalOnOpenChange }: WeightTrackerProps) => {
   const { weightHistory, logWeight, isWeightLoading } = useProgress();
 
   const [currentWeight, setCurrentWeight] = useState<number | null>(null);
   const [goalWeight, setGoalWeight] = useState(170); // TODO: Fetch from user profile
   const [newWeight, setNewWeight] = useState('');
   const [newGoal, setNewGoal] = useState('');
-  const [showAddModal, setShowAddModal] = useState(false);
+  const [internalShowModal, setInternalShowModal] = useState(false);
   const [showGoalModal, setShowGoalModal] = useState(false);
+
+  // Use external control if provided, otherwise use internal state
+  const showAddModal = externalOpen ?? internalShowModal;
+  const setShowAddModal = externalOnOpenChange ?? setInternalShowModal;
 
   useEffect(() => {
     if (weightHistory && weightHistory.length > 0) {

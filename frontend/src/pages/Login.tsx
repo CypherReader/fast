@@ -14,6 +14,7 @@ const Login = () => {
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [showTransition, setShowTransition] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     const navigate = useNavigate();
     const { toast } = useToast();
 
@@ -24,6 +25,7 @@ const Login = () => {
         if (isLoading) return;
 
         setIsLoading(true);
+        setError(null); // Clear previous errors
 
         try {
             const response = await api.post('/auth/login', { email, password });
@@ -44,10 +46,15 @@ const Login = () => {
             setShowTransition(true);
         } catch (error: unknown) {
             const axiosError = error as { response?: { data?: { error?: string } } };
+            const errorMsg = axiosError.response?.data?.error || "Invalid credentials. Please try again.";
+
+            // Set persistent error message
+            setError(errorMsg);
+
             toast({
                 variant: "destructive",
                 title: "Login failed",
-                description: axiosError.response?.data?.error || "Invalid credentials. Please try again.",
+                description: errorMsg,
             });
             setIsLoading(false);
         }
@@ -94,6 +101,12 @@ const Login = () => {
                                     required
                                 />
                             </div>
+
+                            {error && (
+                                <div className="bg-destructive/10 border border-destructive rounded-lg p-3 text-sm text-destructive">
+                                    {error}
+                                </div>
+                            )}
                         </CardContent>
                         <CardFooter className="flex flex-col gap-4">
                             <Button type="submit" className="w-full" disabled={isLoading}>
