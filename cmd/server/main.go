@@ -50,6 +50,7 @@ func main() {
 	var vaultRepo ports.VaultRepository
 	var socialRepo ports.SocialRepository
 	var progressRepo ports.ProgressRepository
+	var tribeRepo ports.TribeRepository
 
 	// Check for DB connection string
 	// Priority: DATABASE_URL (Cloud Run) > DSN > individual env vars
@@ -125,6 +126,7 @@ func main() {
 		vaultRepo = postgres.NewPostgresVaultRepository(db)
 		socialRepo = postgres.NewPostgresSocialRepository(db)
 		progressRepo = postgres.NewPostgresProgressRepository(db)
+		tribeRepo = postgres.NewPostgresTribeRepository(db)
 	} else {
 		log.Println("!!! RUNNING IN IN-MEMORY MODE (DATA WILL BE LOST ON RESTART) !!!")
 		userRepo = memory.NewUserRepository()
@@ -138,6 +140,7 @@ func main() {
 		vaultRepo = memory.NewVaultRepository()
 		socialRepo = memory.NewSocialRepository()
 		progressRepo = memory.NewProgressRepository()
+		tribeRepo = nil // No in-memory implementation for tribes yet
 	}
 
 	// Activity Repo (Memory only for now)
@@ -186,6 +189,7 @@ func main() {
 	telemetryService := services.NewTelemetryService(telemetryRepo)
 	socialService := services.NewSocialService(socialRepo)
 	progressService := services.NewProgressService(progressRepo)
+	tribeService := services.NewTribeService(tribeRepo)
 
 	apiKey := os.Getenv("DEEPSEEK_API_KEY")
 	if apiKey == "" {
@@ -277,6 +281,9 @@ func main() {
 	oauthHandler := http.NewOAuthHandler(oauthService)
 	handler.SetOAuthHandler(oauthHandler)
 
+	// Initialize Tribe handler
+	tribeHandler := http.NewTribeHandler(tribeService)
+
 	// 4. Setup Router
 	router := gin.Default()
 
@@ -327,6 +334,11 @@ func main() {
 	log.Println("Cron scheduler started")
 
 	handler.RegisterRoutes(router)
+
+	// Register Tribe routes
+	api := router.Group("/api/v1")
+	authMiddleware := http.AuthMiddleware(authService)
+	http.RegisterTribesRoutes(api, tribeHandler, authMiddleware)
 
 	// 5. Start Server
 	port := os.Getenv("PORT")
