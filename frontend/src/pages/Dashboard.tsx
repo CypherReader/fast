@@ -4,7 +4,7 @@ import {
   X, Lock, Timer, CheckCircle, Circle, Scale, Utensils,
   Users, Bell, TrendingUp, Flame, Target, ChevronRight
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { useOnboarding } from '@/contexts/OnboardingContext';
@@ -38,6 +38,7 @@ const checklistItems = [
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { state } = useOnboarding();
   const [showWelcomeBanner, setShowWelcomeBanner] = useState(true);
   const [checklist, setChecklist] = useState(checklistItems);
@@ -54,6 +55,17 @@ const Dashboard = () => {
   // Dialog control states for Quick Actions
   const [showMealDialog, setShowMealDialog] = useState(false);
   const [showWeightDialog, setShowWeightDialog] = useState(false);
+
+  // Handle OAuth token from URL
+  useEffect(() => {
+    const token = searchParams.get('token');
+    if (token) {
+      localStorage.setItem('token', token);
+      // Remove token from URL for security
+      searchParams.delete('token');
+      window.history.replaceState({}, '', `/dashboard?${searchParams.toString()}`);
+    }
+  }, [searchParams]);
 
   // Auto-dismiss welcome banner after 10 seconds
   useEffect(() => {

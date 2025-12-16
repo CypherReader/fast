@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { Lock, TrendingUp, DollarSign } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useEffect } from 'react';
 import OnboardingLayout from '@/components/onboarding/OnboardingLayout';
 import { Button } from '@/components/ui/button';
 
@@ -27,6 +28,18 @@ const valueProps = [
 
 const OnboardingWelcome = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  // Handle OAuth token from URL
+  useEffect(() => {
+    const token = searchParams.get('token');
+    if (token) {
+      localStorage.setItem('token', token);
+      // Remove token from URL for security
+      searchParams.delete('token');
+      window.history.replaceState({}, '', `/onboarding?${searchParams.toString()}`);
+    }
+  }, [searchParams]);
 
   return (
     <OnboardingLayout step={1}>

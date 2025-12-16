@@ -90,9 +90,22 @@ func (h *OAuthHandler) HandleGoogleCallback(c *gin.Context) {
 		true,  // httpOnly
 	)
 
-	// Return success with user info and token
-	c.JSON(http.StatusOK, gin.H{
-		"token": token,
-		"user":  user,
-	})
+	// Redirect to frontend with token and user info
+	// Frontend will store the token and redirect to dashboard or onboarding
+	frontendURL := "http://localhost:5173"
+
+	// Check for production frontend URL
+	if prodURL := c.Request.Header.Get("Origin"); prodURL != "" && prodURL != "http://localhost:5173" {
+		frontendURL = prodURL
+	}
+
+	// Determine redirect path based on onboarding status
+	redirectPath := "/dashboard"
+	if !user.OnboardingCompleted {
+		redirectPath = "/onboarding"
+	}
+
+	// Redirect to frontend with token as URL parameter
+	// Frontend will extract token from URL and store it
+	c.Redirect(http.StatusTemporaryRedirect, frontendURL+redirectPath+"?token="+token)
 }
