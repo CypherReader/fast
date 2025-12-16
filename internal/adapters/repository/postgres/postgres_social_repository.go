@@ -56,28 +56,28 @@ func (r *PostgresSocialRepository) FindFriends(ctx context.Context, userID uuid.
 // Tribes
 func (r *PostgresSocialRepository) SaveTribe(ctx context.Context, tribe *domain.Tribe) error {
 	query := `
-		INSERT INTO tribes (id, name, description, created_by, member_count, is_private, created_at, updated_at)
+		INSERT INTO tribes (id, name, description, creator_id, member_count, privacy, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		ON CONFLICT (id) DO UPDATE SET
 			name = EXCLUDED.name,
 			description = EXCLUDED.description,
 			member_count = EXCLUDED.member_count,
-			is_private = EXCLUDED.is_private,
+			privacy = EXCLUDED.privacy,
 			updated_at = NOW()
 	`
 	_, err := r.db.ExecContext(ctx, query,
-		tribe.ID, tribe.Name, tribe.Description, tribe.CreatedBy, tribe.MemberCount, tribe.IsPrivate,
+		tribe.ID, tribe.Name, tribe.Description, tribe.CreatorID, tribe.MemberCount, tribe.Privacy,
 		tribe.CreatedAt, time.Now(),
 	)
 	return err
 }
 
 func (r *PostgresSocialRepository) FindTribeByID(ctx context.Context, id uuid.UUID) (*domain.Tribe, error) {
-	query := `SELECT id, name, description, created_by, member_count, is_private, created_at, updated_at FROM tribes WHERE id = $1`
-	row := r.db.QueryRowContext(ctx, query, id)
+	query := `SELECT id, name, description, creator_id, member_count, privacy, created_at, updated_at FROM tribes WHERE id = $1`
+	row := r.db.QueryRowContext(ctx, query, id.String())
 
 	var t domain.Tribe
-	err := row.Scan(&t.ID, &t.Name, &t.Description, &t.CreatedBy, &t.MemberCount, &t.IsPrivate, &t.CreatedAt, &t.UpdatedAt)
+	err := row.Scan(&t.ID, &t.Name, &t.Description, &t.CreatorID, &t.MemberCount, &t.Privacy, &t.CreatedAt, &t.UpdatedAt)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -89,7 +89,7 @@ func (r *PostgresSocialRepository) FindTribeByID(ctx context.Context, id uuid.UU
 
 func (r *PostgresSocialRepository) FindAllTribes(ctx context.Context, limit, offset int) ([]domain.Tribe, error) {
 	query := `
-		SELECT id, name, description, created_by, member_count, is_private, created_at, updated_at
+		SELECT id, name, description, creator_id, member_count, privacy, created_at, updated_at
 		FROM tribes
 		ORDER BY member_count DESC
 		LIMIT $1 OFFSET $2
@@ -103,7 +103,7 @@ func (r *PostgresSocialRepository) FindAllTribes(ctx context.Context, limit, off
 	var tribes []domain.Tribe
 	for rows.Next() {
 		var t domain.Tribe
-		if err := rows.Scan(&t.ID, &t.Name, &t.Description, &t.CreatedBy, &t.MemberCount, &t.IsPrivate, &t.CreatedAt, &t.UpdatedAt); err != nil {
+		if err := rows.Scan(&t.ID, &t.Name, &t.Description, &t.CreatorID, &t.MemberCount, &t.Privacy, &t.CreatedAt, &t.UpdatedAt); err != nil {
 			return nil, err
 		}
 		tribes = append(tribes, t)

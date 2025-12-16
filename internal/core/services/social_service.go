@@ -52,14 +52,19 @@ func (s *SocialService) GetFriends(ctx context.Context, userID uuid.UUID) ([]dom
 }
 
 func (s *SocialService) CreateTribe(ctx context.Context, userID uuid.UUID, name, description string, isPublic bool) (*domain.Tribe, error) {
+	privacy := "public"
+	if !isPublic {
+		privacy = "private"
+	}
 	tribe := &domain.Tribe{
-		ID:          uuid.New(),
-		CreatedBy:   userID,
+		ID:          uuid.New().String(),
+		CreatorID:   userID.String(),
 		Name:        name,
 		Description: description,
-		IsPrivate:   !isPublic,
+		Privacy:     privacy,
 		MemberCount: 1, // Owner is first member
 		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
 	}
 
 	if err := s.repo.SaveTribe(ctx, tribe); err != nil {

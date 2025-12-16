@@ -433,7 +433,7 @@ func (r *SocialRepository) FindFriends(ctx context.Context, userID uuid.UUID) ([
 func (r *SocialRepository) SaveTribe(ctx context.Context, tribe *domain.Tribe) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	r.tribes[tribe.ID.String()] = tribe
+	r.tribes[tribe.ID] = tribe
 	return nil
 }
 
