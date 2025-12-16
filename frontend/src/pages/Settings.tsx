@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Bell, Moon, Globe, Lock, LogOut, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -8,30 +8,69 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 
+const SETTINGS_KEY = 'fastinghero_settings';
+
 const Settings = () => {
     const navigate = useNavigate();
-    const [settings, setSettings] = useState({
-        notifications: {
-            fastReminders: true,
-            milestoneAlerts: true,
-            communityUpdates: false,
-            emailDigest: true,
-        },
-        preferences: {
-            darkMode: false,
-            language: 'en',
-        },
-    });
+
+    // Load settings from localStorage or use defaults
+    const loadSettings = () => {
+        const saved = localStorage.getItem(SETTINGS_KEY);
+        if (saved) {
+            return JSON.parse(saved);
+        }
+        return {
+            notifications: {
+                fastReminders: true,
+                milestoneAlerts: true,
+                communityUpdates: false,
+                emailDigest: true,
+            },
+            preferences: {
+                darkMode: document.documentElement.classList.contains('dark'),
+                language: 'en',
+            },
+        };
+    };
+
+    const [settings, setSettings] = useState(loadSettings);
+
+    // Save settings to localStorage whenever they change
+    useEffect(() => {
+        localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    }, [settings]);
+
+    // Apply dark mode on mount
+    useEffect(() => {
+        if (settings.preferences.darkMode) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    }, []);
 
     const handleToggle = (category: 'notifications' | 'preferences', key: string) => {
-        setSettings(prev => ({
-            ...prev,
-            [category]: {
-                ...prev[category],
-                [key]: !prev[category][key as keyof typeof prev[typeof category]],
-            },
-        }));
-        toast.success('Settings updated');
+        setSettings(prev => {
+            const newSettings = {
+                ...prev,
+                [category]: {
+                    ...prev[category],
+                    [key]: !prev[category][key as keyof typeof prev[typeof category]],
+                },
+            };
+
+            // Apply dark mode immediately
+            if (category === 'preferences' && key === 'darkMode') {
+                if (newSettings.preferences.darkMode) {
+                    document.documentElement.classList.add('dark');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                }
+            }
+
+            return newSettings;
+        });
+        toast.success('Settings saved');
     };
 
     const handleLogout = () => {
