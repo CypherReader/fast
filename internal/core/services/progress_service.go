@@ -71,18 +71,59 @@ func (s *ProgressService) GetWeightHistory(ctx context.Context, userID uuid.UUID
 }
 
 func (s *ProgressService) LogHydration(ctx context.Context, userID uuid.UUID, amount float64, unit string) (*domain.HydrationLog, error) {
-	// Validate amount is within reasonable bounds
-	if amount < 0 || amount > 100 {
-		return nil, errors.New("hydration amount must be between 0 and 100 glasses")
+	// Validate amount is positive
+	if amount <= 0 {
+		return nil, errors.New("amount must be positive")
 	}
 
-	glasses := int(amount)
+	var glasses int
 
+	// Handle different units
+	switch unit {
+	case "ml":
+		// Validate reasonable ml amount (0-10000ml = 0-40 glasses)
+		if amount > 10000 {
+			return nil, errors.New("amount too large: maximum 10000ml per entry")
+		}
+		// Convert ml to glasses (250ml per glass)
+		glasses = int(amount / 250.0)
+		if glasses == 0 {
+			glasses = 1 // Minimum 1 glass for any amount
+		}
+	case "glasses", "glass":
+		// Direct glasses input
+		if amount > 100 {
+			return nil, errors.New("amount too large: maximum 100 glasses per entry")
+		}
+		glasses = int(amount)
+	default:
+		return nil, fmt.Errorf("invalid unit: must be 'ml' or 'glasses'")
+	}
+
+	// Get today's date (date only, no time)
+	today := time.Now().Truncate(24 * time.Hour)
+
+	// Check if log exists for today
+	existingLog, err := s.repo.GetHydrationLog(ctx, userID, today)
+	if err != nil {
+		return nil, err
+	}
+
+	if existingLog != nil {
+		// Update existing log - add to count
+		existingLog.GlassesCount += glasses
+		if err := s.repo.SaveHydrationLog(ctx, existingLog); err != nil {
+			return nil, err
+		}
+		return existingLog, nil
+	}
+
+	// Create new log for today
 	log := &domain.HydrationLog{
 		ID:           uuid.New(),
 		UserID:       userID,
 		GlassesCount: glasses,
-		LoggedDate:   time.Now(),
+		LoggedDate:   today,
 		CreatedAt:    time.Now(),
 	}
 
