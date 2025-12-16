@@ -1,8 +1,11 @@
 -- Migration: 010_tribes
--- Description: Create tribes and tribe_memberships tables for social groups feature
+-- Description: Upgrade tribes and tribe_memberships tables for full social groups feature
 -- Author: System
 -- Date: 2025-12-16
--- Create tribes table
+-- Drop the old basic tribes table from migration 007 and recreate with full schema
+DROP TABLE IF EXISTS tribe_members CASCADE;
+DROP TABLE IF EXISTS tribes CASCADE;
+-- Create tribes table with complete schema
 CREATE TABLE IF NOT EXISTS tribes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(50) NOT NULL,
