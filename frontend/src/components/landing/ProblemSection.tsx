@@ -15,7 +15,7 @@ export const ProblemSection = () => {
   const isInView = useInView(ref, { once: true, margin: "-100px" });
 
   return (
-    <section className="py-20 md:py-32 bg-gradient-dark relative overflow-hidden" ref={ref}>
+    <section className="py-20 md:py-32 bg-slate-900 dark:bg-gradient-dark relative overflow-hidden" ref={ref}>
       <AnimatedSectionBackground variant="subtle" showOrbs showGrid />
 
       <div className="container px-4 relative z-10">
@@ -24,7 +24,7 @@ export const ProblemSection = () => {
             initial={{ opacity: 0, y: 30 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.6 }}
-            className="text-4xl md:text-5xl lg:text-6xl font-bold mb-12"
+            className="text-4xl md:text-5xl lg:text-6xl font-bold mb-12 text-white"
           >
             The Problem With Fasting Apps
           </motion.h2>
@@ -37,13 +37,13 @@ export const ProblemSection = () => {
                 animate={isInView ? { opacity: 1, x: 0 } : {}}
                 transition={{ duration: 0.5, delay: i * 0.1 }}
                 whileHover={{ x: 10, transition: { duration: 0.2 } }}
-                className="relative bg-card/80 backdrop-blur rounded-xl p-5 border border-border hover:border-destructive/30 transition-colors"
+                className="relative bg-slate-800/80 backdrop-blur rounded-xl p-5 border border-slate-700 hover:border-red-500/30 transition-colors"
               >
                 <motion.div
                   initial={{ scaleY: 0 }}
                   animate={isInView ? { scaleY: 1 } : {}}
                   transition={{ delay: i * 0.1 + 0.3 }}
-                  className="absolute left-0 top-0 bottom-0 w-1 bg-destructive rounded-l-xl origin-top"
+                  className="absolute left-0 top-0 bottom-0 w-1 bg-red-500 rounded-l-xl origin-top"
                 />
                 <div className="flex items-center gap-3 pl-3">
                   <motion.div
@@ -51,9 +51,9 @@ export const ProblemSection = () => {
                     animate={isInView ? { rotate: 0, opacity: 1 } : {}}
                     transition={{ delay: i * 0.1 + 0.2, type: "spring" }}
                   >
-                    <X className="w-5 h-5 text-destructive flex-shrink-0" />
+                    <X className="w-5 h-5 text-red-500 flex-shrink-0" />
                   </motion.div>
-                  <span className="text-foreground font-medium">{problem}</span>
+                  <span className="text-gray-100 font-medium">{problem}</span>
                 </div>
               </motion.div>
             ))}
@@ -65,8 +65,8 @@ export const ProblemSection = () => {
             transition={{ delay: 0.6 }}
             className="text-lg"
           >
-            <span className="text-primary font-bold">FastingHero</span>
-            <span className="text-foreground"> is different.</span>
+            <span className="text-emerald-400 font-bold">FastingHero</span>
+            <span className="text-gray-100"> is different.</span>
           </motion.p>
         </div>
       </div>
