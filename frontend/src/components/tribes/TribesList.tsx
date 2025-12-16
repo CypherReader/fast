@@ -11,13 +11,13 @@ import { CreateTribeDialog } from './CreateTribeDialog';
 export function TribesList() {
     const navigate = useNavigate();
     const [search, setSearch] = useState('');
-    const [fastingSchedule, setFastingSchedule] = useState('');
+    const [fastingSchedule, setFastingSchedule] = useState('all');
     const [sortBy, setSortBy] = useState<'newest' | 'popular' | 'active' | 'members'>('popular');
     const [showCreateDialog, setShowCreateDialog] = useState(false);
 
     const { data, isLoading, error } = useTribes({
         search,
-        fasting_schedule: fastingSchedule,
+        fasting_schedule: fastingSchedule === 'all' ? '' : fastingSchedule,
         sort_by: sortBy,
         limit: 20,
     });
@@ -55,7 +55,7 @@ export function TribesList() {
                         <SelectValue placeholder="All Schedules" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="">All Schedules</SelectItem>
+                        <SelectItem value="all">All Schedules</SelectItem>
                         <SelectItem value="16:8">16:8 Intermittent</SelectItem>
                         <SelectItem value="18:6">18:6 Extended</SelectItem>
                         <SelectItem value="omad">OMAD</SelectItem>
@@ -64,7 +64,7 @@ export function TribesList() {
                 </Select>
 
                 {/* Sort By */}
-                <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
+                <Select value={sortBy} onValueChange={(v) => setSortBy(v as 'newest' | 'popular' | 'active' | 'members')}>
                     <SelectTrigger className="w-36">
                         <SelectValue />
                     </SelectTrigger>
