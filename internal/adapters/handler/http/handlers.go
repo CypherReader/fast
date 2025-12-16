@@ -5,6 +5,7 @@ import (
 	"fastinghero/internal/core/domain"
 	"fastinghero/internal/core/ports"
 	"fastinghero/internal/core/services"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -153,7 +154,8 @@ func (h *Handler) RegisterRoutes(router *gin.Engine) {
 	{
 		fasting.POST("/start", h.StartFast)
 		fasting.POST("/stop", h.StopFast)
-		fasting.GET("/current", h.GetCurrentFast)
+		fasting.GET("/current", h.GetCurrentFast)`r
+	`tfasting.GET("/insight", h.GetFastingInsight)
 	}
 
 	keto := protected.Group("/keto")
@@ -926,4 +928,6 @@ func (h *Handler) GetFastingInsight(c *gin.Context) {
 
 	c.JSON(http.StatusOK, insight)
 }
+
+
 
