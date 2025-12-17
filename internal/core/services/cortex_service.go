@@ -233,7 +233,7 @@ type CravingResponse struct {
 }
 
 // GetCravingHelp provides personalized support for hunger cravings
-func (s *CortexService) GetCravingHelp(ctx context.Context, userID uuid.UUID, cravingDescription string) (*CravingResponse, error) {
+func (s *CortexService) GetCravingHelp(ctx context.Context, userID uuid.UUID, cravingDescription string) (interface{}, error) {
 	// 1. Fetch user context
 	user, err := s.userRepo.FindByID(ctx, userID)
 	if err != nil {
