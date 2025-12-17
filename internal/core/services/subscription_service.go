@@ -51,7 +51,7 @@ func (s *SubscriptionService) UpgradeToVault(ctx context.Context, userID uuid.UU
 	user.SubscriptionTier = domain.TierVault
 	user.SubscriptionStatus = domain.SubStatusActive
 	user.SubscriptionID = subID
-	user.VaultDeposit = 20.0 // Set default deposit
+	user.VaultDeposit = 4.99 // UPDATED FOR V2: Standard subscription price
 
 	return s.userRepo.Save(ctx, user)
 }

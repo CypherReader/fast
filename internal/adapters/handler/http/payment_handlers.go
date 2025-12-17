@@ -76,7 +76,7 @@ func (h *PaymentHandler) HandleDeposit(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message":     "Deposit initiated",
+		"message":     "Subscription payment processed", // UPDATED FOR V2
 		"customer_id": customerID,
 	})
 }

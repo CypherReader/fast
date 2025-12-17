@@ -10,11 +10,18 @@ import (
 	"github.com/google/uuid"
 )
 
+// V2 Pricing
 const (
-	MonthlyCharge = 30.0
-	BaseFee       = 10.0
-	VaultDeposit  = 20.0
-	DailyMax      = 2.0
+	MonthlySubscription = 4.99 // Standard subscription price for V2
+)
+
+// Deprecated vault constants (kept for backward compatibility)
+// HIDDEN FOR V2: These are used by existing vault logic but not exposed to users
+const (
+	MonthlyCharge = 30.0 // Deprecated: old vault pricing
+	BaseFee       = 10.0 // Deprecated: old vault fee
+	VaultDeposit  = 20.0 // Deprecated: now using MonthlySubscription (4.99)
+	DailyMax      = 2.0  // Deprecated: vault daily earning cap
 )
 
 type VaultService struct {
