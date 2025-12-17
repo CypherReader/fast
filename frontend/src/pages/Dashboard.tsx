@@ -28,7 +28,7 @@ const planNames: Record<string, string> = {
 
 const checklistItems = [
   { id: 'account', label: 'Create account', completed: true, icon: CheckCircle },
-  { id: 'deposit', label: 'Deposit to Vault', completed: true, icon: Lock },
+  // { id: 'deposit', label: 'Deposit to Vault', completed: true, icon: Lock }, // HIDDEN FOR V2
   { id: 'first_fast', label: 'Start your first fast', completed: false, icon: Timer, action: 'start_fast' },
   { id: 'log_weight', label: 'Log your weight', completed: false, icon: Scale, action: 'log_weight' },
   { id: 'log_steps', label: 'Log your steps', completed: false, icon: TrendingUp, action: 'log_steps' },
@@ -313,8 +313,8 @@ const Dashboard = () => {
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Main Content - Left Side */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Vault Hero Card */}
-            <motion.div
+            {/* Vault Hero Card - HIDDEN FOR V2 */}
+            {/* <motion.div
               className="bg-card border border-border rounded-2xl overflow-hidden"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -330,13 +330,11 @@ const Dashboard = () => {
                   </span>
                 </div>
 
-                {/* Vault Balance */}
                 <div className="flex items-baseline gap-2 mb-2">
                   <span className="text-4xl font-bold text-primary">${recoveredAmount.toFixed(2)}</span>
                   <span className="text-muted-foreground">/ ${vaultDeposit.toFixed(2)} recovered</span>
                 </div>
 
-                {/* Progress Bar */}
                 <Progress value={(recoveredAmount / vaultDeposit) * 100} className="h-3 mb-4" />
 
                 <div className="flex items-center justify-between text-sm mb-6">
@@ -348,13 +346,41 @@ const Dashboard = () => {
                   </span>
                 </div>
 
-                {/* Fasting Timer with Phase Indicators */}
                 <FastingTimer
                   isActive={currentFast?.status === 'active'}
                   elapsedSeconds={elapsedSeconds}
                   targetHours={getTargetHours()}
                   onStart={handleStartFast}
-                  onPause={() => { }} // Pause not supported by backend yet
+                  onPause={() => { }}
+                  onStop={handleStopFast}
+                  insight={insight}
+                />
+              </div>
+            </motion.div> */}
+
+            {/* Fasting Timer Card - Moved out of vault */}
+            <motion.div
+              className="bg-card border border-border rounded-2xl overflow-hidden"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <Timer className="w-5 h-5 text-primary" />
+                    <h3 className="font-semibold text-foreground">Fasting Timer</h3>
+                  </div>
+                  <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">
+                    {state.fastingPlan ? planNames[state.fastingPlan] : '16:8'} Plan
+                  </span>
+                </div>
+
+                <FastingTimer
+                  isActive={currentFast?.status === 'active'}
+                  elapsedSeconds={elapsedSeconds}
+                  targetHours={getTargetHours()}
+                  onStart={handleStartFast}
+                  onPause={() => { }}
                   onStop={handleStopFast}
                   insight={insight}
                 />
@@ -366,7 +392,7 @@ const Dashboard = () => {
               {[
                 { label: 'Discipline', value: '-- / 100', icon: Target, sublabel: 'Complete a fast to see' },
                 { label: 'Fasts', value: fastsCompleted.toString(), icon: Timer, sublabel: 'completed' },
-                { label: 'Vault Balance', value: `$${recoveredAmount}`, icon: Lock, sublabel: `of $${vaultDeposit}` },
+                // { label: 'Vault Balance', value: `$${recoveredAmount}`, icon: Lock, sublabel: `of $${vaultDeposit}` }, // HIDDEN FOR V2
                 { label: 'Streak', value: '0', icon: Flame, sublabel: 'days' },
               ].map((stat, index) => (
                 <motion.div

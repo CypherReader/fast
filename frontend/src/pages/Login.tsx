@@ -75,7 +75,7 @@ const Login = () => {
                     <CardHeader>
                         <CardTitle className="text-2xl font-bold text-center">Welcome Back</CardTitle>
                         <CardDescription className="text-center">
-                            Enter your credentials to access your vault
+                            Enter your credentials to access your account
                         </CardDescription>
                     </CardHeader>
                     <form onSubmit={handleLogin}>

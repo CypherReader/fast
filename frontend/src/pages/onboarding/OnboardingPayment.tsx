@@ -133,15 +133,15 @@ const OnboardingPayment = () => {
     agreeTerms;
 
   return (
-    <OnboardingLayout step={5} showBack backPath="/onboarding/account">
+    <OnboardingLayout step={4} showBack backPath="/onboarding/plan">
       <div className="max-w-4xl w-full">
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
-            Secure Your Commitment
+            Set Up Payment Method
           </h1>
           <p className="text-muted-foreground">
-            Deposit $20 to activate your Vault
+            Subscribe to FastingHero - $20/month
           </p>
         </div>
 
@@ -358,11 +358,11 @@ const OnboardingPayment = () => {
                 </p>
               </div>
 
-              {/* Visual vault indicator */}
+              {/* Payment info */}
               <div className="mt-6 p-4 bg-muted/50 rounded-xl text-center">
                 <Lock className="w-8 h-8 text-primary mx-auto mb-2" />
                 <p className="text-xs text-muted-foreground">
-                  Your deposit goes into your secure Commitment Vault
+                  Secure subscription powered by Stripe
                 </p>
               </div>
             </div>

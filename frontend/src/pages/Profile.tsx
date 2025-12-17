@@ -131,6 +131,7 @@ const Profile = () => {
                                 <span className="text-muted-foreground">Subscription</span>
                                 <span className="font-medium">Free Plan</span>
                             </div>
+                            {/* HIDDEN FOR V2
                             <div className="flex justify-between items-center py-2 border-b border-border">
                                 <span className="text-muted-foreground">Vault Deposit</span>
                                 <span className="font-medium">$20.00</span>
@@ -139,6 +140,7 @@ const Profile = () => {
                                 <span className="text-muted-foreground">Vault Balance</span>
                                 <span className="font-medium text-green-600">$0.00</span>
                             </div>
+                            */}
                         </div>
                     </Card>
                 </motion.div>
