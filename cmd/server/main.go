@@ -164,7 +164,7 @@ func main() {
 		vaultRepo = memory.NewVaultRepository()
 		socialRepo = memory.NewSocialRepository()
 		progressRepo = memory.NewProgressRepository()
-		tribeRepo = nil // No in-memory implementation for tribes yet
+		tribeRepo = memory.NewTribeRepository()
 		sosRepo = memory.NewMemorySOSRepository()
 	}
 
@@ -340,9 +340,7 @@ func main() {
 	router := gin.Default()
 
 	// Seed Test User (jib@jab.com)
-	if !useMemory {
-		go seedTestUser(authService, userRepo)
-	}
+	go seedTestUser(authService, userRepo)
 
 	// Configure CORS based on environment
 	allowedOrigins := []string{"http://localhost:5173"}
