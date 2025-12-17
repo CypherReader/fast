@@ -30,9 +30,9 @@ export const FinalCTASection = () => {
             transition={{ duration: 0.6 }}
             className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6"
           >
-            <span className="text-gradient-hero">Start Fasting</span>
+            <span className="text-gradient-hero">Start Your</span>
             <br />
-            <span className="text-foreground">For Free Today</span>
+            <span className="text-foreground">Transformation Today</span>
           </motion.h2>
 
           {/* Stats with animated counters */}
@@ -44,10 +44,10 @@ export const FinalCTASection = () => {
           >
             <div className="text-center">
               <div className="font-display text-2xl md:text-4xl font-bold text-primary mb-1">
-                <AnimatedCounter value={87} suffix="%" />
+                <AnimatedCounter value={12} suffix="k+" />
               </div>
               <div className="text-xs md:text-sm text-muted-foreground">
-                Pay $0/Month
+                Active Users
               </div>
             </div>
             <div className="text-center">
@@ -58,9 +58,9 @@ export const FinalCTASection = () => {
             </div>
             <div className="text-center">
               <div className="font-display text-2xl md:text-4xl font-bold text-accent mb-1">
-                $<AnimatedCounter value={0} decimals={0} />
+                $<AnimatedCounter value={4.99} decimals={2} />
               </div>
-              <div className="text-xs md:text-sm text-muted-foreground">Net Cost (Disciplined)</div>
+              <div className="text-xs md:text-sm text-muted-foreground">Per Month</div>
             </div>
           </motion.div>
 
@@ -72,8 +72,7 @@ export const FinalCTASection = () => {
             className="mb-6"
           >
             <MagneticButton className="text-lg">
-              <DollarSign className="w-5 h-5" />
-              Join 12,847 Members Paying $0/Month
+              Join 12,847 Active Fasters
             </MagneticButton>
           </motion.div>
 
@@ -87,7 +86,7 @@ export const FinalCTASection = () => {
             {[
               { icon: Lock, text: "Secure Payment" },
               { icon: CheckCircle, text: "Cancel Anytime" },
-              { icon: Shield, text: "Full Refund Guarantee" },
+              { icon: Shield, text: "30-Day Guarantee" },
             ].map((item, i) => (
               <motion.div
                 key={i}
@@ -110,8 +109,7 @@ export const FinalCTASection = () => {
           >
             <Quote className="w-8 h-8 text-primary/30 mb-3" />
             <p className="text-foreground italic mb-4">
-              "I've tried every fasting app. This is the only one that worked because I had real
-              money on the line."
+              "I've tried every fasting app. FastingHero is the only one that worked because of the AI coaching and supportive community."
             </p>
             <div className="flex items-center justify-center gap-2">
               <motion.div
@@ -122,7 +120,7 @@ export const FinalCTASection = () => {
                 MR
               </motion.div>
               <span className="font-semibold">Michael R.</span>
-              <span className="text-muted-foreground text-sm">(Net cost: $0 for 8 months)</span>
+              <span className="text-muted-foreground text-sm">(Lost 23 lbs in 3 months)</span>
             </div>
           </motion.div>
         </div>

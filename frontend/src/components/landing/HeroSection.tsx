@@ -118,14 +118,7 @@ export const HeroSection = () => {
                 <MagneticButton className="text-lg">
                   Get Started Free
                 </MagneticButton>
-                <button
-                  onClick={scrollToHowItWorks}
-                  className="text-muted-foreground hover:text-foreground transition-colors text-sm underline-offset-4 hover:underline"
-                >
-                
-              >
-                Join thousands of users on their fasting journey
-              </motion.p>
+              </motion.div>
             </div>
 
             {/* Right side - Fasting Timer */}

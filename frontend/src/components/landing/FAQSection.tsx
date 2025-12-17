@@ -8,11 +8,12 @@ import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
 import { AnimatedSectionBackground } from "./AnimatedSectionBackground";
 
+// HIDDEN FOR V2: Vault-related FAQ questions replaced with generic questions
 const faqs = [
   {
-    question: "What if I don't recover all my money back?",
+    question: "How does FastingHero help me succeed?",
     answer:
-      "You'll still recover based on your discipline. Complete 5 fasts → Recover $10 back. Complete 10 fasts → Recover $20 back. Average user recovers $18.73/month. It's progressive, not all-or-nothing.",
+      "FastingHero combines AI coaching, progress tracking, and community support to keep you motivated. Our Cortex AI provides personalized insights during your fasting journey, helping you understand what's happening in your body at each stage.",
   },
   {
     question: "Is my payment information secure?",
@@ -22,17 +23,17 @@ const faqs = [
   {
     question: "Can I cancel anytime?",
     answer:
-      "Yes, you can cancel your subscription at any time with immediate effect. You'll keep any money you've already recovered for that billing period.",
+      "Yes, you can cancel your subscription at any time with immediate effect. There are no long-term commitments or cancellation fees.",
   },
   {
-    question: "What if I miss a few days?",
+    question: "What fasting schedules do you support?",
     answer:
-      "No problem! Our recovery system is progressive. Missing a day or two won't wipe out your progress. You recover for every fast you complete, regardless of streaks.",
+      "We support all popular fasting schedules including 16:8, 18:6, and 23:1 (OMAD). You can choose the plan that fits your lifestyle and goals, and switch between them as needed.",
   },
   {
-    question: "Do other fasting apps do this?",
+    question: "Do I need any special equipment?",
     answer:
-      "No. FastingHero is the only fasting app with a commitment-based refund system. Other apps are free (no commitment) or charge you without giving anything back. We're the only app where your money motivates you AND returns to you.",
+      "No special equipment needed! FastingHero works as a standalone app. However, if you want to track additional metrics like ketones or glucose, the app can integrate with compatible devices.",
   },
 ];
 

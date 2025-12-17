@@ -22,7 +22,8 @@ const Index = () => {
         <ProblemSection />
         <HowItWorksSection />
         <TestimonialsSection />
-        <ComparisonSection />
+        {/* HIDDEN: ComparisonSection - "Why FastingHero wins" */}
+        {/* <ComparisonSection /> */}
         <PricingSection />
         <FAQSection />
         <FinalCTASection />
