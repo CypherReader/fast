@@ -122,8 +122,6 @@ func main() {
 		useMemory = true
 	}
 
-	}
-
 	if !useMemory {
 		// Run Migrations
 		log.Println(">>> Running Migrations...")
@@ -133,7 +131,7 @@ func main() {
 			useMemory = true
 		}
 	}
-	
+
 	log.Printf(">>> Initialization Mode: useMemory=%v", useMemory)
 
 	if !useMemory {
@@ -204,24 +202,45 @@ func main() {
 		}
 	}
 
+	log.Println(">>> Initializing AuthService...")
 	authService := services.NewAuthService(userRepo, referralService, jwtSecret)
+
+	log.Println(">>> Initializing FastingService...")
 	fastingService := services.NewFastingService(fastingRepo, vaultService, userRepo)
+
+	log.Println(">>> Initializing KetoService...")
 	ketoService := services.NewKetoService(ketoRepo, userRepo)
+
+	log.Println(">>> Initializing LeaderboardService...")
 	leaderboardService := services.NewLeaderboardService(leaderboardRepo)
+
+	log.Println(">>> Initializing GamificationService...")
 	gamificationService := services.NewGamificationService(gamificationRepo, fastingRepo)
+
+	log.Println(">>> Initializing ActivityService...")
 	activityService := services.NewActivityService(activityRepo)
+
+	log.Println(">>> Initializing TelemetryService...")
 	telemetryService := services.NewTelemetryService(telemetryRepo)
+
+	log.Println(">>> Initializing SocialService...")
 	socialService := services.NewSocialService(socialRepo)
+
+	log.Println(">>> Initializing ProgressService...")
 	progressService := services.NewProgressService(progressRepo)
 
 	// Only create TribeService if repository exists (not nil in memory mode)
 	var tribeService ports.TribeService
+	log.Printf(">>> Initializing TribeService (tribeRepo != nil: %v)...", tribeRepo != nil)
 	if tribeRepo != nil {
 		tribeService = services.NewTribeService(tribeRepo)
 	}
 
 	// Initialize SOS Service after tribe service
 	var sosService ports.SOSService
+	log.Println(">>> Initializing SOSService...")
+	// Note: We use the already initialized services/repos here
+	// Ensure tribeService is handled correctly inside NewSOSService or passed safely
 
 	apiKey := os.Getenv("DEEPSEEK_API_KEY")
 	if apiKey == "" {
@@ -244,12 +263,17 @@ func main() {
 			}
 		}
 	}
+	log.Println(">>> Initializing LLM Adapter...")
 	llmAdapter := llm.NewDeepSeekAdapter(apiKey)
+	log.Println(">>> Initializing CortexService...")
 	cortexService := services.NewCortexService(llmAdapter, fastingRepo, userRepo)
 
+	log.Println(">>> Initializing MealService...")
 	mealService := services.NewMealService(mealRepo, cortexService)
+	log.Println(">>> Initializing RecipeService...")
 	recipeService := services.NewRecipeService(recipeRepo)
 
+	log.Println(">>> Initializing StripeService...")
 	stripeService := services.NewStripeService(paymentAdapter, subscriptionRepo, userRepo)
 
 	// Notification Service
@@ -259,6 +283,7 @@ func main() {
 	}
 	// notificationRepo is already initialized above
 	var notificationService ports.NotificationService
+	log.Println(">>> Initializing NotificationService...")
 	realNotificationService, err := services.NewNotificationService(notificationRepo, firebaseServiceAccountPath)
 	if err != nil {
 		log.Printf("Warning: Failed to initialize notification service: %v. Using NoOp service.", err)
@@ -268,6 +293,7 @@ func main() {
 	}
 
 	// Create SOS Service (needs cortexService, notificationService, tribeService)
+	// Passing potentially nil tribeService is safe as long as we don't dereference it
 	sosService = services.NewSOSService(
 		sosRepo,
 		userRepo,
@@ -277,6 +303,7 @@ func main() {
 		fastingRepo,
 	)
 
+	log.Println(">>> Initializing Main Handler...")
 	handler := http.NewHandler(
 		authService,
 		fastingService,
@@ -311,6 +338,7 @@ func main() {
 		}
 	}
 
+	log.Println(">>> Initializing OAuthService...")
 	oauthService := services.NewOAuthService(
 		userRepo,
 		jwtSecret,
@@ -320,6 +348,7 @@ func main() {
 	)
 
 	// Initialize OAuth handler and set it in main handler
+	log.Println(">>> Initializing OAuthHandler...")
 	oauthHandler := http.NewOAuthHandler(oauthService)
 	handler.SetOAuthHandler(oauthHandler)
 
@@ -329,10 +358,12 @@ func main() {
 	// Initialize Tribe handler only if tribe service exists
 	var tribeHandler *http.TribeHandler
 	if tribeService != nil {
+		log.Println(">>> Initializing TribeHandler...")
 		tribeHandler = http.NewTribeHandler(tribeService)
 	}
 
 	// 4. Setup Router
+	log.Println(">>> Setting up Gin Router...")
 	router := gin.Default()
 
 	// Configure CORS based on environment
@@ -367,6 +398,7 @@ func main() {
 	router.Use(middleware.RequestLogger())
 
 	// 5. Setup Cron Jobs
+	log.Println(">>> Setting up Cron Jobs...")
 	cronScheduler := cron.New()
 	_, err = cronScheduler.AddFunc("@daily", func() {
 		log.Println("Running daily vault earnings calculation...")
@@ -428,8 +460,8 @@ func main() {
 	if port == "" {
 		port = "8080"
 	}
-	log.Printf("Starting FastingHero Server on :%s", port)
+	log.Println(">>> Starting Server on Port " + port + "...")
 	if err := router.Run(":" + port); err != nil {
-		log.Fatalf("Failed to start server: %v", err)
+		log.Fatal("Failed to start server: ", err)
 	}
 }
