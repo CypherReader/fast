@@ -146,6 +146,11 @@ type SocialService interface {
 	GetFriends(ctx context.Context, userID uuid.UUID) ([]domain.FriendNetwork, error)
 	CreateTribe(ctx context.Context, userID uuid.UUID, name, description string, isPublic bool) (*domain.Tribe, error)
 	GetTribe(ctx context.Context, tribeID uuid.UUID) (*domain.Tribe, error)
+	JoinTribe(ctx context.Context, userID, tribeID uuid.UUID) error
+	LeaveTribe(ctx context.Context, userID, tribeID uuid.UUID) error
+	GetTribeMembers(ctx context.Context, tribeID uuid.UUID, limit, offset int) ([]interface{}, error)
+	GetTribeStats(ctx context.Context, tribeID uuid.UUID) (interface{}, error)
+	GetMyTribes(ctx context.Context, userID uuid.UUID) ([]domain.Tribe, error)
 	CreateChallenge(ctx context.Context, userID uuid.UUID, name string, challengeType domain.ChallengeType, goal int, startDate, endDate time.Time) (*domain.FriendChallenge, error)
 	GetChallenges(ctx context.Context, userID uuid.UUID) ([]domain.FriendChallenge, error)
 	ListTribes(ctx context.Context, limit, offset int) ([]domain.Tribe, error)

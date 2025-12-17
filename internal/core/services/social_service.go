@@ -119,3 +119,36 @@ func (s *SocialService) ListTribes(ctx context.Context, limit, offset int) ([]do
 func (s *SocialService) GetFeed(ctx context.Context, userID uuid.UUID, limit, offset int) ([]domain.SocialEvent, error) {
 	return s.repo.GetFeed(ctx, userID, limit, offset)
 }
+
+// JoinTribe adds a user to a tribe
+func (s *SocialService) JoinTribe(ctx context.Context, userID, tribeID uuid.UUID) error {
+	// TODO: Implement proper tribe joining logic with membership management
+	return errors.New("tribe joining not yet fully implemented")
+}
+
+// LeaveTribe removes a user from a tribe
+func (s *SocialService) LeaveTribe(ctx context.Context, userID, tribeID uuid.UUID) error {
+	// TODO: Implement proper tribe leaving logic
+	return errors.New("tribe leaving not yet fully implemented")
+}
+
+// GetTribeMembers returns members of a tribe
+func (s *SocialService) GetTribeMembers(ctx context.Context, tribeID uuid.UUID, limit, offset int) ([]interface{}, error) {
+	// TODO: Implement proper member retrieval
+	return []interface{}{}, nil
+}
+
+// GetTribeStats returns statistics for a tribe
+func (s *SocialService) GetTribeStats(ctx context.Context, tribeID uuid.UUID) (interface{}, error) {
+	// TODO: Implement proper stats retrieval
+	return map[string]interface{}{
+		"member_count": 0,
+		"active_users": 0,
+	}, nil
+}
+
+// GetMyTribes returns all tribes for a user
+func (s *SocialService) GetMyTribes(ctx context.Context, userID uuid.UUID) ([]domain.Tribe, error) {
+	// TODO: Implement proper user tribes retrieval
+	return []domain.Tribe{}, nil
+}
