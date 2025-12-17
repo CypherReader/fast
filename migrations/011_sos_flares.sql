@@ -13,12 +13,12 @@ CREATE TABLE IF NOT EXISTS sos_flares (
         is_anonymous BOOLEAN DEFAULT false,
         cortex_responded BOOLEAN DEFAULT false,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        resolved_at TIMESTAMP,
-        INDEX idx_sos_user (user_id),
-        INDEX idx_sos_status (status),
-        INDEX idx_sos_created (created_at DESC),
-        INDEX idx_sos_active (user_id, status) -- For finding active SOS
+        resolved_at TIMESTAMP
 );
+CREATE INDEX IF NOT EXISTS idx_sos_user ON sos_flares(user_id);
+CREATE INDEX IF NOT EXISTS idx_sos_status ON sos_flares(status);
+CREATE INDEX IF NOT EXISTS idx_sos_created ON sos_flares(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_sos_active ON sos_flares(user_id, status);
 -- Hype responses table
 CREATE TABLE IF NOT EXISTS hype_responses (
     id UUID PRIMARY KEY,
@@ -27,11 +27,11 @@ CREATE TABLE IF NOT EXISTS hype_responses (
     from_name VARCHAR(255),
     message TEXT,
     emoji VARCHAR(10),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_hype_sos (sos_id),
-    INDEX idx_hype_from (from_user_id),
-    INDEX idx_hype_daily (from_user_id, created_at) -- For daily limits
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+CREATE INDEX IF NOT EXISTS idx_hype_sos ON hype_responses(sos_id);
+CREATE INDEX IF NOT EXISTS idx_hype_from ON hype_responses(from_user_id);
+CREATE INDEX IF NOT EXISTS idx_hype_daily ON hype_responses(from_user_id, created_at);
 -- User SOS settings (add to users table)
 ALTER TABLE users
 ADD COLUMN IF NOT EXISTS notify_tribe_on_sos BOOLEAN DEFAULT true;
