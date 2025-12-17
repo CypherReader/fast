@@ -126,17 +126,11 @@ func main() {
 	}
 
 	if !useMemory {
-		// Check if we should skip migrations
-		if os.Getenv("SKIP_MIGRATIONS") == "true" {
-			log.Println(">>> SKIP_MIGRATIONS=true, skipping database migrations...")
-		} else {
-			// Run Migrations
-			log.Println(">>> Running Migrations...")
-			log.Println("Running database migrations...")
-			if err := postgres.RunMigrations(db, "migrations"); err != nil {
-				log.Printf("Failed to run migrations: %v. Switching to IN-MEMORY mode.", err)
-				useMemory = true
-			}
+		// Run Migrations
+		logger.Info().Msg("Running database migrations...")
+		if err := postgres.RunMigrations(db, "migrations"); err != nil {
+			logger.Error().Err(err).Msg("Failed to run migrations. Switching to IN-MEMORY mode.")
+			useMemory = true
 		}
 	}
 
