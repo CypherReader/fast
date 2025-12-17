@@ -18,6 +18,7 @@ import OnboardingAccount from "./pages/onboarding/OnboardingAccount";
 import OnboardingPayment from "./pages/onboarding/OnboardingPayment";
 import OnboardingSuccess from "./pages/onboarding/OnboardingSuccess";
 import Tribes from "./pages/Tribes";
+import TribeDetails from "./pages/TribeDetails";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 
@@ -37,6 +38,7 @@ const App = () => (
             <Route path="/progress" element={<Progress />} />
             <Route path="/community" element={<Community />} />
             <Route path="/tribes" element={<Tribes />} />
+            <Route path="/tribes/:id" element={<TribeDetails />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/resources" element={<Resources />} />
