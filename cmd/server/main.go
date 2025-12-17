@@ -14,6 +14,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -110,8 +111,10 @@ func main() {
 			useMemory = true
 		} else {
 			logger.Info().Msg("Database connection opened, testing connectivity...")
-			if err := db.Ping(); err != nil {
-				logger.Error().Err(err).Msg("Failed to ping DB. Switching to IN-MEMORY mode.")
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			if err := db.PingContext(ctx); err != nil {
+				logger.Error().Err(err).Msg("Failed to ping DB (timeout or error). Switching to IN-MEMORY mode.")
 				useMemory = true
 			} else {
 				logger.Info().Msg("Database connectivity verified successfully")
