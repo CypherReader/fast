@@ -167,6 +167,7 @@ func (h *Handler) RegisterRoutes(router *gin.Engine) {
 	{
 		cortex.POST("/chat", h.Chat)
 		cortex.POST("/insight", h.GetInsight)
+		cortex.POST("/craving-help", h.GetCravingHelp)
 	}
 
 	activity := protected.Group("/activity")
@@ -306,6 +307,31 @@ func (h *Handler) GetInsight(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"insight": insight})
+}
+
+func (h *Handler) GetCravingHelp(c *gin.Context) {
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	userID := userIDVal.(uuid.UUID)
+
+	var req struct {
+		CravingDescription string `json:"craving_description"`
+	}
+	if err := c.BindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	cravingHelp, err := h.cortexService.GetCravingHelp(c.Request.Context(), userID, req.CravingDescription)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate craving help"})
+		return
+	}
+
+	c.JSON(http.StatusOK, cravingHelp)
 }
 
 func (h *Handler) LogWeight(c *gin.Context) {
@@ -928,6 +954,3 @@ func (h *Handler) GetFastingInsight(c *gin.Context) {
 
 	c.JSON(http.StatusOK, insight)
 }
-
-
-

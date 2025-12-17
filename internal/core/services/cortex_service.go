@@ -5,6 +5,7 @@ import (
 	"fastinghero/internal/core/ports"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -218,4 +219,104 @@ func extractMotivation(response string) string {
 		}
 	}
 	return "Every hour fasting is a victory for your health!"
+}
+
+// CravingResponse contains structured help for hunger cravings
+type CravingResponse struct {
+	ImmediateAction   string   `json:"immediate_action"`
+	DistractionIdea   string   `json:"distraction_idea"`
+	BiologicalFact    string   `json:"biological_fact"`
+	Motivation        string   `json:"motivation"`
+	TimeRemaining     string   `json:"time_remaining,omitempty"`
+	SupportStrategies []string `json:"support_strategies"`
+}
+
+// GetCravingHelp provides personalized support for hunger cravings
+func (s *CortexService) GetCravingHelp(ctx context.Context, userID uuid.UUID, cravingDescription string) (*CravingResponse, error) {
+	// 1. Fetch user context
+	user, err := s.userRepo.FindByID(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch user: %w", err)
+	}
+
+	// 2. Fetch active fast context
+	activeFast, _ := s.fastingRepo.FindActiveByUserID(ctx, userID)
+	if activeFast == nil {
+		// User not currently fasting
+		return &CravingResponse{
+			ImmediateAction: "Start a fast first! You can't beat cravings you don't face.",
+			Motivation:      "Set your goal and commit.",
+		}, nil
+	}
+
+	// 3. Calculate fast duration
+	fastDuration := time.Since(activeFast.StartTime).Hours()
+	hoursRemaining := float64(activeFast.GoalHours) - fastDuration
+
+	// 4. Construct AI prompt
+	systemPrompt := fmt.Sprintf(`You are an emergency fasting coach. The user is %.1f hours into a %d-hour fast and experiencing cravings.
+Discipline Score: %.1f/100
+Craving: %s
+
+Respond in this EXACT format:
+IMMEDIATE: [One 20-second action they can do RIGHT NOW]
+DISTRACTION: [One 5-minute activity to redirect their focus]
+SCIENCE: [One biological fact about what's happening in their body at this stage]
+MOTIVATION: [Powerful one-liner under 15 words]
+
+Be firm, direct, and supportive. No fluff. Total response under 100 words.`,
+		fastDuration, activeFast.GoalHours, user.DisciplineIndex, cravingDescription)
+
+	userMessage := "Help me fight this craving."
+
+	// 5. Call LLM
+	response, err := s.llm.GenerateResponse(ctx, userMessage, systemPrompt)
+	if err != nil {
+		// Fallback response if AI fails
+		return &CravingResponse{
+			ImmediateAction:   "Drink 16oz of water RIGHT NOW. Set a 5-minute timer.",
+			DistractionIdea:   "Take a brisk 5-minute walk or do 20 pushups.",
+			BiologicalFact:    fmt.Sprintf("At %.0f hours, your body is actively burning fat and producing ketones for energy.", fastDuration),
+			Motivation:        "You're stronger than this craving.",
+			TimeRemaining:     fmt.Sprintf("%.1f hours until your goal", hoursRemaining),
+			SupportStrategies: []string{"Drink water", "Move your body", "Call a tribe member"},
+		}, nil
+	}
+
+	// 6. Parse AI response
+	cravingResp := parseCravingResponse(response, fastDuration, hoursRemaining)
+
+	return cravingResp, nil
+}
+
+// parseCravingResponse extracts structured data from AI response
+func parseCravingResponse(aiResponse string, fastDuration, hoursRemaining float64) *CravingResponse {
+	lines := strings.Split(aiResponse, "\n")
+	resp := &CravingResponse{
+		TimeRemaining:     fmt.Sprintf("%.1f hours until your goal", hoursRemaining),
+		SupportStrategies: []string{"Drink water", "5-minute walk", "Deep breathing"},
+	}
+
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "IMMEDIATE:") {
+			resp.ImmediateAction = strings.TrimSpace(strings.TrimPrefix(line, "IMMEDIATE:"))
+		} else if strings.HasPrefix(line, "DISTRACTION:") {
+			resp.DistractionIdea = strings.TrimSpace(strings.TrimPrefix(line, "DISTRACTION:"))
+		} else if strings.HasPrefix(line, "SCIENCE:") {
+			resp.BiologicalFact = strings.TrimSpace(strings.TrimPrefix(line, "SCIENCE:"))
+		} else if strings.HasPrefix(line, "MOTIVATION:") {
+			resp.Motivation = strings.TrimSpace(strings.TrimPrefix(line, "MOTIVATION:"))
+		}
+	}
+
+	// Fallbacks if parsing fails
+	if resp.ImmediateAction == "" {
+		resp.ImmediateAction = "Drink 16oz water immediately and wait 5 minutes."
+	}
+	if resp.Motivation == "" {
+		resp.Motivation = "You're stronger than this."
+	}
+
+	return resp
 }

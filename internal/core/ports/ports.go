@@ -54,6 +54,7 @@ type CortexService interface {
 	Chat(ctx context.Context, userID uuid.UUID, message string) (string, error)
 	GenerateInsight(ctx context.Context, userID uuid.UUID, fastingHours float64) (string, error)
 	AnalyzeMeal(ctx context.Context, imageBase64, description string) (string, bool, bool, error)
+	GetCravingHelp(ctx context.Context, userID uuid.UUID, cravingDescription string) (interface{}, error)
 }
 
 // Secondary Ports (Repositories & Adapters)
