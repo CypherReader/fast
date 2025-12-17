@@ -3,6 +3,7 @@ package http
 import (
 	"fastinghero/internal/core/services"
 	"net/http"
+	"os"
 
 	"github.com/gin-gonic/gin"
 )
@@ -95,7 +96,7 @@ func (h *OAuthHandler) HandleGoogleCallback(c *gin.Context) {
 	frontendURL := "http://localhost:5173"
 
 	// Check for production frontend URL
-	if prodURL := c.Request.Header.Get("Origin"); prodURL != "" && prodURL != "http://localhost:5173" {
+	if prodURL := os.Getenv("FRONTEND_URL"); prodURL != "" {
 		frontendURL = prodURL
 	}
 
