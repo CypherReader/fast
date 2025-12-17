@@ -110,7 +110,7 @@ export const PricingSection = () => {
             </ul>
 
             {/* CTA */}
-            <MagneticButton className="w-full justify-center text-lg py-6">
+            <MagneticButton className="w-full justify-center text-lg py-6" onClick={() => window.location.href = '/register'}>
               <Sparkles className="w-5 h-5" />
               Join for $4.99/month
               <ArrowRight className="w-5 h-5" />

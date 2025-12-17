@@ -64,7 +64,7 @@ export const FinalCTASection = () => {
             className="flex flex-col sm:flex-row gap-4 justify-center mb-8"
           >
             {/* Primary CTA */}
-            <MagneticButton className="text-lg px-8 py-6">
+            <MagneticButton className="text-lg px-8 py-6" onClick={() => window.location.href = '/register'}>
               Start My Transformation ($4.99/mo)
               <ArrowRight className="w-5 h-5 ml-2" />
             </MagneticButton>

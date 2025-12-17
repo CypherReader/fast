@@ -140,7 +140,7 @@ export const HowItWorksSection = () => {
             transition={{ duration: 0.6, delay: 0.9 }}
             className="text-center"
           >
-            <MagneticButton className="text-lg">
+            <MagneticButton className="text-lg" onClick={() => window.location.href = '/register'}>
               Begin Day 1
               <ArrowRight className="w-5 h-5 ml-2" />
             </MagneticButton>
