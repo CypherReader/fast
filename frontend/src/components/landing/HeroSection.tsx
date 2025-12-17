@@ -1,5 +1,5 @@
-import { DollarSign, Lock, CheckCircle, Shield } from "lucide-react";
 import { motion } from "framer-motion";
+import { ArrowRight, CheckCircle, Lock, Shield, Star } from "lucide-react";
 import { ClockVideoBackground } from "./ClockVideoBackground";
 import { FloatingParticles } from "./FloatingParticles";
 import { FastingTimerHero } from "./FastingTimerHero";
@@ -7,11 +7,13 @@ import { MagneticButton } from "./MagneticButton";
 
 const avatars = ["SM", "MR", "AK", "JD", "LB"];
 
-export const HeroSection = () => {
-  const scrollToHowItWorks = () => {
-    document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" });
-  };
+const trustBadges = [
+  { icon: Star, text: "4.9★ Rating" },
+  { icon: Shield, text: "30-Day Guarantee" },
+  { icon: Lock, text: "Secure Payment" },
+];
 
+export const HeroSection = () => {
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-background">
       {/* Cinematic clock video background */}
@@ -33,39 +35,31 @@ export const HeroSection = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
-                className="flex flex-wrap justify-center lg:justify-start gap-4 text-xs text-muted-foreground mb-6"
+                className="flex flex-wrap justify-center lg:justify-start gap-3 text-xs text-muted-foreground mb-6"
               >
-                <div className="flex items-center gap-1.5 bg-card/50 backdrop-blur px-3 py-1.5 rounded-full border border-border/50">
-                  <Lock className="w-3 h-3 text-secondary" />
-                  256-bit SSL
-                </div>
-                <div className="flex items-center gap-1.5 bg-card/50 backdrop-blur px-3 py-1.5 rounded-full border border-border/50">
-                  <CheckCircle className="w-3 h-3 text-secondary" />
-                  Stripe Secured
-                </div>
-                <div className="flex items-center gap-1.5 bg-card/50 backdrop-blur px-3 py-1.5 rounded-full border border-border/50">
-                  <Shield className="w-3 h-3 text-secondary" />
-                  30-Day Guarantee
-                </div>
+                {trustBadges.map((badge) => (
+                  <div
+                    key={badge.text}
+                    className="flex items-center gap-1.5 bg-card/50 backdrop-blur px-3 py-1.5 rounded-full border border-border/50"
+                  >
+                    <badge.icon className="w-3 h-3 text-secondary" />
+                    {badge.text}
+                  </div>
+                ))}
               </motion.div>
 
-              {/* Main headline */}
+              {/* Main headline - VIRAL HOOK */}
               <motion.h1
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.7, delay: 0.1 }}
-                className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-extrabold mb-4 leading-tight"
+                className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-extrabold mb-6 leading-tight"
               >
-                <span className="text-gradient-hero">The AI-assisted fasting app</span>
-              </motion.h1>
-
-              <motion.h1
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.7, delay: 0.2 }}
-                className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-extrabold mb-6"
-              >
-                <span className="text-foreground"></span>
+                <span className="text-gradient-hero">The AI Fasting Coach</span>
+                <br />
+                <span className="text-foreground">That Helped 12,000+ People</span>
+                <br />
+                <span className="text-primary">Lose Weight While They Sleep</span>
               </motion.h1>
 
               {/* Subheadline */}
@@ -75,11 +69,8 @@ export const HeroSection = () => {
                 transition={{ duration: 0.5, delay: 0.3 }}
                 className="text-lg md:text-xl text-muted-foreground mb-6 max-w-xl mx-auto lg:mx-0"
               >
-                {/* HIDDEN FOR V2: Deposit $20/month. Fast consistently. Get it all back. */}
-                Track your fasting journey. Build discipline. Achieve your goals.
-                <br className="hidden md:block" />
-                Start your transformation today with{" "}
-                <span className="text-primary font-semibold">FastingHero</span>.
+                Join the fastest-growing fasting movement. AI-powered. Science-backed.{" "}
+                <span className="text-primary font-semibold">$4.99/month</span>
               </motion.p>
 
               {/* Social proof - Avatar stack */}
@@ -103,21 +94,45 @@ export const HeroSection = () => {
                   ))}
                 </div>
                 <span className="text-sm text-muted-foreground">
-                  <span className="text-primary font-semibold">12,847</span> people paying $0/month
+                  <span className="text-primary font-semibold">12,847</span> people transformed
                 </span>
               </motion.div>
 
-              {/* CTAs */}
+              {/* Primary CTA */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.4 }}
-                className="flex flex-col items-center lg:items-start gap-3"
+                className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 mb-6"
               >
-                {/* HIDDEN FOR V2: Start Your Vault - $20 Refundable */}
-                <MagneticButton className="text-lg">
-                  Get Started Free
+                <MagneticButton className="text-lg px-8 py-6">
+                  Start My Transformation
+                  <ArrowRight className="w-5 h-5 ml-2" />
                 </MagneticButton>
+                <button className="text-muted-foreground hover:text-foreground transition-colors text-sm underline-offset-4 hover:underline">
+                  Watch Demo (2 min)
+                </button>
+              </motion.div>
+
+              {/* Trust line with checkmarks */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.5, delay: 0.5 }}
+                className="flex flex-wrap justify-center lg:justify-start gap-4 text-sm text-muted-foreground"
+              >
+                <div className="flex items-center gap-1.5">
+                  <CheckCircle className="w-4 h-4 text-secondary" />
+                  <span>No credit card needed</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <CheckCircle className="w-4 h-4 text-secondary" />
+                  <span>Cancel anytime</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <CheckCircle className="w-4 h-4 text-secondary" />
+                  <span>30-day guarantee</span>
+                </div>
               </motion.div>
             </div>
 

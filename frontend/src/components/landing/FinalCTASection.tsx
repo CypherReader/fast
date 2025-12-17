@@ -1,4 +1,4 @@
-import { DollarSign, Lock, CheckCircle, Shield, Quote } from "lucide-react";
+import { CheckCircle, Lock, Shield, ArrowRight, Play, Star, Flame } from "lucide-react";
 import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
 import { AnimatedCounter } from "./AnimatedCounter";
@@ -23,75 +23,88 @@ export const FinalCTASection = () => {
 
       <div className="container px-4 relative z-10">
         <div className="max-w-3xl mx-auto text-center">
+          {/* Urgency badge */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={isInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.5 }}
+            className="inline-flex items-center gap-2 mb-6 px-4 py-2 bg-destructive/20 border border-destructive/40 rounded-full"
+          >
+            <Flame className="w-4 h-4 text-destructive" />
+            <span className="text-sm font-semibold text-destructive">127 people joined in the last 24 hours</span>
+          </motion.div>
+
           {/* Headline */}
           <motion.h2
             initial={{ opacity: 0, y: 30 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.6 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
             className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6"
           >
-            <span className="text-gradient-hero">Start Your</span>
+            <span className="text-gradient-hero">You're One Decision Away</span>
             <br />
-            <span className="text-foreground">Transformation Today</span>
+            <span className="text-foreground">From Your Goal Weight</span>
           </motion.h2>
 
-          {/* Stats with animated counters */}
-          <motion.div
+          {/* Value reminder */}
+          <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="grid grid-cols-3 gap-4 md:gap-8 mb-10"
+            className="text-lg text-muted-foreground mb-10"
           >
-            <div className="text-center">
-              <div className="font-display text-2xl md:text-4xl font-bold text-primary mb-1">
-                <AnimatedCounter value={12} suffix="k+" />
-              </div>
-              <div className="text-xs md:text-sm text-muted-foreground">
-                Active Users
-              </div>
-            </div>
-            <div className="text-center">
-              <div className="font-display text-2xl md:text-4xl font-bold text-secondary mb-1">
-                <AnimatedCounter value={18} suffix=" lbs" />
-              </div>
-              <div className="text-xs md:text-sm text-muted-foreground">Avg Weight Loss</div>
-            </div>
-            <div className="text-center">
-              <div className="font-display text-2xl md:text-4xl font-bold text-accent mb-1">
-                $<AnimatedCounter value={4.99} decimals={2} />
-              </div>
-              <div className="text-xs md:text-sm text-muted-foreground">Per Month</div>
-            </div>
-          </motion.div>
+            AI coach + 12,000 member tribe + proven system = Your transformation starts today
+          </motion.p>
 
-          {/* CTA */}
+          {/* Triple CTA options */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.6, delay: 0.3 }}
-            className="mb-6"
+            className="flex flex-col sm:flex-row gap-4 justify-center mb-8"
           >
-            <MagneticButton className="text-lg">
-              Join 12,847 Active Fasters
+            {/* Primary CTA */}
+            <MagneticButton className="text-lg px-8 py-6">
+              Start My Transformation ($4.99/mo)
+              <ArrowRight className="w-5 h-5 ml-2" />
             </MagneticButton>
+
+            {/* Secondary CTA */}
+            <button className="px-6 py-4 bg-card/50 hover:bg-card border border-border hover:border-secondary/50 rounded-xl transition-all flex items-center justify-center gap-2 text-foreground font-semibold">
+              <Play className="w-5 h-5" />
+              Watch Demo First
+            </button>
+          </motion.div>
+
+          {/* Tertiary CTA link */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={isInView ? { opacity: 1 } : {}}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            className="mb-10"
+          >
+            <a href="#testimonials" className="text-muted-foreground hover:text-foreground transition-colors text-sm underline-offset-4 hover:underline inline-flex items-center gap-1">
+              <Star className="w-4 h-4 text-primary" />
+              Read 500+ reviews from real users
+            </a>
           </motion.div>
 
           {/* Trust signals */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={isInView ? { opacity: 1 } : {}}
-            transition={{ duration: 0.6, delay: 0.4 }}
-            className="flex flex-wrap justify-center gap-4 md:gap-6 text-sm text-muted-foreground mb-10"
+            transition={{ duration: 0.6, delay: 0.5 }}
+            className="flex flex-wrap justify-center gap-6 text-sm text-muted-foreground mb-10"
           >
             {[
               { icon: Lock, text: "Secure Payment" },
               { icon: CheckCircle, text: "Cancel Anytime" },
-              { icon: Shield, text: "30-Day Guarantee" },
+              { icon: Shield, text: "30-Day Money-Back" },
             ].map((item, i) => (
               <motion.div
                 key={i}
                 whileHover={{ scale: 1.05 }}
-                className="flex items-center gap-1.5"
+                className="flex items-center gap-2"
               >
                 <item.icon className="w-4 h-4 text-secondary" />
                 {item.text}
@@ -99,28 +112,19 @@ export const FinalCTASection = () => {
             ))}
           </motion.div>
 
-          {/* Final testimonial */}
+          {/* Live counter */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.6, delay: 0.5 }}
-            whileHover={{ scale: 1.02 }}
-            className="bg-card/80 backdrop-blur rounded-xl p-6 border border-border max-w-lg mx-auto"
+            transition={{ duration: 0.6, delay: 0.6 }}
+            className="bg-card/80 backdrop-blur rounded-xl p-6 border border-border"
           >
-            <Quote className="w-8 h-8 text-primary/30 mb-3" />
-            <p className="text-foreground italic mb-4">
-              "I've tried every fasting app. FastingHero is the only one that worked because of the AI coaching and supportive community."
-            </p>
-            <div className="flex items-center justify-center gap-2">
-              <motion.div
-                animate={{ scale: [1, 1.1, 1] }}
-                transition={{ duration: 2, repeat: Infinity }}
-                className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-semibold"
-              >
-                MR
-              </motion.div>
-              <span className="font-semibold">Michael R.</span>
-              <span className="text-muted-foreground text-sm">(Lost 23 lbs in 3 months)</span>
+            <div className="text-sm text-muted-foreground mb-2">Active members right now</div>
+            <div className="font-display text-4xl font-bold text-primary">
+              <AnimatedCounter value={12847} />
+            </div>
+            <div className="text-sm text-muted-foreground mt-2">
+              And growing by <span className="text-primary font-semibold">~127</span> every day
             </div>
           </motion.div>
         </div>

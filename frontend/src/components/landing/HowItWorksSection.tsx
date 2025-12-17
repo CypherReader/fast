@@ -1,38 +1,54 @@
-import { Lock, RefreshCw, DollarSign } from "lucide-react";
 import { motion, useInView } from "framer-motion";
+import { Calendar, Zap, TrendingUp, Users, Brain, ArrowRight } from "lucide-react";
 import { useRef } from "react";
 import { AnimatedSectionBackground } from "./AnimatedSectionBackground";
+import { MagneticButton } from "./MagneticButton";
 
 const steps = [
   {
-    number: "1",
-    icon: Lock,
-    title: "The Deposit",
-    description: "Put your money where your goals are",
-    detail: "$20 goes into your Vault each month",
-    visual: "$20",
-    gradient: "from-destructive/20 to-primary/20",
-    iconColor: "text-destructive",
+    days: "Day 1-7",
+    title: "Choose Your Fasting Window",
+    description: "Cortex AI analyzes your lifestyle and builds a personalized fasting plan. No generic templates.",
+    icon: Calendar,
+    color: "text-primary",
+    bgColor: "bg-primary/10",
+    borderColor: "border-primary/30",
   },
   {
-    number: "2",
-    icon: RefreshCw,
-    title: "The Recovery",
-    description: "Every completed fast returns $2 of your deposit",
-    detail: "10 fasts = full $20 recovered",
-    visual: "+$2",
-    gradient: "from-background to-secondary/20",
-    iconColor: "text-secondary",
+    days: "Day 8-21",
+    title: "Build Your Streak & Join The Tribe",
+    description: "Track your progress, get AI coaching when you need it, and connect with 12,000+ fasters.",
+    icon: Zap,
+    color: "text-secondary",
+    bgColor: "bg-secondary/10",
+    borderColor: "border-secondary/30",
   },
   {
-    number: "3",
-    icon: DollarSign,
-    title: "The Refund",
-    description: "Get your money back automatically each month",
-    detail: "Fast consistently = $0 net cost",
-    visual: "$0",
-    gradient: "from-primary/20 to-gold-light/20",
-    iconColor: "text-primary",
+    days: "Day 22-30",
+    title: "See Results & Transform",
+    description: "Feel amazing. Look great. Never look back. This is where everything clicks.",
+    icon: TrendingUp,
+    color: "text-accent",
+    bgColor: "bg-accent/10",
+    borderColor: "border-accent/30",
+  },
+];
+
+const features = [
+  {
+    icon: Brain,
+    title: "Cortex AI Coach",
+    description: "Get personalized advice at 3am when you're hungry. Cortex knows you.",
+  },
+  {
+    icon: Users,
+    title: "12,000+ Member Tribe",
+    description: "You're not alone. Share wins, get support, stay accountable.",
+  },
+  {
+    icon: Zap,
+    title: "Gamification That Works",
+    description: "Turn discipline into dopamine. Streaks, badges, and real progress.",
   },
 ];
 
@@ -41,144 +57,97 @@ export const HowItWorksSection = () => {
   const isInView = useInView(ref, { once: true, margin: "-100px" });
 
   return (
-    <section id="how-it-works" className="py-20 md:py-32 bg-background relative overflow-hidden" ref={ref}>
-      <AnimatedSectionBackground variant="default" showOrbs showGrid showParticles />
+    <section className="py-20 md:py-32 bg-background relative overflow-hidden" id="how-it-works" ref={ref}>
+      <AnimatedSectionBackground variant="subtle" showOrbs showGrid />
 
       <div className="container px-4 relative z-10">
-        <div className="max-w-5xl mx-auto">
-          <motion.h2
+        <div className="max-w-6xl mx-auto">
+          {/* Section header */}
+          <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.6 }}
-            className="text-4xl md:text-5xl lg:text-6xl font-bold text-center mb-4"
+            className="text-center mb-16"
           >
-            How It Works
-          </motion.h2>
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            className="text-muted-foreground text-center text-lg mb-16 max-w-2xl mx-auto"
-          >
-            A simple system that turns your commitment into refunds
-          </motion.p>
+            <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4">
+              <span className="text-gradient-hero">Your First 30 Days</span>
+            </h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Here's exactly what happens when you join FastingHero
+            </p>
+          </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative">
-            {/* Animated money flow path */}
-            <svg
-              className="hidden md:block absolute top-1/2 left-0 right-0 h-2 -translate-y-1/2 z-0 overflow-visible"
-              style={{ width: "100%" }}
-            >
-              <motion.line
-                x1="16.5%"
-                y1="50%"
-                x2="83.5%"
-                y2="50%"
-                stroke="hsl(var(--border))"
-                strokeWidth="2"
-                strokeDasharray="8 8"
-                initial={{ pathLength: 0 }}
-                animate={isInView ? { pathLength: 1 } : {}}
-                transition={{ duration: 2, ease: "easeInOut" }}
-              />
-              {/* Traveling coin */}
-              <motion.circle
-                r="8"
-                fill="hsl(var(--primary))"
-                initial={{ cx: "16.5%", cy: "50%" }}
-                animate={
-                  isInView
-                    ? {
-                        cx: ["16.5%", "50%", "83.5%", "16.5%"],
-                      }
-                    : {}
-                }
-                transition={{
-                  duration: 4,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                  repeatDelay: 1,
-                }}
-              />
-            </svg>
-
+          {/* Timeline steps */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
             {steps.map((step, i) => (
               <motion.div
                 key={i}
                 initial={{ opacity: 0, y: 30 }}
                 animate={isInView ? { opacity: 1, y: 0 } : {}}
-                transition={{ duration: 0.5, delay: i * 0.2 }}
+                transition={{ duration: 0.5, delay: i * 0.15 }}
                 whileHover={{ y: -8, transition: { duration: 0.2 } }}
-                className="relative z-10"
+                className={`relative rounded-2xl p-8 border ${step.borderColor} ${step.bgColor} transition-all`}
               >
-                <motion.div
-                  className={`bg-gradient-to-br ${step.gradient} backdrop-blur rounded-2xl p-6 border border-border transition-all duration-300`}
-                  whileHover={{
-                    borderColor: "hsl(var(--primary) / 0.5)",
-                    boxShadow: "0 20px 40px -15px hsl(var(--primary) / 0.3)",
-                  }}
-                >
-                  {/* Step number */}
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={isInView ? { scale: 1 } : {}}
-                    transition={{ delay: i * 0.2 + 0.3, type: "spring" }}
-                    className="absolute -top-3 -left-3 w-10 h-10 rounded-full bg-card border-2 border-border flex items-center justify-center font-display font-bold text-primary"
-                  >
-                    {step.number}
-                  </motion.div>
+                {/* Step number */}
+                <div className="absolute -top-4 left-6 px-3 py-1 bg-background border border-border rounded-full">
+                  <span className="text-sm font-bold text-muted-foreground">{step.days}</span>
+                </div>
 
-                  {/* Icon */}
-                  <motion.div
-                    whileHover={{ rotate: 10, scale: 1.1 }}
-                    className={`w-14 h-14 rounded-xl bg-card/80 backdrop-blur flex items-center justify-center mb-4 ${step.iconColor}`}
-                  >
-                    <step.icon className="w-7 h-7" />
-                  </motion.div>
+                {/* Icon */}
+                <div className={`w-16 h-16 rounded-2xl ${step.bgColor} border ${step.borderColor} flex items-center justify-center mb-6`}>
+                  <step.icon className={`w-8 h-8 ${step.color}`} />
+                </div>
 
-                  {/* Content */}
-                  <h3 className="text-xl font-bold mb-2">{step.title}</h3>
-                  <p className="text-muted-foreground mb-2">{step.description}</p>
-                  <p className="text-sm text-muted-foreground/80 mb-4">{step.detail}</p>
-
-                  {/* Visual with animation */}
-                  <motion.div
-                    className="font-display text-3xl font-bold text-primary"
-                    whileHover={{ scale: 1.1 }}
-                  >
-                    {step.visual}
-                  </motion.div>
-                </motion.div>
-
-                {/* Arrow for mobile */}
-                {i < steps.length - 1 && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={isInView ? { opacity: 1 } : {}}
-                    transition={{ delay: i * 0.2 + 0.5 }}
-                    className="flex justify-center py-4 md:hidden"
-                  >
-                    <motion.div
-                      animate={{ y: [0, 5, 0] }}
-                      transition={{ duration: 1.5, repeat: Infinity }}
-                    >
-                      <DollarSign className="w-6 h-6 text-primary" />
-                    </motion.div>
-                  </motion.div>
-                )}
+                {/* Content */}
+                <h3 className="text-xl font-bold text-foreground mb-3">{step.title}</h3>
+                <p className="text-muted-foreground leading-relaxed">{step.description}</p>
               </motion.div>
             ))}
           </div>
 
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={isInView ? { opacity: 1 } : {}}
-            transition={{ delay: 1 }}
-            className="text-center text-muted-foreground mt-12"
+          {/* The FastingHero Difference */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={isInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.6, delay: 0.5 }}
+            className="mb-12"
           >
-            <span className="text-primary font-semibold font-display">87%</span> of users get their
-            full deposit back every month
-          </motion.p>
+            <h3 className="text-3xl md:text-4xl font-bold text-center mb-12">
+              <span className="text-gradient-hero">Meet Cortex:</span> Your AI Fasting Coach That Actually Knows You
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {features.map((feature, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={isInView ? { opacity: 1, y: 0 } : {}}
+                  transition={{ duration: 0.5, delay: 0.6 + i * 0.1 }}
+                  className="bg-card/50 backdrop-blur rounded-xl p-6 border border-border hover:border-secondary/50 transition-all"
+                >
+                  <feature.icon className="w-10 h-10 text-secondary mb-4" />
+                  <h4 className="text-lg font-semibold text-foreground mb-2">{feature.title}</h4>
+                  <p className="text-sm text-muted-foreground">{feature.description}</p>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* CTA */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={isInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.6, delay: 0.9 }}
+            className="text-center"
+          >
+            <MagneticButton className="text-lg">
+              Begin Day 1
+              <ArrowRight className="w-5 h-5 ml-2" />
+            </MagneticButton>
+            <p className="text-sm text-muted-foreground mt-4">
+              30-day money-back guarantee • Cancel anytime
+            </p>
+          </motion.div>
         </div>
       </div>
     </section>

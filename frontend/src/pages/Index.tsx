@@ -1,10 +1,10 @@
 import { Navbar } from "@/components/landing/Navbar";
 import { HeroSection } from "@/components/landing/HeroSection";
+import { LiveActivityTicker } from "@/components/landing/LiveActivityTicker";
 import { ProblemSection } from "@/components/landing/ProblemSection";
 import { HowItWorksSection } from "@/components/landing/HowItWorksSection";
+import { TransformationShowcase } from "@/components/landing/TransformationShowcase";
 import { TestimonialsSection } from "@/components/landing/TestimonialsSection";
-import { LiveTickerSection } from "@/components/landing/LiveTickerSection";
-import { ComparisonSection } from "@/components/landing/ComparisonSection";
 import { PricingSection } from "@/components/landing/PricingSection";
 import { FAQSection } from "@/components/landing/FAQSection";
 import { FinalCTASection } from "@/components/landing/FinalCTASection";
@@ -18,12 +18,11 @@ const Index = () => {
       <Navbar />
       <main>
         <HeroSection />
-        <LiveTickerSection />
+        <LiveActivityTicker />
         <ProblemSection />
         <HowItWorksSection />
+        <TransformationShowcase />
         <TestimonialsSection />
-        {/* HIDDEN: ComparisonSection - "Why FastingHero wins" */}
-        {/* <ComparisonSection /> */}
         <PricingSection />
         <FAQSection />
         <FinalCTASection />
