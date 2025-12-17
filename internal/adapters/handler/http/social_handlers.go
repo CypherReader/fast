@@ -1,326 +1,326 @@
 package http
 
 import (
-\t"fastinghero/internal/core/domain"
-\t"net/http"
-\t"strconv"
+	"fastinghero/internal/core/domain"
+	"net/http"
+	"strconv"
 
-\t"github.com/gin-gonic/gin"
-\t"github.com/google/uuid"
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 func (h *Handler) AddFriend(c *gin.Context) {
-\tuserIDVal, exists := c.Get("user_id")
-\tif !exists {
-\t\tc.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-\t\treturn
-\t}
-\tuserID := userIDVal.(uuid.UUID)
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	userID := userIDVal.(uuid.UUID)
 
-\tvar req struct {
-\t\tFriendID string `json:"friend_id"`
-\t}
-\tif err := c.BindJSON(&req); err != nil {
-\t\tc.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-\t\treturn
-\t}
+	var req struct {
+		FriendID string `json:"friend_id"`
+	}
+	if err := c.BindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
-\tfriendUUID, err := uuid.Parse(req.FriendID)
-\tif err != nil {
-\t\tc.JSON(http.StatusBadRequest, gin.H{"error": "invalid friend id"})
-\t\treturn
-\t}
+	friendUUID, err := uuid.Parse(req.FriendID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid friend id"})
+		return
+	}
 
-\terr = h.socialService.AddFriend(c.Request.Context(), userID, friendUUID)
-\tif err != nil {
-\t\tc.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-\t\treturn
-\t}
+	err = h.socialService.AddFriend(c.Request.Context(), userID, friendUUID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
-\tc.JSON(http.StatusOK, gin.H{"message": "Friend request sent"})
+	c.JSON(http.StatusOK, gin.H{"message": "Friend request sent"})
 }
 
 func (h *Handler) GetFriends(c *gin.Context) {
-\tuserIDVal, exists := c.Get("user_id")
-\tif !exists {
-\t\tc.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-\t\treturn
-\t}
-\tuserID := userIDVal.(uuid.UUID)
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	userID := userIDVal.(uuid.UUID)
 
-\tfriends, err := h.socialService.GetFriends(c.Request.Context(), userID)
-\tif err != nil {
-\t\tc.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-\t\treturn
-\t}
+	friends, err := h.socialService.GetFriends(c.Request.Context(), userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 
-\tc.JSON(http.StatusOK, friends)
+	c.JSON(http.StatusOK, friends)
 }
 
 func (h *Handler) CreateTribe(c *gin.Context) {
-\tuserIDVal, exists := c.Get("user_id")
-\tif !exists {
-\t\tc.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-\t\treturn
-\t}
-\tuserID := userIDVal.(uuid.UUID)
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	userID := userIDVal.(uuid.UUID)
 
-\tvar req struct {
-\t\tName        string `json:"name"`
-\t\tDescription string `json:"description"`
-\t\tIsPublic    bool   `json:"is_public"`
-\t}
-\tif err := c.BindJSON(&req); err != nil {
-\t\tc.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-\t\treturn
-\t}
+	var req struct {
+		Name        string `json:"name"`
+		Description string `json:"description"`
+		IsPublic    bool   `json:"is_public"`
+	}
+	if err := c.BindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
-\ttribe, err := h.socialService.CreateTribe(c.Request.Context(), userID, req.Name, req.Description, req.IsPublic)
-\tif err != nil {
-\t\tc.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-\t\treturn
-\t}
+	tribe, err := h.socialService.CreateTribe(c.Request.Context(), userID, req.Name, req.Description, req.IsPublic)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 
-\tc.JSON(http.StatusCreated, tribe)
+	c.JSON(http.StatusCreated, tribe)
 }
 
 func (h *Handler) GetTribe(c *gin.Context) {
-\tid := c.Param("id")
-\ttribeUUID, err := uuid.Parse(id)
-\tif err != nil {
-\t\tc.JSON(http.StatusBadRequest, gin.H{"error": "invalid tribe id"})
-\t\treturn
-\t}
+	id := c.Param("id")
+	tribeUUID, err := uuid.Parse(id)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid tribe id"})
+		return
+	}
 
-\ttribe, err := h.socialService.GetTribe(c.Request.Context(), tribeUUID)
-\tif err != nil {
-\t\tc.JSON(http.StatusNotFound, gin.H{"error": "tribe not found"})
-\t\treturn
-\t}
+	tribe, err := h.socialService.GetTribe(c.Request.Context(), tribeUUID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "tribe not found"})
+		return
+	}
 
-\tc.JSON(http.StatusOK, tribe)
+	c.JSON(http.StatusOK, tribe)
 }
 
 func (h *Handler) ListTribes(c *gin.Context) {
-\t// Parse query parameters with defaults
-\tlimit := 20
-\toffset := 0
+	// Parse query parameters with defaults
+	limit := 20
+	offset := 0
 
-\tif limitStr := c.Query("limit"); limitStr != "" {
-\t\tif l, err := strconv.Atoi(limitStr); err == nil {
-\t\t\tlimit = l
-\t\t}
-\t}
+	if limitStr := c.Query("limit"); limitStr != "" {
+		if l, err := strconv.Atoi(limitStr); err == nil {
+			limit = l
+		}
+	}
 
-\tif offsetStr := c.Query("offset"); offsetStr != "" {
-\t\tif o, err := strconv.Atoi(offsetStr); err == nil {
-\t\t\toffset = o
-\t\t}
-\t}
+	if offsetStr := c.Query("offset"); offsetStr != "" {
+		if o, err := strconv.Atoi(offsetStr); err == nil {
+			offset = o
+		}
+	}
 
-\ttribes, err := h.socialService.ListTribes(c.Request.Context(), limit, offset)
-\tif err != nil {
-\t\tc.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-\t\treturn
-\t}
+	tribes, err := h.socialService.ListTribes(c.Request.Context(), limit, offset)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 
-\t// Return response in format expected by frontend
-\tc.JSON(http.StatusOK, gin.H{
-\t\t"tribes": tribes,
-\t\t"total":  len(tribes), // TODO: Get actual total from service
-\t\t"limit":  limit,
-\t\t"offset": offset,
-\t})
+	// Return response in format expected by frontend
+	c.JSON(http.StatusOK, gin.H{
+		"tribes": tribes,
+		"total":  len(tribes), // TODO: Get actual total from service
+		"limit":  limit,
+		"offset": offset,
+	})
 }
 
 // JoinTribe handles joining a tribe
 func (h *Handler) JoinTribe(c *gin.Context) {
-\tuserIDVal, exists := c.Get("user_id")
-\tif !exists {
-\t\tc.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-\t\treturn
-\t}
-\tuserID := userIDVal.(uuid.UUID)
-\ttribeID := c.Param("id")
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	userID := userIDVal.(uuid.UUID)
+	tribeID := c.Param("id")
 
-\ttribeUUID, err := uuid.Parse(tribeID)
-\tif err != nil {
-\t\tc.JSON(http.StatusBadRequest, gin.H{"error": "invalid tribe id"})
-\t\treturn
-\t}
+	tribeUUID, err := uuid.Parse(tribeID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid tribe id"})
+		return
+	}
 
-\terr = h.socialService.JoinTribe(c.Request.Context(), userID, tribeUUID)
-\tif err != nil {
-\t\tc.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-\t\treturn
-\t}
+	err = h.socialService.JoinTribe(c.Request.Context(), userID, tribeUUID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
-\tc.JSON(http.StatusOK, gin.H{"message": "successfully joined tribe"})
+	c.JSON(http.StatusOK, gin.H{"message": "successfully joined tribe"})
 }
 
 // LeaveTribe handles leaving a tribe
 func (h *Handler) LeaveTribe(c *gin.Context) {
-\tuserIDVal, exists := c.Get("user_id")
-\tif !exists {
-\t\tc.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-\t\treturn
-\t}
-\tuserID := userIDVal.(uuid.UUID)
-\ttribeID := c.Param("id")
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	userID := userIDVal.(uuid.UUID)
+	tribeID := c.Param("id")
 
-\ttribeUUID, err := uuid.Parse(tribeID)
-\tif err != nil {
-\t\tc.JSON(http.StatusBadRequest, gin.H{"error": "invalid tribe id"})
-\t\treturn
-\t}
+	tribeUUID, err := uuid.Parse(tribeID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid tribe id"})
+		return
+	}
 
-\terr = h.socialService.LeaveTribe(c.Request.Context(), userID, tribeUUID)
-\tif err != nil {
-\t\tc.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-\t\treturn
-\t}
+	err = h.socialService.LeaveTribe(c.Request.Context(), userID, tribeUUID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
-\tc.JSON(http.StatusOK, gin.H{"message": "successfully left tribe"})
+	c.JSON(http.StatusOK, gin.H{"message": "successfully left tribe"})
 }
 
 // GetTribeMembers handles getting members of a tribe
 func (h *Handler) GetTribeMembers(c *gin.Context) {
-\ttribeID := c.Param("id")
-\ttribeUUID, err := uuid.Parse(tribeID)
-\tif err != nil {
-\t\tc.JSON(http.StatusBadRequest, gin.H{"error": "invalid tribe id"})
-\t\treturn
-\t}
+	tribeID := c.Param("id")
+	tribeUUID, err := uuid.Parse(tribeID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid tribe id"})
+		return
+	}
 
-\tlimit := 20
-\toffset := 0
+	limit := 20
+	offset := 0
 
-\tif limitStr := c.Query("limit"); limitStr != "" {
-\t\tif l, err := strconv.Atoi(limitStr); err == nil {
-\t\t\tlimit = l
-\t\t}
-\t}
+	if limitStr := c.Query("limit"); limitStr != "" {
+		if l, err := strconv.Atoi(limitStr); err == nil {
+			limit = l
+		}
+	}
 
-\tif offsetStr := c.Query("offset"); offsetStr != "" {
-\t\tif o, err := strconv.Atoi(offsetStr); err == nil {
-\t\t\toffset = o
-\t\t}
-\t}
+	if offsetStr := c.Query("offset"); offsetStr != "" {
+		if o, err := strconv.Atoi(offsetStr); err == nil {
+			offset = o
+		}
+	}
 
-\tmembers, err := h.socialService.GetTribeMembers(c.Request.Context(), tribeUUID, limit, offset)
-\tif err != nil {
-\t\tc.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-\t\treturn
-\t}
+	members, err := h.socialService.GetTribeMembers(c.Request.Context(), tribeUUID, limit, offset)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 
-\tc.JSON(http.StatusOK, gin.H{
-\t\t"members": members,
-\t\t"limit":   limit,
-\t\t"offset":  offset,
-\t})
+	c.JSON(http.StatusOK, gin.H{
+		"members": members,
+		"limit":   limit,
+		"offset":  offset,
+	})
 }
 
 // GetTribeStats handles getting statistics for a tribe
 func (h *Handler) GetTribeStats(c *gin.Context) {
-\ttribeID := c.Param("id")
-\ttribeUUID, err := uuid.Parse(tribeID)
-\tif err != nil {
-\t\tc.JSON(http.StatusBadRequest, gin.H{"error": "invalid tribe id"})
-\t\treturn
-\t}
+	tribeID := c.Param("id")
+	tribeUUID, err := uuid.Parse(tribeID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid tribe id"})
+		return
+	}
 
-\tstats, err := h.socialService.GetTribeStats(c.Request.Context(), tribeUUID)
-\tif err != nil {
-\t\tc.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-\t\treturn
-\t}
+	stats, err := h.socialService.GetTribeStats(c.Request.Context(), tribeUUID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 
-\tc.JSON(http.StatusOK, stats)
+	c.JSON(http.StatusOK, stats)
 }
 
 // GetMyTribes handles getting the current user's tribes
 func (h *Handler) GetMyTribes(c *gin.Context) {
-\tuserIDVal, exists := c.Get("user_id")
-\tif !exists {
-\t\tc.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-\t\treturn
-\t}
-\tuserID := userIDVal.(uuid.UUID)
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	userID := userIDVal.(uuid.UUID)
 
-\ttribes, err := h.socialService.GetMyTribes(c.Request.Context(), userID)
-\tif err != nil {
-\t\tc.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-\t\treturn
-\t}
+	tribes, err := h.socialService.GetMyTribes(c.Request.Context(), userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 
-\tc.JSON(http.StatusOK, gin.H{"tribes": tribes})
+	c.JSON(http.StatusOK, gin.H{"tribes": tribes})
 }
 
 func (h *Handler) CreateChallenge(c *gin.Context) {
-\t// userIDVal, exists := c.Get("user_id")
-\t// if !exists {
-\t// \tc.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-\t// \treturn
-\t// }
-\t// userID := userIDVal.(uuid.UUID)
+	// userIDVal, exists := c.Get("user_id")
+	// if !exists {
+	// 	c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+	// 	return
+	// }
+	// userID := userIDVal.(uuid.UUID)
 
-\tvar req struct {
-\t\tName          string               `json:"name"`
-\t\tChallengeType domain.ChallengeType `json:"challenge_type"`
-\t\tGoal          int                  `json:"goal"`
-\t\tStartDate     string               `json:"start_date"` // ISO string
-\t\tEndDate       string               `json:"end_date"`   // ISO string
-\t}
-\tif err := c.BindJSON(&req); err != nil {
-\t\tc.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-\t\treturn
-\t}
+	var req struct {
+		Name          string               `json:"name"`
+		ChallengeType domain.ChallengeType `json:"challenge_type"`
+		Goal          int                  `json:"goal"`
+		StartDate     string               `json:"start_date"` // ISO string
+		EndDate       string               `json:"end_date"`   // ISO string
+	}
+	if err := c.BindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
-\t// Parse dates
-\t// ... (simplified for now, assuming ISO string parsing in service or here)
-\t// Using time.Parse(time.RFC3339, ...)
+	// Parse dates
+	// ... (simplified for now, assuming ISO string parsing in service or here)
+	// Using time.Parse(time.RFC3339, ...)
 
-\t// For now, let's skip date parsing complexity and assume service handles it or just pass zero time if not critical for this step
-\t// But service expects time.Time.
+	// For now, let's skip date parsing complexity and assume service handles it or just pass zero time if not critical for this step
+	// But service expects time.Time.
 
-\t// TODO: Implement date parsing
-\tc.JSON(http.StatusNotImplemented, gin.H{"error": "Challenge creation not fully implemented"})
+	// TODO: Implement date parsing
+	c.JSON(http.StatusNotImplemented, gin.H{"error": "Challenge creation not fully implemented"})
 }
 
 func (h *Handler) GetChallenges(c *gin.Context) {
-\tuserIDVal, exists := c.Get("user_id")
-\tif !exists {
-\t\tc.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-\t\treturn
-\t}
-\tuserID := userIDVal.(uuid.UUID)
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	userID := userIDVal.(uuid.UUID)
 
-\tchallenges, err := h.socialService.GetChallenges(c.Request.Context(), userID)
-\tif err != nil {
-\t\tc.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-\t\treturn
-\t}
+	challenges, err := h.socialService.GetChallenges(c.Request.Context(), userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 
-\tc.JSON(http.StatusOK, challenges)
+	c.JSON(http.StatusOK, challenges)
 }
 
 func (h *Handler) GetFeed(c *gin.Context) {
-\tuserIDVal, exists := c.Get("user_id")
-\tif !exists {
-\t\tc.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-\t\treturn
-\t}
-\tuserID := userIDVal.(uuid.UUID)
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	userID := userIDVal.(uuid.UUID)
 
-\t// Pagination params (simplified)
-\tlimit := 20
-\toffset := 0
+	// Pagination params (simplified)
+	limit := 20
+	offset := 0
 
-\tfeed, err := h.socialService.GetFeed(c.Request.Context(), userID, limit, offset)
-\tif err != nil {
-\t\tc.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-\t\treturn
-\t}
+	feed, err := h.socialService.GetFeed(c.Request.Context(), userID, limit, offset)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 
-\tc.JSON(http.StatusOK, feed)
+	c.JSON(http.StatusOK, feed)
 }
