@@ -5,23 +5,24 @@ import { useEffect } from 'react';
 import OnboardingLayout from '@/components/onboarding/OnboardingLayout';
 import { Button } from '@/components/ui/button';
 
+// HIDDEN FOR V2: Vault deposit value props
 const valueProps = [
   {
-    icon: Lock,
-    title: 'Deposit $20',
-    description: 'Put your money where your goals are',
+    icon: TrendingUp,
+    title: 'Set Your Goals',
+    description: 'Choose your personalized fasting plan',
     color: 'text-secondary',
   },
   {
-    icon: TrendingUp,
-    title: 'Fast Consistently',
-    description: 'Complete fasts to recover your deposit',
+    icon: Lock,
+    title: 'Track Progress',
+    description: 'Monitor your fasting journey daily',
     color: 'text-secondary',
   },
   {
     icon: DollarSign,
-    title: 'Get Refunded',
-    description: '87% of users pay $0/month',
+    title: 'Build Discipline',
+    description: 'Develop sustainable healthy habits',
     color: 'text-primary',
   },
 ];
@@ -80,6 +81,27 @@ const OnboardingWelcome = () => {
             </motion.div>
           ))}
         </div>
+
+        {/* Social proof - Avatar stack */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.35 }}
+          className="flex items-center justify-center gap-3 mb-8"
+        >
+          <div className="flex -space-x-2">
+            {[...Array(5)].map((_, i) => (
+              <div
+                key={i}
+                className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/80 to-secondary/80 border-2 border-background flex items-center justify-center text-xs font-semibold text-primary-foreground"
+              />
+            ))}
+          </div>
+          <span className="text-sm text-muted-foreground">
+            {/* HIDDEN FOR V2: 12,847 people paying $0/month */}
+            <span className="text-primary font-semibold">12,847</span> active fasters
+          </span>
+        </motion.div>
 
         {/* CTA */}
         <Button

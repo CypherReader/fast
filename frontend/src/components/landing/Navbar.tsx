@@ -17,9 +17,9 @@ export const Navbar = () => {
             <Button variant="ghost" size="sm" onClick={() => window.location.href = '/login'}>
               Login
             </Button>
-            <Button variant="hero" size="sm">
-              <DollarSign className="w-4 h-4" />
-              Start Your Vault
+            {/* HIDDEN FOR V2: Start Your Vault */}
+            <Button variant="hero" size="sm" onClick={() => window.location.href = '/onboarding'}>
+              Get Started
             </Button>
           </div>
         </div>

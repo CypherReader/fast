@@ -59,7 +59,8 @@ export const PricingSection = () => {
             transition={{ duration: 0.6, delay: 0.1 }}
             className="text-gray-300 text-center text-lg mb-12"
           >
-            Pay to commit. Get it all back if you fast consistently.
+            {/* HIDDEN FOR V2: Pay to commit. Get it all back if you fast consistently. */}
+            Start your fasting journey for free. No credit card required.
           </motion.p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -136,15 +137,16 @@ export const PricingSection = () => {
                 </ul>
 
                 {/* CTA */}
+                {/* HIDDEN FOR V2: Start Your Vault */}
                 <MagneticButton className="w-full justify-center">
                   <Sparkles className="w-4 h-4" />
-                  Start Your Vault
+                  Get Started Free
                 </MagneticButton>
 
                 {/* Net cost */}
+                {/* HIDDEN FOR V2: Net cost $0 if you fast consistently */}
                 <p className="text-sm text-muted-foreground mt-4 text-center">
-                  Net cost: <span className="text-primary font-semibold">$0</span> if you fast
-                  consistently
+                  Join thousands tracking their fasting journey
                 </p>
               </motion.div>
             ))}

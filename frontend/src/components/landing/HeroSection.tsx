@@ -75,10 +75,11 @@ export const HeroSection = () => {
                 transition={{ duration: 0.5, delay: 0.3 }}
                 className="text-lg md:text-xl text-muted-foreground mb-6 max-w-xl mx-auto lg:mx-0"
               >
-                Deposit $20/month. Fast consistently. Get it all back.
+                {/* HIDDEN FOR V2: Deposit $20/month. Fast consistently. Get it all back. */}
+                Track your fasting journey. Build discipline. Achieve your goals.
                 <br className="hidden md:block" />
-                The only fasting app that costs{" "}
-                <span className="text-primary font-semibold">$0</span> if you're disciplined.
+                Start your transformation today with{" "}
+                <span className="text-primary font-semibold">FastingHero</span>.
               </motion.p>
 
               {/* Social proof - Avatar stack */}
@@ -113,9 +114,9 @@ export const HeroSection = () => {
                 transition={{ duration: 0.5, delay: 0.4 }}
                 className="flex flex-col items-center lg:items-start gap-3"
               >
+                {/* HIDDEN FOR V2: Start Your Vault - $20 Refundable */}
                 <MagneticButton className="text-lg">
-                  <DollarSign className="w-5 h-5" />
-                  Start Your Vault - $20 Refundable
+                  Get Started Free
                 </MagneticButton>
                 <button
                   onClick={scrollToHowItWorks}
@@ -126,14 +127,14 @@ export const HeroSection = () => {
               </motion.div>
 
               {/* Trust line */}
+              {/* HIDDEN FOR V2: Net cost $0 if you fast consistently */}
               <motion.p
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.5, delay: 0.5 }}
                 className="text-sm text-muted-foreground mt-4"
               >
-                Net cost: <span className="text-primary font-semibold">$0</span> if you fast
-                consistently
+                Join thousands of users on their fasting journey
               </motion.p>
             </div>
 
