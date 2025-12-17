@@ -51,6 +51,7 @@ func main() {
 	var socialRepo ports.SocialRepository
 	var progressRepo ports.ProgressRepository
 	var tribeRepo ports.TribeRepository
+	var sosRepo ports.SOSRepository
 
 	// Check for DB connection string
 	// Priority: DATABASE_URL (Cloud Run) > DSN > individual env vars
@@ -127,6 +128,7 @@ func main() {
 		socialRepo = postgres.NewPostgresSocialRepository(db)
 		progressRepo = postgres.NewPostgresProgressRepository(db)
 		tribeRepo = postgres.NewPostgresTribeRepository(db)
+		sosRepo = postgres.NewPostgresSOSRepository(db)
 	} else {
 		log.Println("!!! RUNNING IN IN-MEMORY MODE (DATA WILL BE LOST ON RESTART) !!!")
 		userRepo = memory.NewUserRepository()
@@ -141,6 +143,7 @@ func main() {
 		socialRepo = memory.NewSocialRepository()
 		progressRepo = memory.NewProgressRepository()
 		tribeRepo = nil // No in-memory implementation for tribes yet
+		sosRepo = memory.NewMemorySOSRepository()
 	}
 
 	// Activity Repo (Memory only for now)
@@ -191,6 +194,9 @@ func main() {
 	progressService := services.NewProgressService(progressRepo)
 	tribeService := services.NewTribeService(tribeRepo)
 
+	// Initialize SOS Service after tribe service
+	var sosService ports.SOSService
+
 	apiKey := os.Getenv("DEEPSEEK_API_KEY")
 	if apiKey == "" {
 		log.Println("Warning: DEEPSEEK_API_KEY not set, Cortex will fail")
@@ -234,6 +240,16 @@ func main() {
 	} else {
 		notificationService = realNotificationService
 	}
+
+	// Create SOS Service (needs cortexService, notificationService, tribeService)
+	sosService = services.NewSOSService(
+		sosRepo,
+		userRepo,
+		tribeService,
+		notificationService,
+		cortexService,
+		fastingRepo,
+	)
 
 	handler := http.NewHandler(
 		authService,
@@ -280,6 +296,9 @@ func main() {
 	// Initialize OAuth handler and set it in main handler
 	oauthHandler := http.NewOAuthHandler(oauthService)
 	handler.SetOAuthHandler(oauthHandler)
+
+	// Set SOS service in handler
+	handler.SetSOSService(sosService)
 
 	// Initialize Tribe handler
 	tribeHandler := http.NewTribeHandler(tribeService)
@@ -330,6 +349,26 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to add cron job: %v", err)
 	}
+
+	// Add cron job for SOS Cortex backup (every minute)
+	_, err = cronScheduler.AddFunc("* * * * *", func() {
+		ctx := context.Background()
+		activeSOSFlares, err := sosRepo.FindAllActive(ctx)
+		if err != nil {
+			log.Printf("Error fetching active SOS flares: %v", err)
+			return
+		}
+
+		for _, sosFlare := range activeSOSFlares {
+			if err := sosService.CheckAndSendCortexBackup(ctx, sosFlare.ID); err != nil {
+				log.Printf("Error checking SOS %s for Cortex backup: %v", sosFlare.ID, err)
+			}
+		}
+	})
+	if err != nil {
+		log.Fatalf("Failed to add SOS cron job: %v", err)
+	}
+
 	cronScheduler.Start()
 	log.Println("Cron scheduler started")
 
@@ -339,6 +378,17 @@ func main() {
 	api := router.Group("/api/v1")
 	authMiddleware := http.AuthMiddleware(authService)
 	http.RegisterTribesRoutes(api, tribeHandler, authMiddleware)
+
+	// Register SOS routes
+	protected := api.Group("")
+	protected.Use(authMiddleware)
+	{
+		protected.POST("/fasting/sos", handler.SendSOSFlare)
+		protected.POST("/sos/:id/hype", handler.SendHype)
+		protected.POST("/sos/:id/resolve", handler.ResolveSOS)
+		protected.GET("/user/sos-settings", handler.GetSOSSettings)
+		protected.PUT("/user/sos-settings", handler.UpdateSOSSettings)
+	}
 
 	// 5. Start Server
 	port := os.Getenv("PORT")

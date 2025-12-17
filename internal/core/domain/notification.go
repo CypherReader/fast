@@ -35,4 +35,8 @@ const (
 	NotificationTypePotWinner     NotificationType = "pot_winner"
 	NotificationTypeStreakWarning NotificationType = "streak_warning"
 	NotificationTypeFriendInvite  NotificationType = "friend_invite"
+	NotificationTypeSOSFlare      NotificationType = "sos_flare"     // Tribe member needs help
+	NotificationTypeHypeReceived  NotificationType = "hype_received" // User received hype support
+	NotificationTypeSOSResolved   NotificationType = "sos_resolved"  // SOS was resolved (rescued)
+	NotificationTypeCortexBackup  NotificationType = "cortex_backup" // Cortex auto-responded to SOS
 )

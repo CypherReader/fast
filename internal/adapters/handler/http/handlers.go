@@ -33,6 +33,7 @@ type Handler struct {
 	progressService     ports.ProgressService
 	progressAnalyzer    *services.ProgressAnalyzer
 	streakMonitor       *services.StreakMonitor
+	sosService          ports.SOSService
 }
 
 func NewHandler(
@@ -77,6 +78,11 @@ func NewHandler(
 // SetOAuthHandler sets the OAuth handler (called from main.go after handler construction)
 func (h *Handler) SetOAuthHandler(oauthHandler *OAuthHandler) {
 	h.oauthHandler = oauthHandler
+}
+
+// SetSOSService sets the SOS service (called from main.go after handler construction)
+func (h *Handler) SetSOSService(sosService ports.SOSService) {
+	h.sosService = sosService
 }
 
 func (h *Handler) Register(c *gin.Context) {
@@ -1046,4 +1052,165 @@ func (h *Handler) GetFastingInsight(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, insight)
+}
+
+// SendSOSFlare handles POST /api/v1/fasting/sos
+func (h *Handler) SendSOSFlare(c *gin.Context) {
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	userID := userIDVal.(uuid.UUID)
+
+	var req struct {
+		CravingDescription string `json:"craving_description"`
+	}
+	if err := c.BindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	sos, aiResponse, err := h.sosService.SendSOSFlare(c.Request.Context(), userID, req.CravingDescription)
+	if err != nil {
+		// Check for rate limit error
+		if strings.Contains(err.Error(), "cooldown active") {
+			c.JSON(http.StatusTooManyRequests, gin.H{
+				"error":  err.Error(),
+				"status": "cooldown",
+				"sos_id": nil,
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Get tribe count for response
+	alliesNotified := 0
+	tribeNotified := false
+
+	// Return combined response
+	c.JSON(http.StatusOK, gin.H{
+		"sos_id":          sos.ID,
+		"ai_response":     aiResponse,
+		"tribe_notified":  tribeNotified,
+		"allies_notified": alliesNotified,
+		"status":          "active",
+		"hype_count":      sos.HypeCount,
+	})
+}
+
+// SendHype handles POST /api/v1/sos/:id/hype
+func (h *Handler) SendHype(c *gin.Context) {
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	fromUserID := userIDVal.(uuid.UUID)
+
+	sosID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid sos_id"})
+		return
+	}
+
+	var req struct {
+		Emoji   string `json:"emoji"`
+		Message string `json:"message"`
+	}
+	if err := c.BindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Validate emoji
+	if req.Emoji != "🔥" && req.Emoji != "⚡" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "emoji must be 🔥 or ⚡"})
+		return
+	}
+
+	err = h.sosService.SendHype(c.Request.Context(), sosID, fromUserID, req.Emoji, req.Message)
+	if err != nil {
+		// Check for daily limit error
+		if strings.Contains(err.Error(), "daily hype limit reached") {
+			c.JSON(http.StatusTooManyRequests, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "hype sent"})
+}
+
+// ResolveSOS handles POST /api/v1/sos/:id/resolve
+func (h *Handler) ResolveSOS(c *gin.Context) {
+	sosID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid sos_id"})
+		return
+	}
+
+	var req struct {
+		Survived bool `json:"survived"`
+	}
+	if err := c.BindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	err = h.sosService.ResolveSOS(c.Request.Context(), sosID, req.Survived)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "sos resolved",
+		"status":  map[bool]string{true: "rescued", false: "failed"}[req.Survived],
+	})
+}
+
+// GetSOSSettings handles GET /api/v1/user/sos-settings
+func (h *Handler) GetSOSSettings(c *gin.Context) {
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	userID := userIDVal.(uuid.UUID)
+
+	settings, err := h.sosService.GetSOSSettings(c.Request.Context(), userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, settings)
+}
+
+// UpdateSOSSettings handles PUT /api/v1/user/sos-settings
+func (h *Handler) UpdateSOSSettings(c *gin.Context) {
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	userID := userIDVal.(uuid.UUID)
+
+	var settings domain.SOSSettings
+	if err := c.BindJSON(&settings); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	err := h.sosService.UpdateSOSSettings(c.Request.Context(), userID, &settings)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "settings updated"})
 }

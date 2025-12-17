@@ -222,3 +222,27 @@ type TribeService interface {
 	// Stats and analytics
 	GetTribeStats(ctx context.Context, tribeID string) (*domain.TribeStats, error)
 }
+
+// SOSRepository defines the interface for SOS flare data persistence
+type SOSRepository interface {
+	Save(ctx context.Context, sos *domain.SOSFlare) error
+	FindByID(ctx context.Context, id uuid.UUID) (*domain.SOSFlare, error)
+	FindActiveByUserID(ctx context.Context, userID uuid.UUID) (*domain.SOSFlare, error)
+	FindAllActive(ctx context.Context) ([]*domain.SOSFlare, error) // For cron job
+	UpdateStatus(ctx context.Context, sosID uuid.UUID, status domain.SOSStatus) error
+	UpdateCortexResponse(ctx context.Context, sosID uuid.UUID) error
+	SaveHypeResponse(ctx context.Context, hype *domain.HypeResponse) error
+	GetHypeResponses(ctx context.Context, sosID uuid.UUID) ([]domain.HypeResponse, error)
+	GetUserHypeCount(ctx context.Context, userID uuid.UUID, since time.Time) (int, error)
+	IncrementHypeCount(ctx context.Context, sosID uuid.UUID) error
+}
+
+// SOSService defines the business logic for SOS operations
+type SOSService interface {
+	SendSOSFlare(ctx context.Context, userID uuid.UUID, cravingDescription string) (*domain.SOSFlare, interface{}, error)
+	SendHype(ctx context.Context, sosID, fromUserID uuid.UUID, emoji, message string) error
+	ResolveSOS(ctx context.Context, sosID uuid.UUID, survived bool) error
+	GetSOSSettings(ctx context.Context, userID uuid.UUID) (*domain.SOSSettings, error)
+	UpdateSOSSettings(ctx context.Context, userID uuid.UUID, settings *domain.SOSSettings) error
+	CheckAndSendCortexBackup(ctx context.Context, sosID uuid.UUID) error // Auto-respond after 10m
+}
