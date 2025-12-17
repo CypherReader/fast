@@ -133,7 +133,7 @@ export const TribesSection = () => {
                         transition={{ duration: 0.6, delay: 0.8 }}
                         className="text-center"
                     >
-                        <MagneticButton className="text-lg" onClick={() => window.location.href = '/register'}>
+                        <MagneticButton className="text-lg" onClick={() => window.location.href = '/onboarding'}>
                             <Users className="w-5 h-5" />
                             Join a Tribe Today
                             <ArrowRight className="w-5 h-5 ml-2" />

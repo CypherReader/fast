@@ -105,7 +105,7 @@ export const HeroSection = () => {
                 transition={{ duration: 0.5, delay: 0.4 }}
                 className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 mb-6"
               >
-                <MagneticButton className="text-lg px-8 py-6" onClick={() => window.location.href = '/register'}>
+                <MagneticButton className="text-lg px-8 py-6" onClick={() => window.location.href = '/onboarding'}>
                   Start My Transformation
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </MagneticButton>
