@@ -15,6 +15,7 @@ import WeightTracker from '@/components/dashboard/WeightTracker';
 import WaterTracker from '@/components/dashboard/WaterTracker';
 import MealTracker from '@/components/dashboard/MealTracker';
 import { CravingHelpButton } from '@/components/dashboard/CravingHelpButton';
+import { StreakAlert } from '@/components/dashboard/StreakAlert';
 import { useFasting } from '@/hooks/use-fasting';
 import { useUser } from '@/hooks/use-user';
 import { useProgress } from '@/hooks/use-progress';
@@ -548,6 +549,9 @@ const Dashboard = () => {
           ))}
         </div>
       </nav>
+
+      {/* Streak Protection Alert */}
+      <StreakAlert />
 
       {/* Craving Help Button - only show when fasting */}
       {currentFast?.status === 'active' && <CravingHelpButton />}

@@ -31,6 +31,8 @@ type Handler struct {
 	notificationService ports.NotificationService
 	socialService       ports.SocialService
 	progressService     ports.ProgressService
+	progressAnalyzer    *services.ProgressAnalyzer
+	streakMonitor       *services.StreakMonitor
 }
 
 func NewHandler(
@@ -155,6 +157,7 @@ func (h *Handler) RegisterRoutes(router *gin.Engine) {
 		fasting.POST("/start", h.StartFast)
 		fasting.POST("/stop", h.StopFast)
 		fasting.GET("/current", h.GetCurrentFast)
+		fasting.GET("/streak-risk", h.CheckStreakRisk)
 		fasting.GET("/insight", h.GetFastingInsight)
 	}
 
@@ -168,6 +171,7 @@ func (h *Handler) RegisterRoutes(router *gin.Engine) {
 		cortex.POST("/chat", h.Chat)
 		cortex.POST("/insight", h.GetInsight)
 		cortex.POST("/craving-help", h.GetCravingHelp)
+		cortex.GET("/weekly-report", h.GetWeeklyReport)
 	}
 
 	activity := protected.Group("/activity")
@@ -332,6 +336,50 @@ func (h *Handler) GetCravingHelp(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, cravingHelp)
+}
+
+func (h *Handler) GetWeeklyReport(c *gin.Context) {
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	userID := userIDVal.(uuid.UUID)
+
+	if h.progressAnalyzer == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Weekly reports not available"})
+		return
+	}
+
+	report, err := h.progressAnalyzer.GenerateWeeklyReport(c.Request.Context(), userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate report"})
+		return
+	}
+
+	c.JSON(http.StatusOK, report)
+}
+
+func (h *Handler) CheckStreakRisk(c *gin.Context) {
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	userID := userIDVal.(uuid.UUID)
+
+	if h.streakMonitor == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Streak monitoring not available"})
+		return
+	}
+
+	riskStatus, err := h.streakMonitor.CheckStreakRisk(c.Request.Context(), userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to check streak"})
+		return
+	}
+
+	c.JSON(http.StatusOK, riskStatus)
 }
 
 func (h *Handler) LogWeight(c *gin.Context) {
