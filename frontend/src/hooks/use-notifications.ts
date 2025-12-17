@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/api/client';
-import { Notification } from '@/api/types';
 import { useToast } from '@/hooks/use-toast';
+import type { Notification as NotificationData } from '@/api/types';
 
 export const useNotifications = () => {
     const queryClient = useQueryClient();
@@ -10,7 +10,7 @@ export const useNotifications = () => {
     const { data: notifications, isLoading } = useQuery({
         queryKey: ['notifications'],
         queryFn: async () => {
-            const response = await api.get<Notification[]>('/notifications/history');
+            const response = await api.get<NotificationData[]>('/notifications/history');
             return response.data;
         },
     });

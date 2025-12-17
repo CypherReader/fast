@@ -107,7 +107,7 @@ export const NotificationSettings = () => {
                                     )}
                                     <div className="flex-1 space-y-1">
                                         <p className="font-medium">{notification.title}</p>
-                                        <p className="text-muted-foreground text-xs">{notification.body}</p>
+                                        <p className="text-muted-foreground text-xs">{notification.message}</p>
                                     </div>
                                 </div>
                             ))}
