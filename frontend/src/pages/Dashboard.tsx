@@ -16,6 +16,8 @@ import WaterTracker from '@/components/dashboard/WaterTracker';
 import MealTracker from '@/components/dashboard/MealTracker';
 import { CravingHelpButton } from '@/components/dashboard/CravingHelpButton';
 import { StreakAlert } from '@/components/dashboard/StreakAlert';
+import { DailyQuoteCard } from '@/components/cortex/DailyQuoteCard';
+import { BreakFastPlannerDialog } from '@/components/cortex/BreakFastPlannerDialog';
 import { useFasting } from '@/hooks/use-fasting';
 import { useUser } from '@/hooks/use-user';
 import { useProgress } from '@/hooks/use-progress';
@@ -59,6 +61,8 @@ const Dashboard = () => {
   // Dialog control states for Quick Actions
   const [showMealDialog, setShowMealDialog] = useState(false);
   const [showWeightDialog, setShowWeightDialog] = useState(false);
+  const [showBreakFastPlanner, setShowBreakFastPlanner] = useState(false);
+  const [completedFastDuration, setCompletedFastDuration] = useState(0);
 
   // Handle OAuth token from URL
   useEffect(() => {
@@ -133,6 +137,12 @@ const Dashboard = () => {
   };
 
   const handleStopFast = () => {
+    // Calculate fast duration before stopping
+    if (currentFast?.start_time) {
+      const duration = (new Date().getTime() - new Date(currentFast.start_time).getTime()) / (1000 * 60 * 60);
+      setCompletedFastDuration(duration);
+      setShowBreakFastPlanner(true);
+    }
     stopFast();
   };
 
@@ -270,20 +280,13 @@ const Dashboard = () => {
         </AnimatePresence>
 
         {/* Daily Motivational Quote */}
-        {quote && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-gradient-to-r from-primary/10 via-secondary/10 to-primary/10 border border-primary/20 rounded-xl p-4 mb-6 text-center"
-          >
-            <div className="flex items-center justify-center gap-2 mb-2">
-              <span className="text-xl">✨</span>
-              <span className="text-xs font-semibold text-primary uppercase tracking-wider">Today's Inspiration</span>
-              <span className="text-xl">✨</span>
-            </div>
-            <p className="text-foreground font-medium italic">"{quote}"</p>
-          </motion.div>
-        )}
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-6"
+        >
+          <DailyQuoteCard />
+        </motion.div>
 
         {/* Setup Complete Celebration */}
         <AnimatePresence>
@@ -573,6 +576,13 @@ const Dashboard = () => {
 
       {/* Craving Help Button - only show when fasting */}
       {currentFast?.status === 'active' && <CravingHelpButton />}
+
+      {/* Break-Fast Planner Dialog */}
+      <BreakFastPlannerDialog
+        open={showBreakFastPlanner}
+        onOpenChange={setShowBreakFastPlanner}
+        fastDuration={completedFastDuration}
+      />
     </div>
   );
 };
