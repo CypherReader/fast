@@ -155,7 +155,7 @@ Keep response under 100 words total.`, fastsCompleted, avgDuration, user.Discipl
 
 	systemPrompt := "You are a supportive fasting coach analyzing weekly progress. Be specific, encouraging, and actionable."
 
-	insights, err := p.cortex.Chat(ctx, user.ID, prompt)
+	insights, err := p.cortex.Chat(ctx, user.ID, systemPrompt+"\n\n"+prompt)
 	if err != nil {
 		// Fallback if AI fails
 		insights = fmt.Sprintf("You completed %d fasts this week! Your dedication is building real discipline. Keep pushing forward.", fastsCompleted)
