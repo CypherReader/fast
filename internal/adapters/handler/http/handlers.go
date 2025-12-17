@@ -225,13 +225,28 @@ func (h *Handler) RegisterRoutes(router *gin.Engine) {
 	{
 		social.POST("/friends/add", h.AddFriend)
 		social.GET("/friends", h.GetFriends)
-		social.POST("/tribes", h.CreateTribe)
-		social.GET("/tribes", h.ListTribes)
-		social.GET("/tribes/:id", h.GetTribe)
 		social.POST("/challenges", h.CreateChallenge)
 		social.GET("/challenges", h.GetChallenges)
 		social.GET("/feed", h.GetFeed)
 	}
+
+	// Tribes Routes - Public and authenticated
+	// Public routes (optional authentication)
+	api.GET("/tribes", h.ListTribes)
+	api.GET("/tribes/:id", h.GetTribe)
+
+	// Protected tribes routes
+	tribes := protected.Group("/tribes")
+	{
+		tribes.POST("", h.CreateTribe)
+		tribes.POST("/:id/join", h.JoinTribe)
+		tribes.POST("/:id/leave", h.LeaveTribe)
+		tribes.GET("/:id/members", h.GetTribeMembers)
+		tribes.GET("/:id/stats", h.GetTribeStats)
+	}
+
+	// User's tribes (protected)
+	protected.GET("/users/me/tribes", h.GetMyTribes)
 
 	leaderboardGroup := protected.Group("/leaderboard")
 	{
