@@ -56,7 +56,7 @@ export const HeroSection = () => {
                 transition={{ duration: 0.7, delay: 0.1 }}
                 className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-extrabold mb-4 leading-tight"
               >
-                <span className="text-gradient-hero">The Fasting App</span>
+                <span className="text-gradient-hero">The AI-assisted fasting app</span>
               </motion.h1>
 
               <motion.h1
@@ -65,7 +65,7 @@ export const HeroSection = () => {
                 transition={{ duration: 0.7, delay: 0.2 }}
                 className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-extrabold mb-6"
               >
-                <span className="text-foreground">That Pays for Itself</span>
+                <span className="text-foreground"></span>
               </motion.h1>
 
               {/* Subheadline */}
@@ -122,17 +122,7 @@ export const HeroSection = () => {
                   onClick={scrollToHowItWorks}
                   className="text-muted-foreground hover:text-foreground transition-colors text-sm underline-offset-4 hover:underline"
                 >
-                  See how it works ↓
-                </button>
-              </motion.div>
-
-              {/* Trust line */}
-              {/* HIDDEN FOR V2: Net cost $0 if you fast consistently */}
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.5, delay: 0.5 }}
-                className="text-sm text-muted-foreground mt-4"
+                
               >
                 Join thousands of users on their fasting journey
               </motion.p>
