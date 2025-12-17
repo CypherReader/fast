@@ -234,7 +234,7 @@ func (h *Handler) RegisterRoutes(router *gin.Engine) {
 	// to ensure proper dependency injection of TribeService
 
 	// User's tribes (protected)
-	protected.GET("/users/me/tribes", h.GetMyTribes)
+	// Moved to main.go via TribeHandler to ensure proper dependencies
 
 	leaderboardGroup := protected.Group("/leaderboard")
 	{
