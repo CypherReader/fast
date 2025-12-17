@@ -111,6 +111,7 @@ func (h *Handler) Login(c *gin.Context) {
 	}
 	if err := c.BindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
 	token, refresh, user, err := h.authService.Login(c.Request.Context(), req.Email, req.Password)
 	if err != nil {
