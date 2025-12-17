@@ -192,7 +192,12 @@ func main() {
 	telemetryService := services.NewTelemetryService(telemetryRepo)
 	socialService := services.NewSocialService(socialRepo)
 	progressService := services.NewProgressService(progressRepo)
-	tribeService := services.NewTribeService(tribeRepo)
+
+	// Only create TribeService if repository exists (not nil in memory mode)
+	var tribeService ports.TribeService
+	if tribeRepo != nil {
+		tribeService = services.NewTribeService(tribeRepo)
+	}
 
 	// Initialize SOS Service after tribe service
 	var sosService ports.SOSService
