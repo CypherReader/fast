@@ -108,9 +108,9 @@ const OnboardingPayment = () => {
         fasting_plan: state.fastingPlan,
       });
 
-      // 4. Process Deposit (Mock payment, real backend update)
+      // 4. Process Subscription Payment (Mock payment, real backend update)
       await api.post('/payments/deposit', {
-        amount: 20,
+        amount: 4.99,
         payment_method_id: 'pm_card_visa', // Mock Stripe ID
       });
 
@@ -141,7 +141,7 @@ const OnboardingPayment = () => {
             Set Up Payment Method
           </h1>
           <p className="text-muted-foreground">
-            Subscribe to FastingHero - $20/month
+            Subscribe to FastingHero - $4.99/month
           </p>
         </div>
 
@@ -239,7 +239,7 @@ const OnboardingPayment = () => {
                     htmlFor="agreeRefund"
                     className="text-sm text-muted-foreground cursor-pointer leading-relaxed"
                   >
-                    I understand my deposit is fully refundable based on fasting
+                    I understand this is a monthly subscription for $4.99/month
                   </label>
                 </div>
                 <div className="flex items-start gap-3">
@@ -333,16 +333,17 @@ const OnboardingPayment = () => {
 
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Monthly Deposit</span>
-                  <span className="text-foreground font-medium">$20.00</span>
+                  <span className="text-muted-foreground">Monthly Subscription</span>
+                  <span className="text-foreground font-medium">$4.99</span>
                 </div>
-                <div className="flex justify-between">
+                {/* HIDDEN FOR V2: Vault recovery system */}
+                {/* <div className="flex justify-between">
                   <span className="text-muted-foreground">Potential Recovery</span>
                   <span className="text-secondary font-medium">Up to $20.00</span>
-                </div>
+                </div> */}
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Your Net Cost</span>
-                  <span className="text-foreground font-medium">$0-20 (based on discipline)</span>
+                  <span className="text-muted-foreground">Billing Cycle</span>
+                  <span className="text-foreground font-medium">Monthly</span>
                 </div>
               </div>
 
@@ -351,10 +352,10 @@ const OnboardingPayment = () => {
               <div className="space-y-2">
                 <div className="flex justify-between items-baseline">
                   <span className="text-lg font-semibold text-foreground">First charge</span>
-                  <span className="text-2xl font-bold text-primary">$20.00</span>
+                  <span className="text-2xl font-bold text-primary">$4.99</span>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Refund processed: 1st of next month
+                  Recurring monthly subscription
                 </p>
               </div>
 
