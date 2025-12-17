@@ -9,6 +9,7 @@ import (
 	"fastinghero/internal/adapters/repository/memory"
 	"fastinghero/internal/adapters/repository/postgres"
 	"fastinghero/internal/adapters/secondary/llm"
+	"fastinghero/internal/core/domain"
 	"fastinghero/internal/core/ports"
 	"fastinghero/internal/core/services"
 	"log"
@@ -338,6 +339,11 @@ func main() {
 	// 4. Setup Router
 	router := gin.Default()
 
+	// Seed Test User (jib@jab.com)
+	if !useMemory {
+		go seedTestUser(authService, userRepo)
+	}
+
 	// Configure CORS based on environment
 	allowedOrigins := []string{"http://localhost:5173"}
 
@@ -434,5 +440,45 @@ func main() {
 	logger.Info().Msg("Starting server on port " + port)
 	if err := router.Run(":" + port); err != nil {
 		log.Fatal("Failed to start server: ", err)
+	}
+}
+
+func seedTestUser(authService *services.AuthService, userRepo ports.UserRepository) {
+	// Allow some time for server to start and DB connections to settle
+	time.Sleep(5 * time.Second)
+
+	ctx := context.Background()
+	email := "jib@jab.com"
+	password := "Turtl3Sh3ll!"
+
+	logger.Info().Msg("Seeding test user: " + email)
+
+	// Check if user exists
+	user, err := userRepo.FindByEmail(ctx, email)
+	if err != nil {
+		// Create user if not found
+		logger.Info().Msg("Test user not found, creating...")
+		user, err = authService.Register(ctx, email, password, "Test User", "")
+		if err != nil {
+			logger.Error().Err(err).Msg("Failed to seed test user")
+			return
+		}
+	} else {
+		logger.Info().Msg("Test user already exists, updating subscription...")
+	}
+
+	// Upgrade to Premium (Vault)
+	user.SubscriptionTier = domain.TierVault
+	user.SubscriptionStatus = domain.SubStatusActive
+	user.VaultEnabled = true
+	user.VaultDeposit = 20.0
+	user.CurrentPrice = 0.0
+
+	// We need to use Repo.Save to update.
+	// Note: PostgresUserRepository.Save performs UPSERT (ON CONFLICT DO UPDATE)
+	if err := userRepo.Save(ctx, user); err != nil {
+		logger.Error().Err(err).Msg("Failed to upgrade test user to premium")
+	} else {
+		logger.Info().Msg("Successfully verified/upgraded test user " + email)
 	}
 }

@@ -5,7 +5,10 @@ import (
 	"errors"
 	"fastinghero/internal/core/domain"
 	"fastinghero/internal/core/ports"
+	"strings"
 	"time"
+
+	"fastinghero/pkg/logger"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
@@ -27,24 +30,30 @@ func NewAuthService(userRepo ports.UserRepository, referralService ports.Referra
 }
 
 func (s *AuthService) Register(ctx context.Context, email, password, name, referralCode string) (*domain.User, error) {
+	email = strings.ToLower(email)
+
 	// 1. Validate email format
 	if !isValidEmail(email) {
+		logger.Error().Str("email", email).Msg("Registration failed: invalid email format")
 		return nil, errors.New("invalid email format")
 	}
 
 	// 2. Check if user exists
 	if _, err := s.userRepo.FindByEmail(ctx, email); err == nil {
+		logger.Error().Str("email", email).Msg("Registration failed: email already in use")
 		return nil, errors.New("email already in use")
 	}
 
 	// 3. Enforce password policy
 	if err := validatePasswordStrength(password); err != nil {
+		logger.Error().Err(err).Msg("Registration failed: weak password")
 		return nil, err
 	}
 
 	// 4. Hash password
 	hashedBytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
+		logger.Error().Err(err).Msg("Registration failed: password hashing error")
 		return nil, err
 	}
 
@@ -62,6 +71,7 @@ func (s *AuthService) Register(ctx context.Context, email, password, name, refer
 	}
 
 	if err := s.userRepo.Save(ctx, user); err != nil {
+		logger.Error().Err(err).Msg("Registration failed: database save error")
 		return nil, err
 	}
 
@@ -69,7 +79,7 @@ func (s *AuthService) Register(ctx context.Context, email, password, name, refer
 	if referralCode != "" && s.referralService != nil {
 		if err := s.referralService.TrackReferral(ctx, referralCode, user.ID); err != nil {
 			// Log error but don't fail registration
-			// In a real app, use a logger
+			logger.Error().Err(err).Msg("Failed to track referral")
 		}
 	}
 
@@ -77,14 +87,18 @@ func (s *AuthService) Register(ctx context.Context, email, password, name, refer
 }
 
 func (s *AuthService) Login(ctx context.Context, email, password string) (string, string, *domain.User, error) {
+	email = strings.ToLower(email)
+
 	// 1. Find User
 	user, err := s.userRepo.FindByEmail(ctx, email)
 	if err != nil {
+		logger.Error().Str("email", email).Err(err).Msg("Login failed: user not found")
 		return "", "", nil, errors.New("invalid credentials")
 	}
 
 	// 2. Check Password
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
+		logger.Error().Str("email", email).Msg("Login failed: invalid password")
 		return "", "", nil, errors.New("invalid credentials")
 	}
 
@@ -96,6 +110,7 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (string
 
 	tokenString, err := token.SignedString(s.jwtSecret)
 	if err != nil {
+		logger.Error().Err(err).Msg("Login failed: token generation error")
 		return "", "", nil, err
 	}
 
