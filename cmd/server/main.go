@@ -37,6 +37,21 @@ func main() {
 		logLevel = "info"
 	}
 	logger.Init(logLevel)
+
+	// Force plain log output for visibility in Cloud Run errors
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+	log.Println(">>> FASTINGHERO STARTUP BEGINNING <<<")
+
+	// Defer panic recovery
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("!!! PANIC DURING STARTUP: %v !!!", r)
+			// Print stack trace
+			// debug.PrintStack() - requires runtime/debug package
+			os.Exit(1)
+		}
+	}()
+
 	logger.Info().Msg("Starting FastingHero application...")
 
 	var userRepo ports.UserRepository
@@ -87,6 +102,7 @@ func main() {
 	useMemory := false
 
 	if dsn != "" {
+		log.Println(">>> Attempting DB Connection...")
 		logger.Info().Msg("Connecting to PostgreSQL...")
 		db, err = sql.Open("postgres", dsn)
 		if err != nil {
@@ -106,14 +122,19 @@ func main() {
 		useMemory = true
 	}
 
+	}
+
 	if !useMemory {
 		// Run Migrations
+		log.Println(">>> Running Migrations...")
 		log.Println("Running database migrations...")
 		if err := postgres.RunMigrations(db, "migrations"); err != nil {
 			log.Printf("Failed to run migrations: %v. Switching to IN-MEMORY mode.", err)
 			useMemory = true
 		}
 	}
+	
+	log.Printf(">>> Initialization Mode: useMemory=%v", useMemory)
 
 	if !useMemory {
 		userRepo = postgres.NewPostgresUserRepository(db)
