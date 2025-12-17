@@ -38,8 +38,11 @@ const OnboardingWelcome = () => {
       // Remove token from URL for security
       searchParams.delete('token');
       window.history.replaceState({}, '', `/onboarding?${searchParams.toString()}`);
+
+      // Auto-redirect OAuth users to goal page (skip welcome since account is already created)
+      setTimeout(() => navigate('/onboarding/goal'), 100);
     }
-  }, [searchParams]);
+  }, [searchParams, navigate]);
 
   return (
     <OnboardingLayout step={1}>

@@ -171,7 +171,11 @@ const OnboardingPlan = () => {
             size="xl"
             className="w-full md:w-80 bg-gradient-gold hover:scale-105 transition-transform shadow-gold-glow disabled:opacity-50 disabled:hover:scale-100"
             disabled={!state.fastingPlan}
-            onClick={() => navigate('/onboarding/account')}
+            onClick={() => {
+              // Skip account creation for OAuth users (they already have an account)
+              const hasToken = localStorage.getItem('token');
+              navigate(hasToken ? '/onboarding/payment' : '/onboarding/account');
+            }}
           >
             {selectedPlanName ? `Continue with ${selectedPlanName}` : 'Continue'}
           </Button>
