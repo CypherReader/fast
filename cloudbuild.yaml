@@ -23,7 +23,7 @@ steps:
       - '--region=us-central1'
       - '--platform=managed'
       - '--allow-unauthenticated'
-      - '--set-env-vars=ENVIRONMENT=uat,FRONTEND_URL=https://fastinghero-uat-537397575496.us-central1.run.app'
+      - '--set-env-vars=ENVIRONMENT=uat,SKIP_MIGRATIONS=true,FRONTEND_URL=https://fastinghero-uat-537397575496.us-central1.run.app'
       - '--set-secrets=JWT_SECRET=JWT_SECRET:latest,DATABASE_URL=DATABASE_URL:latest,GOOGLE_CLIENT_ID=GOOGLE_CLIENT_ID:latest,GOOGLE_CLIENT_SECRET=GOOGLE_CLIENT_SECRET:latest,DEEPSEEK_API_KEY=DEEPSEEK_API_KEY:latest'
       - '--add-cloudsql-instances=noted-function-481218-g0:us-central1:fastinghero-uat-db'
       - '--memory=512Mi'
