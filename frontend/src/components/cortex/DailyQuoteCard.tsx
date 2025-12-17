@@ -2,7 +2,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useDailyQuote } from '@/hooks/use-daily-quote';
 import { Sparkles, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useQueryClient } from '@tantml:query/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export const DailyQuoteCard = () => {
