@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
+import { NotificationSettings } from '@/components/dashboard/NotificationSettings';
 
 const SETTINGS_KEY = 'fastinghero_settings';
 
@@ -157,11 +158,20 @@ const Settings = () => {
                         </Card>
                     </motion.div>
 
+                    {/* Push Notifications */}
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.05, duration: 0.3 }}
+                    >
+                        <NotificationSettings />
+                    </motion.div>
+
                     {/* Preferences */}
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.1, duration: 0.3 }}
+                        transition={{ delay: 0.15, duration: 0.3 }}
                     >
                         <Card className="p-6">
                             <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
@@ -198,7 +208,7 @@ const Settings = () => {
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.2, duration: 0.3 }}
+                        transition={{ delay: 0.25, duration: 0.3 }}
                     >
                         <Card className="p-6">
                             <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
@@ -221,7 +231,7 @@ const Settings = () => {
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.3, duration: 0.3 }}
+                        transition={{ delay: 0.35, duration: 0.3 }}
                     >
                         <Card className="p-6 border-red-200 dark:border-red-900">
                             <h3 className="font-semibold text-lg mb-4 flex items-center gap-2 text-red-600">

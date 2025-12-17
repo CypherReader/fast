@@ -101,8 +101,8 @@ func (s *FastingService) StopFast(ctx context.Context, userID uuid.UUID) (*domai
 		}
 	}
 
-	// 4. Save updated session
-	if err := s.repo.Save(ctx, session); err != nil {
+	// 4. Update session (use Update instead of Save since session already exists)
+	if err := s.repo.Update(ctx, session); err != nil {
 		return nil, err
 	}
 
