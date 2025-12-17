@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"fastinghero/internal/core/domain"
 	"fastinghero/internal/core/ports"
 	"fmt"
 	"strings"
@@ -319,4 +320,183 @@ func parseCravingResponse(aiResponse string, fastDuration, hoursRemaining float6
 	}
 
 	return resp
+}
+
+// BreakFastGuide contains recommendations for breaking a fast
+type BreakFastGuide struct {
+	FastDuration       float64  `json:"fast_duration"`
+	MealType           string   `json:"meal_type"`
+	PortionSize        string   `json:"portion_size"`
+	RecommendedFoods   []string `json:"recommended_foods"`
+	FoodsToAvoid       []string `json:"foods_to_avoid"`
+	ReintroductionPlan string   `json:"reintroduction_plan"`
+	HydrationTip       string   `json:"hydration_tip"`
+	TimingAdvice       string   `json:"timing_advice"`
+	AIGuidance         string   `json:"ai_guidance"`
+}
+
+// GetBreakFastRecommendations provides guidance for breaking a fast safely
+func (s *CortexService) GetBreakFastRecommendations(ctx context.Context, userID uuid.UUID, fastDuration float64) (*BreakFastGuide, error) {
+	// Determine meal type and size based on duration
+	guide := &BreakFastGuide{
+		FastDuration: fastDuration,
+	}
+
+	// Categorize fast duration
+	switch {
+	case fastDuration < 16:
+		guide.MealType = "Light meal"
+		guide.PortionSize = "Normal portion"
+		guide.RecommendedFoods = []string{"Eggs", "Avocado", "Leafy greens", "Nuts"}
+		guide.FoodsToAvoid = []string{"Heavy fried foods", "Large carb-heavy meals"}
+		guide.ReintroductionPlan = "Start with your normal eating pattern"
+		guide.HydrationTip = "Drink water 30 minutes before eating"
+		guide.TimingAdvice = "No special timing needed"
+
+	case fastDuration >= 16 && fastDuration < 24:
+		guide.MealType = "Gentle refeeding"
+		guide.PortionSize = "Small to moderate portion"
+		guide.RecommendedFoods = []string{"Bone broth", "Steamed vegetables", "Small protein portion", "Fermented foods"}
+		guide.FoodsToAvoid = []string{"Large meals", "Processed foods", "High sugar items"}
+		guide.ReintroductionPlan = "Start light, wait 1-2 hours, then eat normally"
+		guide.HydrationTip = "Sip 16oz water with electrolytes first"
+		guide.TimingAdvice = "Break fast with small portion, then regular meal 2 hours later"
+
+	case fastDuration >= 24 && fastDuration < 48:
+		guide.MealType = "Very gentle refeeding"
+		guide.PortionSize = "Small portions only"
+		guide.RecommendedFoods = []string{"Bone broth", "Light soup", "Cooked vegetables", "Small amount of fish or chicken"}
+		guide.FoodsToAvoid = []string{"Raw vegetables", "Heavy proteins", "Dairy", "Nuts"}
+		guide.ReintroductionPlan = "Broth first, wait 2h, then light protein, gradually increase over 6-8 hours"
+		guide.HydrationTip = "Start with 8oz bone broth or electrolyte water"
+		guide.TimingAdvice = "Space reintroduction over 6-8 hours"
+
+	case fastDuration >= 48:
+		guide.MealType = "Extended fast refeed protocol"
+		guide.PortionSize = "Very small portions"
+		guide.RecommendedFoods = []string{"Bone broth", "Clear soup", "Well-cooked vegetables", "Minimal lean protein"}
+		guide.FoodsToAvoid = []string{"Raw foods", "Heavy fats", "Dairy", "Grains initially", "Large portions"}
+		guide.ReintroductionPlan = "Day 1: Broth and soup only. Day 2: Add light proteins. Day 3: Return to normal"
+		guide.HydrationTip = "Critical: Sip mineral water and broth slowly over first 2 hours"
+		guide.TimingAdvice = "Reintroduce foods over 24-48 hours, not all at once"
+	}
+
+	// Get AI-powered personalized guidance
+	user, err := s.userRepo.FindByID(ctx, userID)
+	if err == nil {
+		aiGuidance := s.generateBreakFastAIGuidance(ctx, user, fastDuration)
+		guide.AIGuidance = aiGuidance
+	}
+
+	return guide, nil
+}
+
+// generateBreakFastAIGuidance creates personalized guidance
+func (s *CortexService) generateBreakFastAIGuidance(ctx context.Context, user *domain.User, fastDuration float64) string {
+	prompt := fmt.Sprintf(`User completed a %.1f-hour fast. Provide ONE specific, actionable tip for breaking this fast safely.
+	
+Keep it under 25 words. Be science-based and practical. Focus on what to eat first or what to avoid.`, fastDuration)
+
+	systemPrompt := "You are a fasting nutrition expert. Provide concise, science-based refeeding advice."
+
+	aiResponse, err := s.llm.GenerateResponse(ctx, prompt, systemPrompt)
+
+	// Fallback
+	if err != nil || aiResponse == "" {
+		if fastDuration < 24 {
+			return "Start with something light and protein-rich. Your digestive system is ready!"
+		} else if fastDuration < 48 {
+			return "Critical: Start with bone broth, then wait 2 hours before eating solid food."
+		}
+		return "Extended fasts require careful refeeding. Start with broth, introduce solids gradually over 24-48 hours."
+	}
+
+	return aiResponse
+}
+
+// GenerateDailyQuote creates personalized daily motivation
+func (s *CortexService) GenerateDailyQuote(ctx context.Context, userID uuid.UUID) (string, error) {
+	// 1. Get user context
+	user, err := s.userRepo.FindByID(ctx, userID)
+	if err != nil {
+		return "", fmt.Errorf("failed to fetch user: %w", err)
+	}
+
+	// 2. Get recent fasting sessions
+	sessions, err := s.fastingRepo.FindByUserID(ctx, userID)
+	if err != nil {
+		sessions = []domain.FastingSession{} // Continue with empty if error
+	}
+
+	// 3. Calculate user stats
+	completedFasts := 0
+	totalHours := 0.0
+	for _, session := range sessions {
+		if session.Status == domain.StatusCompleted {
+			completedFasts++
+			totalHours += session.ActualDurationHours
+		}
+	}
+
+	// Check if currently fasting
+	activeFast, _ := s.fastingRepo.FindActiveByUserID(ctx, userID)
+	isFasting := activeFast != nil
+
+	// 4. Determine user journey stage
+	var stage string
+	var context string
+
+	switch {
+	case completedFasts == 0:
+		stage = "beginner"
+		context = "first steps"
+	case completedFasts < 5:
+		stage = "building_habit"
+		context = "building momentum"
+	case completedFasts < 20:
+		stage = "committed"
+		context = "proven dedication"
+	default:
+		stage = "veteran"
+		context = "mastery level"
+	}
+
+	if isFasting {
+		context += ", currently fasting"
+	}
+
+	// 5. Construct AI prompt
+	prompt := fmt.Sprintf(`Create ONE powerful motivational quote for a fasting user.
+
+User Context:
+- Journey stage: %s (%s)
+- Completed fasts: %d
+- Total fasting hours: %.0f
+- Discipline: %.1f/100
+- Currently fasting: %v
+
+Requirements:
+- 15 words or less
+- Inspiring and specific to their journey
+- Not generic - reference their actual progress
+- Make them feel proud and motivated
+
+Just return the quote, nothing else.`, stage, context, completedFasts, totalHours, user.DisciplineIndex, isFasting)
+
+	systemPrompt := "You are a motivational fasting coach. Create powerful, personalized quotes that inspire action."
+
+	// 6. Generate quote
+	quote, err := s.llm.GenerateResponse(ctx, prompt, systemPrompt)
+	if err != nil || quote == "" {
+		// Fallback quotes based on stage
+		fallbackQuotes := map[string]string{
+			"beginner":       "Every expert was once a beginner. Your first fast is your first victory.",
+			"building_habit": fmt.Sprintf("%d fasts completed. Your discipline is compounding daily.", completedFasts),
+			"committed":      fmt.Sprintf("%.0f hours of fasting mastered. You're building something remarkable.", totalHours),
+			"veteran":        fmt.Sprintf("%d fasts. You've proven your strength repeatedly. Keep leading.", completedFasts),
+		}
+		quote = fallbackQuotes[stage]
+	}
+
+	return quote, nil
 }

@@ -19,6 +19,7 @@ import { StreakAlert } from '@/components/dashboard/StreakAlert';
 import { useFasting } from '@/hooks/use-fasting';
 import { useUser } from '@/hooks/use-user';
 import { useProgress } from '@/hooks/use-progress';
+import { useDailyQuote } from '@/hooks/use-daily-quote';
 import confetti from 'canvas-confetti';
 import UserMenu from '@/components/layout/UserMenu';
 
@@ -51,6 +52,7 @@ const Dashboard = () => {
   const { currentFast, startFast, stopFast, isLoading, getInsight } = useFasting();
   const { user, stats } = useUser();
   const { weightHistory, dailyHydration } = useProgress();
+  const { quote } = useDailyQuote();
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [insight, setInsight] = useState<string | null>(null);
 
@@ -266,6 +268,22 @@ const Dashboard = () => {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Daily Motivational Quote */}
+        {quote && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-gradient-to-r from-primary/10 via-secondary/10 to-primary/10 border border-primary/20 rounded-xl p-4 mb-6 text-center"
+          >
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <span className="text-xl">✨</span>
+              <span className="text-xs font-semibold text-primary uppercase tracking-wider">Today's Inspiration</span>
+              <span className="text-xl">✨</span>
+            </div>
+            <p className="text-foreground font-medium italic">"{quote}"</p>
+          </motion.div>
+        )}
 
         {/* Setup Complete Celebration */}
         <AnimatePresence>

@@ -172,6 +172,8 @@ func (h *Handler) RegisterRoutes(router *gin.Engine) {
 		cortex.POST("/insight", h.GetInsight)
 		cortex.POST("/craving-help", h.GetCravingHelp)
 		cortex.GET("/weekly-report", h.GetWeeklyReport)
+		cortex.POST("/break-fast-guide", h.GetBreakFastGuide)
+		cortex.GET("/daily-quote", h.GetDailyQuote)
 	}
 
 	activity := protected.Group("/activity")
@@ -380,6 +382,49 @@ func (h *Handler) CheckStreakRisk(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, riskStatus)
+}
+
+func (h *Handler) GetBreakFastGuide(c *gin.Context) {
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	userID := userIDVal.(uuid.UUID)
+
+	var req struct {
+		FastDuration float64 `json:"fast_duration"`
+	}
+	if err := c.BindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	guide, err := h.cortexService.(*services.CortexService).GetBreakFastRecommendations(c.Request.Context(), userID, req.FastDuration)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate guide"})
+		return
+	}
+
+	c.JSON(http.StatusOK, guide)
+}
+
+func (h *Handler) GetDailyQuote(c *gin.Context) {
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	userID := userIDVal.(uuid.UUID)
+
+	quote, err := h.cortexService.(*services.CortexService).GenerateDailyQuote(c.Request.Context(), userID)
+	if err != nil {
+		// Return fallback quote on error
+		c.JSON(http.StatusOK, gin.H{"quote": "Every hour of discipline builds the person you're becoming."})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"quote": quote})
 }
 
 func (h *Handler) LogWeight(c *gin.Context) {
