@@ -44,6 +44,21 @@ func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	log.Println(">>> FASTINGHERO STARTUP BEGINNING <<<")
 
+	// Log environment variable status for debugging
+	log.Println("=== Environment Variable Diagnostics ===")
+	envVars := []string{"PORT", "JWT_SECRET", "DATABASE_URL", "DSN", "DEEPSEEK_API_KEY", "ENVIRONMENT", "GOOGLE_CLIENT_ID"}
+	for _, env := range envVars {
+		val := os.Getenv(env)
+		if val == "" {
+			log.Printf("  %s: NOT SET", env)
+		} else if env == "JWT_SECRET" || env == "DATABASE_URL" || env == "DSN" || env == "DEEPSEEK_API_KEY" || env == "GOOGLE_CLIENT_SECRET" {
+			log.Printf("  %s: SET (length=%d)", env, len(val))
+		} else {
+			log.Printf("  %s: %s", env, val)
+		}
+	}
+	log.Println("=========================================")
+
 	// Defer panic recovery
 	defer func() {
 		if r := recover(); r != nil {
