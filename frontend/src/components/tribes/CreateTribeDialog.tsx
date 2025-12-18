@@ -59,6 +59,7 @@ export function CreateTribeDialog({ open, onOpenChange }: CreateTribeDialogProps
                         <Label htmlFor="name">Tribe Name *</Label>
                         <Input
                             id="name"
+                            name="name"
                             placeholder="e.g., 16:8 Warriors"
                             value={formData.name}
                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -73,6 +74,7 @@ export function CreateTribeDialog({ open, onOpenChange }: CreateTribeDialogProps
                         <Label htmlFor="description">Description *</Label>
                         <Textarea
                             id="description"
+                            name="description"
                             placeholder="Tell people what your tribe is about..."
                             value={formData.description}
                             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -146,6 +148,7 @@ export function CreateTribeDialog({ open, onOpenChange }: CreateTribeDialogProps
                         <Label htmlFor="rules">Community Rules (Optional)</Label>
                         <Textarea
                             id="rules"
+                            name="rules"
                             placeholder="Set some ground rules for your community..."
                             value={formData.rules || ''}
                             onChange={(e) => setFormData({ ...formData, rules: e.target.value })}

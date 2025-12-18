@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTribe, useJoinTribe, useLeaveTribe } from '../hooks/use-tribes';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContextDefinition';
 import { Loader2, Users, Clock, Target, Calendar, Shield, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -92,8 +92,8 @@ export default function TribeDetails() {
                             <h1 className="text-3xl font-bold text-gray-900 mb-2">{tribe.name}</h1>
                             <div className="flex flex-wrap gap-2 mb-4">
                                 <span className={`px-3 py-1 rounded-full text-sm font-medium ${tribe.privacy === 'public' ? 'bg-green-100 text-green-800' :
-                                        tribe.privacy === 'private' ? 'bg-orange-100 text-orange-800' :
-                                            'bg-gray-100 text-gray-800'
+                                    tribe.privacy === 'private' ? 'bg-orange-100 text-orange-800' :
+                                        'bg-gray-100 text-gray-800'
                                     }`}>
                                     {tribe.privacy.charAt(0).toUpperCase() + tribe.privacy.slice(1)}
                                 </span>

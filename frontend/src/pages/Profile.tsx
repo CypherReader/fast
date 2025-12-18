@@ -85,6 +85,7 @@ const Profile = () => {
                                     <Label htmlFor="name">Name</Label>
                                     <Input
                                         id="name"
+                                        name="name"
                                         value={editData.name}
                                         onChange={(e) => setEditData({ ...editData, name: e.target.value })}
                                     />
@@ -93,6 +94,7 @@ const Profile = () => {
                                     <Label htmlFor="email">Email</Label>
                                     <Input
                                         id="email"
+                                        name="email"
                                         type="email"
                                         value={editData.email}
                                         onChange={(e) => setEditData({ ...editData, email: e.target.value })}

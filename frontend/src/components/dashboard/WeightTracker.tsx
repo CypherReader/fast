@@ -152,6 +152,8 @@ const WeightTracker = ({ onWeightChange, externalOpen, externalOnOpenChange }: W
                     <Minus className="w-4 h-4" />
                   </Button>
                   <Input
+                    id="weight-input"
+                    name="weight"
                     type="number"
                     step="0.1"
                     placeholder="Enter weight..."
@@ -237,6 +239,8 @@ const WeightTracker = ({ onWeightChange, externalOpen, externalOnOpenChange }: W
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <Input
+                  id="goal-weight-input"
+                  name="goalWeight"
                   type="number"
                   step="0.1"
                   placeholder="Enter goal weight..."

@@ -90,6 +90,7 @@ const OnboardingAccount = () => {
                             <div className="relative">
                                 <Input
                                     id="name"
+                                    name="name"
                                     type="text"
                                     placeholder="John Doe"
                                     value={name}
@@ -106,6 +107,7 @@ const OnboardingAccount = () => {
                             <div className="relative">
                                 <Input
                                     id="email"
+                                    name="email"
                                     type="email"
                                     placeholder="you@example.com"
                                     value={email}
@@ -122,6 +124,7 @@ const OnboardingAccount = () => {
                             <div className="relative">
                                 <Input
                                     id="password"
+                                    name="password"
                                     type={showPassword ? 'text' : 'password'}
                                     placeholder="••••••••"
                                     value={password}

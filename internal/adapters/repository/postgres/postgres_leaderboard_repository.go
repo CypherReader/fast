@@ -28,10 +28,10 @@ func (r *PostgresLeaderboardRepository) GetGlobalLeaderboard(ctx context.Context
 			u.id, 
 			u.email, -- Using email as name for now, should be display_name
 			COALESCE(SUM(EXTRACT(EPOCH FROM (fs.end_time - fs.start_time))/3600), 0) as total_hours,
-			u.discipline_score
+			COALESCE(u.discipline_index, 0) as discipline_score
 		FROM users u
 		LEFT JOIN fasting_sessions fs ON u.id = fs.user_id AND fs.end_time IS NOT NULL
-		GROUP BY u.id, u.email, u.discipline_score
+		GROUP BY u.id, u.email, u.discipline_index
 		ORDER BY total_hours DESC
 		LIMIT $1
 	`
@@ -61,11 +61,11 @@ func (r *PostgresLeaderboardRepository) GetTribeLeaderboard(ctx context.Context,
 			u.id, 
 			u.email,
 			COALESCE(SUM(EXTRACT(EPOCH FROM (fs.end_time - fs.start_time))/3600), 0) as total_hours,
-			u.discipline_score
+			COALESCE(u.discipline_index, 0) as discipline_score
 		FROM users u
 		LEFT JOIN fasting_sessions fs ON u.id = fs.user_id AND fs.end_time IS NOT NULL
 		WHERE u.tribe_id = $1
-		GROUP BY u.id, u.email, u.discipline_score
+		GROUP BY u.id, u.email, u.discipline_index
 		ORDER BY total_hours DESC
 		LIMIT $2
 	`
