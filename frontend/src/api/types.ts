@@ -1,3 +1,15 @@
+export interface User {
+    id: string;
+    email: string;
+    name?: string;
+    profile_picture_url?: string;
+    subscription_tier: 'free' | 'vault';
+    onboarding_completed: boolean;
+    discipline_index: number;
+    vault_deposit: number;
+    earned_refund: number;
+}
+
 export interface WeightLog {
     id: string;
     user_id: string;
