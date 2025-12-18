@@ -172,6 +172,15 @@ func (h *Handler) RegisterRoutes(router *gin.Engine) {
 		fasting.GET("/current", h.GetCurrentFast)
 		fasting.GET("/streak-risk", h.CheckStreakRisk)
 		fasting.GET("/insight", h.GetFastingInsight)
+		fasting.POST("/sos", h.SendSOSFlare)
+	}
+
+	// SOS Routes for tribe support
+	sos := protected.Group("/sos")
+	{
+		sos.POST("/:id/hype", h.SendHype)
+		sos.GET("/:id/hypes", h.GetHypeResponses)
+		sos.POST("/:id/resolve", h.ResolveSOS)
 	}
 
 	keto := protected.Group("/keto")
@@ -1136,9 +1145,13 @@ func (h *Handler) SendHype(c *gin.Context) {
 		return
 	}
 
-	// Validate emoji
-	if req.Emoji != "🔥" && req.Emoji != "⚡" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "emoji must be 🔥 or ⚡"})
+	// Validate emoji - allow common supportive emojis
+	allowedEmojis := map[string]bool{
+		"🔥": true, "⚡": true, "💪": true, "🙌": true, "❤️": true,
+		"💜": true, "🎉": true, "👊": true, "✨": true, "🌟": true,
+	}
+	if !allowedEmojis[req.Emoji] {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid emoji"})
 		return
 	}
 
@@ -1154,6 +1167,20 @@ func (h *Handler) SendHype(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "hype sent"})
+}
+
+// GetHypeResponses handles GET /api/v1/sos/:id/hypes
+func (h *Handler) GetHypeResponses(c *gin.Context) {
+	sosID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid sos_id"})
+		return
+	}
+
+	// Use the sosService to get hype responses via the repository
+	// For now, return empty array until we add this method to the service
+	c.JSON(http.StatusOK, gin.H{"hypes": []gin.H{}})
+	_ = sosID // TODO: Implement GetHypeResponses in SOSService
 }
 
 // ResolveSOS handles POST /api/v1/sos/:id/resolve
