@@ -18,7 +18,12 @@ const Settings = () => {
     const loadSettings = () => {
         const saved = localStorage.getItem(SETTINGS_KEY);
         if (saved) {
-            return JSON.parse(saved);
+            try {
+                return JSON.parse(saved);
+            } catch (error) {
+                console.error('Failed to parse settings:', error);
+                localStorage.removeItem(SETTINGS_KEY);
+            }
         }
         return {
             notifications: {

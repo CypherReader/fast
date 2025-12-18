@@ -16,7 +16,7 @@ export const useSocial = () => {
     const { data: tribes, isLoading: isLoadingTribes } = useQuery({
         queryKey: ['tribes'],
         queryFn: async () => {
-            const response = await api.get<Tribe[]>('/social/tribes');
+            const response = await api.get<Tribe[]>('/tribes');
             return response.data;
         },
     });
