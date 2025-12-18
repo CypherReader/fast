@@ -1,5 +1,5 @@
 # Build stage for Go backend
-FROM golang:1.25-alpine AS backend-builder
+FROM golang:1.22-alpine AS backend-builder
 
 # Install build dependencies
 RUN apk add --no-cache git ca-certificates tzdata
