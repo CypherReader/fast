@@ -97,11 +97,22 @@ export default function TribeDetails() {
                                     }`}>
                                     {tribe.privacy.charAt(0).toUpperCase() + tribe.privacy.slice(1)}
                                 </span>
-                                {tribe.category && JSON.parse(String(tribe.category)).map((cat: string) => (
-                                    <span key={cat} className="px-3 py-1 rounded-full text-sm bg-purple-50 text-purple-700">
-                                        {cat}
-                                    </span>
-                                ))}
+                                {(() => {
+                                    try {
+                                        if (!tribe.category) return null;
+                                        const categories = Array.isArray(tribe.category)
+                                            ? tribe.category
+                                            : JSON.parse(String(tribe.category));
+                                        if (!Array.isArray(categories) || categories.length === 0) return null;
+                                        return categories.map((cat: string) => (
+                                            <span key={cat} className="px-3 py-1 rounded-full text-sm bg-purple-50 text-purple-700">
+                                                {cat}
+                                            </span>
+                                        ));
+                                    } catch {
+                                        return null;
+                                    }
+                                })()}
                             </div>
                         </div>
 

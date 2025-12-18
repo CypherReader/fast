@@ -215,10 +215,14 @@ func (h *TribeHandler) GetTribeStats(c *gin.Context) {
 }
 
 // RegisterTribesRoutes registers all tribe-related routes
-func RegisterTribesRoutes(router *gin.RouterGroup, handler *TribeHandler, authMiddleware gin.HandlerFunc) {
-	// Public routes (browsing tribes)
-	router.GET("/tribes", handler.ListTribes)
-	router.GET("/tribes/:id", handler.GetTribe)
+func RegisterTribesRoutes(router *gin.RouterGroup, handler *TribeHandler, authMiddleware gin.HandlerFunc, optionalAuthMiddleware gin.HandlerFunc) {
+	// Public routes (browsing tribes) - use optional auth to detect logged-in users
+	publicTribes := router.Group("/tribes")
+	publicTribes.Use(optionalAuthMiddleware)
+	{
+		publicTribes.GET("", handler.ListTribes)
+		publicTribes.GET("/:id", handler.GetTribe)
+	}
 
 	// Protected routes - require authentication
 	tribes := router.Group("/tribes")

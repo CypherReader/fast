@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/google/uuid"
@@ -44,23 +45,23 @@ type FriendNetwork struct {
 
 // Tribe represents a social group for fasting accountability
 type Tribe struct {
-	ID                string     `json:"id" db:"id"`
-	Name              string     `json:"name" db:"name"`
-	Slug              string     `json:"slug" db:"slug"`
-	Description       string     `json:"description" db:"description"`
-	AvatarURL         *string    `json:"avatar_url,omitempty" db:"avatar_url"`
-	CoverPhotoURL     *string    `json:"cover_photo_url,omitempty" db:"cover_photo_url"`
-	CreatorID         string     `json:"creator_id" db:"creator_id"`
-	FastingSchedule   string     `json:"fasting_schedule" db:"fasting_schedule"` // "16:8", "18:6", "omad", "custom"
-	PrimaryGoal       string     `json:"primary_goal" db:"primary_goal"`         // "weight_loss", "metabolic_health", etc.
-	Category          []byte     `json:"category" db:"category"`                 // JSON array of category tags
-	Privacy           string     `json:"privacy" db:"privacy"`                   // "public", "private", "invite_only"
-	Rules             *string    `json:"rules,omitempty" db:"rules"`
-	MemberCount       int        `json:"member_count" db:"member_count"`
-	ActiveMemberCount int        `json:"active_member_count" db:"active_member_count"`
-	CreatedAt         time.Time  `json:"created_at" db:"created_at"`
-	UpdatedAt         time.Time  `json:"updated_at" db:"updated_at"`
-	DeletedAt         *time.Time `json:"deleted_at,omitempty" db:"deleted_at"`
+	ID                string          `json:"id" db:"id"`
+	Name              string          `json:"name" db:"name"`
+	Slug              string          `json:"slug" db:"slug"`
+	Description       string          `json:"description" db:"description"`
+	AvatarURL         *string         `json:"avatar_url,omitempty" db:"avatar_url"`
+	CoverPhotoURL     *string         `json:"cover_photo_url,omitempty" db:"cover_photo_url"`
+	CreatorID         string          `json:"creator_id" db:"creator_id"`
+	FastingSchedule   string          `json:"fasting_schedule" db:"fasting_schedule"` // "16:8", "18:6", "omad", "custom"
+	PrimaryGoal       string          `json:"primary_goal" db:"primary_goal"`         // "weight_loss", "metabolic_health", etc.
+	Category          json.RawMessage `json:"category" db:"category"`                 // JSON array of category tags
+	Privacy           string          `json:"privacy" db:"privacy"`                   // "public", "private", "invite_only"
+	Rules             *string         `json:"rules,omitempty" db:"rules"`
+	MemberCount       int             `json:"member_count" db:"member_count"`
+	ActiveMemberCount int             `json:"active_member_count" db:"active_member_count"`
+	CreatedAt         time.Time       `json:"created_at" db:"created_at"`
+	UpdatedAt         time.Time       `json:"updated_at" db:"updated_at"`
+	DeletedAt         *time.Time      `json:"deleted_at,omitempty" db:"deleted_at"`
 
 	// Computed fields (not in database)
 	IsJoined bool   `json:"is_joined" db:"-"`           // Whether current user is a member

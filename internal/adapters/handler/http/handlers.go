@@ -239,7 +239,8 @@ func (h *Handler) RegisterRoutes(router *gin.Engine) {
 	// Tribe Routes
 	if h.tribeHandler != nil {
 		authMiddleware := AuthMiddleware(h.authService)
-		RegisterTribesRoutes(api, h.tribeHandler, authMiddleware)
+		optionalAuthMiddleware := OptionalAuthMiddleware(h.authService)
+		RegisterTribesRoutes(api, h.tribeHandler, authMiddleware, optionalAuthMiddleware)
 	}
 
 	leaderboardGroup := protected.Group("/leaderboard")

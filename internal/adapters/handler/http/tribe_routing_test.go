@@ -95,7 +95,13 @@ func TestRegisterTribesRoutes_JoinTribe(t *testing.T) {
 		c.Next()
 	}
 
-	RegisterTribesRoutes(api, handler, authMiddleware)
+	// Optional auth middleware (same for test)
+	optionalAuthMiddleware := func(c *gin.Context) {
+		c.Set("user_id", uuid.New())
+		c.Next()
+	}
+
+	RegisterTribesRoutes(api, handler, authMiddleware, optionalAuthMiddleware)
 
 	// Test Case: Join Tribe
 	t.Run("Join Tribe Endpoint Exists", func(t *testing.T) {
