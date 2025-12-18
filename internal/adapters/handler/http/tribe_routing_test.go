@@ -67,6 +67,19 @@ func (m *MockTribeService) GetTribeStats(ctx context.Context, tribeID string) (*
 	return args.Get(0).(*domain.TribeStats), args.Error(1)
 }
 
+func (m *MockTribeService) UpdateTribe(ctx context.Context, tribeID, userID string, req domain.UpdateTribeRequest) (*domain.Tribe, error) {
+	args := m.Called(ctx, tribeID, userID, req)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domain.Tribe), args.Error(1)
+}
+
+func (m *MockTribeService) DeleteTribe(ctx context.Context, tribeID, userID string) error {
+	args := m.Called(ctx, tribeID, userID)
+	return args.Error(0)
+}
+
 func TestRegisterTribesRoutes_JoinTribe(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 

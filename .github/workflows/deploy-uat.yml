@@ -7,19 +7,23 @@ on:
       - main
   workflow_dispatch:
 
-env:
-  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-  SERVICE_NAME: fastinghero-uat
-  REGION: us-central1
+
 
 jobs:
   deploy:
     name: Deploy to Cloud Run
     runs-on: ubuntu-latest
 
+    env:
+      PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+      SERVICE_NAME: fastinghero-uat
+      REGION: us-central1
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+
+
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v1
