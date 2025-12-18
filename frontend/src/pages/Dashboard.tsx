@@ -22,6 +22,7 @@ import { useFasting } from '@/hooks/use-fasting';
 import { useUser } from '@/hooks/use-user';
 import { useProgress } from '@/hooks/use-progress';
 import { useDailyQuote } from '@/hooks/use-daily-quote';
+import { useMyTribes } from '@/hooks/use-tribes';
 import confetti from 'canvas-confetti';
 import UserMenu from '@/components/layout/UserMenu';
 
@@ -55,6 +56,7 @@ const Dashboard = () => {
   const { user, stats } = useUser();
   const { weightHistory, dailyHydration } = useProgress();
   const { quote } = useDailyQuote();
+  const { data: myTribesData } = useMyTribes();
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [insight, setInsight] = useState<string | null>(null);
 
@@ -161,9 +163,17 @@ const Dashboard = () => {
       if (item.id === 'log_steps' && dailyHydration && dailyHydration.glasses_count > 0) {
         return { ...item, completed: true };
       }
+      // Mark tribe complete if user has joined any tribe
+      if (item.id === 'join_tribe' && myTribesData?.tribes && myTribesData.tribes.length > 0) {
+        return { ...item, completed: true };
+      }
+      // Mark notifications complete if push notifications are enabled
+      if (item.id === 'notifications' && user?.push_notifications_enabled) {
+        return { ...item, completed: true };
+      }
       return item;
     }));
-  }, [currentFast, weightHistory, dailyHydration]);
+  }, [currentFast, weightHistory, dailyHydration, myTribesData, user]);
 
   // Check for setup completion and trigger celebration
   useEffect(() => {
@@ -216,10 +226,37 @@ const Dashboard = () => {
   }, [checklist, setupJustCompleted, showSetupComplete]);
 
   const handleChecklistAction = (action: string) => {
-    if (action === 'start_fast') {
-      handleStartFast();
+    switch (action) {
+      case 'start_fast':
+        handleStartFast();
+        break;
+      case 'log_weight':
+        setShowWeightDialog(true);
+        break;
+      case 'log_steps':
+        // Scroll to step tracker for now
+        document.getElementById('step-tracker')?.scrollIntoView({ behavior: 'smooth' });
+        break;
+      case 'join_tribe':
+        navigate('/tribes');
+        break;
+      case 'notifications':
+        // For now, navigate to a settings page or show a toast with instructions
+        // In the future, this could trigger browser push notification permission
+        if ('Notification' in window && Notification.permission !== 'granted') {
+          Notification.requestPermission().then(permission => {
+            if (permission === 'granted') {
+              // Update user settings via API
+              setChecklist(prev => prev.map(item =>
+                item.id === 'notifications' ? { ...item, completed: true } : item
+              ));
+            }
+          });
+        }
+        break;
+      default:
+        break;
     }
-    // Other actions would navigate to respective features
   };
 
   const completedCount = checklist.filter(item => item.completed).length;

@@ -71,6 +71,7 @@ const StepTracker = ({ dailyGoal = 10000, onStepsChange }: StepTrackerProps) => 
 
   return (
     <motion.div
+      id="step-tracker"
       className="bg-card border border-border rounded-2xl p-5"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}

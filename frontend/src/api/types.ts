@@ -8,6 +8,7 @@ export interface User {
     discipline_index: number;
     vault_deposit: number;
     earned_refund: number;
+    push_notifications_enabled?: boolean;
 }
 
 export interface WeightLog {

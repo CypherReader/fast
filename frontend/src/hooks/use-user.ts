@@ -7,6 +7,7 @@ export interface User {
     name?: string;
     is_premium: boolean;
     created_at: string;
+    push_notifications_enabled?: boolean;
 }
 
 export interface UserStats {
