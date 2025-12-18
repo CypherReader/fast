@@ -24,10 +24,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (storedToken && storedUser) {
             setToken(storedToken);
             try {
-                setUser(JSON.parse(storedUser));
+                const parsedUser = JSON.parse(storedUser);
+                if (parsedUser && typeof parsedUser === 'object') {
+                    setUser(parsedUser);
+                } else {
+                    throw new Error('Invalid user data format');
+                }
             } catch (e) {
                 console.error('Failed to parse stored user', e);
                 localStorage.removeItem('user');
+                localStorage.removeItem('token');
             }
         }
         setIsLoading(false);
