@@ -34,6 +34,7 @@ type Handler struct {
 	progressAnalyzer    *services.ProgressAnalyzer
 	streakMonitor       *services.StreakMonitor
 	sosService          ports.SOSService
+	tribeHandler        *TribeHandler
 }
 
 func NewHandler(
@@ -83,6 +84,11 @@ func (h *Handler) SetOAuthHandler(oauthHandler *OAuthHandler) {
 // SetSOSService sets the SOS service (called from main.go after handler construction)
 func (h *Handler) SetSOSService(sosService ports.SOSService) {
 	h.sosService = sosService
+}
+
+// SetTribeHandler sets the Tribe handler (called from main.go after handler construction)
+func (h *Handler) SetTribeHandler(tribeHandler *TribeHandler) {
+	h.tribeHandler = tribeHandler
 }
 
 func (h *Handler) Register(c *gin.Context) {
@@ -230,11 +236,11 @@ func (h *Handler) RegisterRoutes(router *gin.Engine) {
 		social.GET("/feed", h.GetFeed)
 	}
 
-	// Tribe Routes are registered in main.go via TribeHandler
-	// to ensure proper dependency injection of TribeService
-
-	// User's tribes (protected)
-	// Moved to main.go via TribeHandler to ensure proper dependencies
+	// Tribe Routes
+	if h.tribeHandler != nil {
+		authMiddleware := AuthMiddleware(h.authService)
+		RegisterTribesRoutes(api, h.tribeHandler, authMiddleware)
+	}
 
 	leaderboardGroup := protected.Group("/leaderboard")
 	{

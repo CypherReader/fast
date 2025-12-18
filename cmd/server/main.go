@@ -331,9 +331,9 @@ func main() {
 	handler.SetSOSService(sosService)
 
 	// Initialize Tribe handler only if tribe service exists
-	var tribeHandler *http.TribeHandler
 	if tribeService != nil {
-		tribeHandler = http.NewTribeHandler(tribeService)
+		tribeHandler := http.NewTribeHandler(tribeService)
+		handler.SetTribeHandler(tribeHandler)
 	}
 
 	// 4. Setup Router
@@ -413,11 +413,6 @@ func main() {
 	// Get API group and auth middleware for additional routes
 	api := router.Group("/api/v1")
 	authMiddleware := http.AuthMiddleware(authService)
-
-	// Register Tribe routes only if tribe service exists
-	if tribeHandler != nil {
-		http.RegisterTribesRoutes(api, tribeHandler, authMiddleware)
-	}
 
 	// Register SOS routes
 	protected := api.Group("")
