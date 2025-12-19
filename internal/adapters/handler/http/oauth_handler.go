@@ -103,7 +103,7 @@ func (h *OAuthHandler) HandleGoogleCallback(c *gin.Context) {
 	// Determine redirect path based on onboarding status
 	redirectPath := "/dashboard"
 	if !user.OnboardingCompleted {
-		redirectPath = "/onboarding"
+		redirectPath = "/onboarding/payment"
 	}
 
 	// Redirect to frontend with token as URL parameter

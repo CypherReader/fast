@@ -34,7 +34,7 @@ func (h *PaymentHandler) HandleDeposit(c *gin.Context) {
 
 	var req struct {
 		Amount          float64 `json:"amount"`
-		PaymentMethodID string  `json:"paymentMethodId"`
+		PaymentMethodID string  `json:"payment_method_id"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {

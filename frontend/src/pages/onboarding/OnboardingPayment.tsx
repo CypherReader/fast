@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Lock, CreditCard, Shield, CheckCircle, Building2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -44,6 +44,17 @@ const OnboardingPayment = () => {
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
+
+  // Extract token from URL (for OAuth users) and store it
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    if (token) {
+      localStorage.setItem('token', token);
+      // Clean URL by removing token param
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
 
   // Check if user is already authenticated (e.g., via OAuth)
   const existingToken = localStorage.getItem('token');
