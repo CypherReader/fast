@@ -1,0 +1,36 @@
+﻿=== RUN   TestSubscriptionService_UpgradeToVault_AlreadyVaultMember
+--- FAIL: TestSubscriptionService_UpgradeToVault_AlreadyVaultMember (0.00s)
+panic: 
+	assert: mock: I don't know what to return because the method call was unexpected.
+		Either do Mock.On("CreateCustomer").Return(...) first, or remove the CreateCustomer() call.
+		This method was unexpected:
+			CreateCustomer(string,string)
+			0: "test@example.com"
+			1: "test@example.com"
+		at: [C:/Users/Mery/fast/internal/core/services/subscription_service_test.go:21 C:/Users/Mery/fast/internal/core/services/subscription_service.go:37 C:/Users/Mery/fast/internal/core/services/subscription_service_test.go:105] [recovered, repanicked]
+
+goroutine 10 [running]:
+testing.tRunner.func1.2({0x7ff69241b240, 0xc00012bcd0})
+	C:/Program Files/Go/src/testing/testing.go:1872 +0x239
+testing.tRunner.func1()
+	C:/Program Files/Go/src/testing/testing.go:1875 +0x35b
+panic({0x7ff69241b240?, 0xc00012bcd0?})
+	C:/Program Files/Go/src/runtime/panic.go:783 +0x132
+github.com/stretchr/testify/mock.(*Mock).fail(0xc00012e9b0, {0x7ff6927d9bd1?, 0x4?}, {0xc000601c00?, 0x2?, 0x2?})
+	C:/Users/Mery/go/pkg/mod/github.com/stretchr/testify@v1.11.1/mock/mock.go:359 +0x125
+github.com/stretchr/testify/mock.(*Mock).MethodCalled(0xc00012e9b0, {0x7ff692cee61d, 0xe}, {0xc0000a5840, 0x2, 0x2})
+	C:/Users/Mery/go/pkg/mod/github.com/stretchr/testify@v1.11.1/mock/mock.go:527 +0x77b
+github.com/stretchr/testify/mock.(*Mock).Called(0xc00012e9b0, {0xc0000a5840, 0x2, 0x2})
+	C:/Users/Mery/go/pkg/mod/github.com/stretchr/testify@v1.11.1/mock/mock.go:491 +0x125
+fastinghero/internal/core/services.(*MockPaymentGatewayForSubscription).CreateCustomer(0xc00012e9b0, {0x7ff69278cc97, 0x10}, {0x7ff69278cc97, 0x10})
+	C:/Users/Mery/fast/internal/core/services/subscription_service_test.go:21 +0xe6
+fastinghero/internal/core/services.(*SubscriptionService).UpgradeToVault(0xc00006bf40, {0x7ff69292db18, 0x7ff693574ba0}, {0xe6, 0xcc, 0x9c, 0x3c, 0x87, 0x37, 0x4f, ...}, ...)
+	C:/Users/Mery/fast/internal/core/services/subscription_service.go:37 +0xe3
+fastinghero/internal/core/services.TestSubscriptionService_UpgradeToVault_AlreadyVaultMember(0xc000107340)
+	C:/Users/Mery/fast/internal/core/services/subscription_service_test.go:105 +0x225
+testing.tRunner(0xc000107340, 0x7ff6927e7308)
+	C:/Program Files/Go/src/testing/testing.go:1934 +0xc3
+created by testing.(*T).Run in goroutine 1
+	C:/Program Files/Go/src/testing/testing.go:1997 +0x44b
+FAIL	fastinghero/internal/core/services	1.364s
+FAIL

@@ -97,3 +97,16 @@ export const useFasting = () => {
         isStopping: stopFastMutation.isPending,
     };
 };
+
+// Separate hook for fasting history (used on Progress page)
+export const useFastingHistory = () => {
+    const { data: history, isLoading } = useQuery({
+        queryKey: ['fasting-history'],
+        queryFn: async () => {
+            const response = await api.get<FastingSession[]>('/fasting/history');
+            return response.data;
+        },
+    });
+
+    return { history, isLoading };
+};

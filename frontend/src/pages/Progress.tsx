@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Lock, ArrowLeft, TrendingUp, Calendar, Target, Scale } from 'lucide-react';
+import { ArrowLeft, TrendingUp, Calendar, Target, Scale } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useUser } from '@/hooks/use-user';
 import UserMenu from '@/components/layout/UserMenu';
@@ -16,13 +16,15 @@ import {
     Area
 } from 'recharts';
 import { useProgress } from '@/hooks/use-progress';
-import { format, parseISO } from 'date-fns';
+import { useFastingHistory } from '@/hooks/use-fasting';
+import { format, parseISO, subDays } from 'date-fns';
 import { WeeklyReportCard } from '@/components/progress/WeeklyReportCard';
 
 const Progress = () => {
     const navigate = useNavigate();
     const { user, stats } = useUser();
     const { weightHistory } = useProgress();
+    const { history: fastingHistory } = useFastingHistory();
 
     // Transform weight history to chart format
     const weightData = weightHistory && weightHistory.length > 0
@@ -32,15 +34,41 @@ const Progress = () => {
         }))
         : [];
 
-    const fastingData = [
-        { date: 'Mon', hours: 16 },
-        { date: 'Tue', hours: 16.5 },
-        { date: 'Wed', hours: 15.5 },
-        { date: 'Thu', hours: 17 },
-        { date: 'Fri', hours: 16 },
-        { date: 'Sat', hours: 18 },
-        { date: 'Sun', hours: 16 },
-    ];
+    // Transform fasting history to chart format - group by day and sum hours
+    const fastingData = (() => {
+        if (!fastingHistory || fastingHistory.length === 0) {
+            // Return last 7 days with 0 hours if no history
+            return Array.from({ length: 7 }, (_, i) => ({
+                date: format(subDays(new Date(), 6 - i), 'EEE'),
+                hours: 0
+            }));
+        }
+
+        // Group completed fasts by day
+        const last7Days = Array.from({ length: 7 }, (_, i) => {
+            const day = subDays(new Date(), 6 - i);
+            const dayStr = format(day, 'yyyy-MM-dd');
+
+            const dailyFasts = fastingHistory.filter(fast => {
+                if (!fast.end_time || fast.status !== 'completed') return false;
+                const fastDate = format(parseISO(fast.end_time), 'yyyy-MM-dd');
+                return fastDate === dayStr;
+            });
+
+            const totalHours = dailyFasts.reduce((sum, fast) => {
+                const start = new Date(fast.start_time).getTime();
+                const end = new Date(fast.end_time!).getTime();
+                return sum + (end - start) / (1000 * 60 * 60);
+            }, 0);
+
+            return {
+                date: format(day, 'EEE'),
+                hours: Math.round(totalHours * 10) / 10
+            };
+        });
+
+        return last7Days;
+    })();
 
     return (
         <div className="min-h-screen bg-background">
@@ -62,12 +90,11 @@ const Progress = () => {
 
             <main className="container mx-auto px-4 py-6 max-w-4xl space-y-6">
                 {/* Stats Overview */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-3 gap-4">
                     {[
                         { label: 'Current Streak', value: stats?.current_streak || 0, icon: TrendingUp, unit: 'days' },
                         { label: 'Total Fasts', value: stats?.fasts_completed || 0, icon: Calendar, unit: 'fasts' },
                         { label: 'Total Hours', value: stats?.total_fasting_hours || 0, icon: Target, unit: 'hours' },
-                        { label: 'Vault Balance', value: `$${stats?.vault_balance || 0}`, icon: Lock, unit: 'saved' },
                     ].map((stat, index) => (
                         <motion.div
                             key={stat.label}

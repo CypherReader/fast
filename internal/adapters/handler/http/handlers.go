@@ -181,6 +181,7 @@ func (h *Handler) RegisterRoutes(router *gin.Engine) {
 		fasting.POST("/start", h.StartFast)
 		fasting.POST("/stop", h.StopFast)
 		fasting.GET("/current", h.GetCurrentFast)
+		fasting.GET("/history", h.GetFastingHistory)
 		fasting.GET("/streak-risk", h.CheckStreakRisk)
 		fasting.GET("/insight", h.GetFastingInsight)
 		fasting.POST("/sos", h.SendSOSFlare)
@@ -652,6 +653,21 @@ func (h *Handler) GetCurrentFast(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, session)
+}
+
+func (h *Handler) GetFastingHistory(c *gin.Context) {
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	userID := userIDVal.(uuid.UUID)
+	sessions, err := h.fastingService.GetFastingHistory(c.Request.Context(), userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, sessions)
 }
 
 func (h *Handler) LogKeto(c *gin.Context) {

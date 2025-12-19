@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Clock, Droplets, Sparkles, Timer } from 'lucide-react';
+import { Clock, Droplets, Sparkles, Timer, Info } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useReminderSettings, useOptimalFastingWindow, formatHour } from '@/hooks/use-smart-reminders';
 
 export function SmartRemindersCard() {
@@ -54,7 +55,19 @@ export function SmartRemindersCard() {
                 {/* Preferred Start Time (show only if fast start is enabled) */}
                 {settings.reminder_fast_start && (
                     <div className="py-3 border-b border-border">
-                        <Label className="text-sm text-muted-foreground mb-2 block">Preferred Start Time</Label>
+                        <div className="flex items-center gap-2 mb-2">
+                            <Label className="text-sm text-muted-foreground">Preferred Start Time</Label>
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Info className="w-4 h-4 text-muted-foreground cursor-help" />
+                                    </TooltipTrigger>
+                                    <TooltipContent className="max-w-[250px]">
+                                        <p>Set the time you typically want to start your daily fast. You'll receive a reminder at this time.</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        </div>
                         <div className="flex items-center gap-4">
                             <Slider
                                 value={[settings.preferred_fast_start_hour]}

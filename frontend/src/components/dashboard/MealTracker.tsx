@@ -19,7 +19,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useMeals, Meal } from '@/hooks/use-meals';
+import { useFasting } from '@/hooks/use-fasting';
 import { format, parseISO } from 'date-fns';
+import { toast } from 'sonner';
 
 interface MealTrackerProps {
   dailyCalorieGoal?: number;
@@ -45,6 +47,7 @@ const quickMeals = [
 
 const MealTracker = ({ dailyCalorieGoal = 1800, externalOpen, externalOnOpenChange }: MealTrackerProps) => {
   const { meals, logMeal, isLoading } = useMeals();
+  const { currentFast, stopFast } = useFasting();
   const [internalShowModal, setInternalShowModal] = useState(false);
 
   // Use external control if provided, otherwise use internal state
@@ -67,6 +70,16 @@ const MealTracker = ({ dailyCalorieGoal = 1800, externalOpen, externalOnOpenChan
   const isOverGoal = totalCalories > dailyCalorieGoal;
 
   const handleAddMeal = (name: string, calories: number, mealType: 'breakfast' | 'lunch' | 'dinner' | 'snack') => {
+    // If there's an active fast, stop it and notify the user
+    if (currentFast?.status === 'active' && currentFast.start_time) {
+      const fastDurationHours = (new Date().getTime() - new Date(currentFast.start_time).getTime()) / (1000 * 60 * 60);
+      stopFast();
+      toast.info(`Fast ended after ${fastDurationHours.toFixed(1)} hours`, {
+        description: `Meal logged: ${name}. Your fasting timer has been stopped.`,
+        duration: 5000,
+      });
+    }
+
     logMeal({
       name,
       calories,

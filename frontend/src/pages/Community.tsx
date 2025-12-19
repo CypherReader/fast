@@ -1,17 +1,37 @@
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Users, MessageSquare, Heart, Trophy, Flame, Search } from 'lucide-react';
+import { ArrowLeft, Users, MessageSquare, Heart, Trophy, Flame, Search, Siren, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useUser } from '@/hooks/use-user';
 import { useLeaderboard } from '@/hooks/use-leaderboard';
 import { useSocial } from '@/hooks/use-social';
+import { useMyTribes } from '@/hooks/use-tribes';
 
 const Community = () => {
     const navigate = useNavigate();
     const { user } = useUser();
     const { leaderboard, isLoading: isLoadingLeaderboard } = useLeaderboard();
     const { tribes, feed, isLoadingTribes, isLoadingFeed } = useSocial();
+    const { data: myTribesData, isLoading: isLoadingMyTribes } = useMyTribes();
+
+    // Helper to get action text for feed items
+    const getActionText = (eventType: string, data: Record<string, unknown>) => {
+        switch (eventType) {
+            case 'fast_completed':
+                return 'completed a fast';
+            case 'tribe_joined':
+                return `joined ${data.tribe_name || 'a tribe'}`;
+            case 'sos_flare':
+                return 'sent an SOS flare 🆘';
+            case 'hype_sent':
+                return `sent hype to ${data.recipient_name || 'a tribe member'}`;
+            case 'challenge_won':
+                return 'won a challenge';
+            default:
+                return 'had activity';
+        }
+    };
 
     return (
         <div className="min-h-screen bg-background">
@@ -69,18 +89,19 @@ const Community = () => {
                             ) : feed && feed.length > 0 ? (
                                 feed.map((item, index) => {
                                     const data = item.data ? JSON.parse(item.data) : {};
-                                    const actionText = item.event_type === 'fast_completed' ? 'completed a fast' : item.event_type === 'tribe_joined' ? `joined ${data.tribe_name || 'a tribe'}` : 'won a challenge';
+                                    const actionText = getActionText(item.event_type, data);
+                                    const isSOS = item.event_type.includes('sos');
                                     return (
                                         <motion.div
                                             key={item.id}
-                                            className="bg-card border border-border rounded-xl p-4"
+                                            className={`bg-card border rounded-xl p-4 ${isSOS ? 'border-red-500/50 bg-red-500/5' : 'border-border'}`}
                                             initial={{ opacity: 0, y: 20 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             transition={{ delay: index * 0.1 }}
                                         >
                                             <div className="flex items-start gap-3">
-                                                <div className="w-10 h-10 rounded-full bg-secondary/20 flex items-center justify-center text-secondary font-bold">
-                                                    {item.user_name.charAt(0)}
+                                                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${isSOS ? 'bg-red-500/20 text-red-400' : 'bg-secondary/20 text-secondary'}`}>
+                                                    {isSOS ? <Siren className="w-5 h-5" /> : item.user_name.charAt(0)}
                                                 </div>
                                                 <div className="flex-1">
                                                     <p className="text-sm text-foreground">
@@ -89,14 +110,23 @@ const Community = () => {
                                                     <p className="text-xs text-muted-foreground mt-1">{new Date(item.created_at).toLocaleString()}</p>
 
                                                     <div className="flex items-center gap-4 mt-3">
-                                                        <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors">
-                                                            <Heart className="w-4 h-4" />
-                                                            {item.likes}
-                                                        </button>
-                                                        <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors">
-                                                            <MessageSquare className="w-4 h-4" />
-                                                            {item.comments}
-                                                        </button>
+                                                        {isSOS ? (
+                                                            <button className="flex items-center gap-1 text-xs bg-gradient-to-r from-amber-500 to-orange-500 text-white px-3 py-1.5 rounded-full hover:opacity-90 transition-opacity">
+                                                                <Sparkles className="w-4 h-4" />
+                                                                Send Hype
+                                                            </button>
+                                                        ) : (
+                                                            <>
+                                                                <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors">
+                                                                    <Heart className="w-4 h-4" />
+                                                                    {item.likes}
+                                                                </button>
+                                                                <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors">
+                                                                    <MessageSquare className="w-4 h-4" />
+                                                                    {item.comments}
+                                                                </button>
+                                                            </>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </div>
@@ -111,6 +141,34 @@ const Community = () => {
 
                     {/* Sidebar - Right Side */}
                     <div className="space-y-8">
+                        {/* My Tribes */}
+                        {myTribesData?.tribes && myTribesData.tribes.length > 0 && (
+                            <div className="mb-6">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h2 className="font-semibold text-foreground flex items-center gap-2">
+                                        <Sparkles className="w-5 h-5 text-amber-400" />
+                                        My Tribes
+                                    </h2>
+                                </div>
+                                <div className="space-y-3">
+                                    {myTribesData.tribes.map((tribe) => (
+                                        <div
+                                            key={tribe.id}
+                                            className="bg-gradient-to-r from-primary/10 to-secondary/10 border border-primary/30 rounded-xl p-3 hover:border-primary/50 transition-colors cursor-pointer"
+                                            onClick={() => navigate(`/tribes/${tribe.id}`)}
+                                        >
+                                            <h3 className="font-medium text-foreground">{tribe.name}</h3>
+                                            <p className="text-xs text-muted-foreground mb-2">{tribe.description}</p>
+                                            <div className="flex items-center gap-1 text-xs text-primary">
+                                                <Users className="w-3 h-3" />
+                                                {tribe.member_count} members
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
                         {/* Featured Tribes */}
                         <div>
                             <div className="flex items-center justify-between mb-4">
@@ -201,4 +259,3 @@ const Community = () => {
 };
 
 export default Community;
- 

@@ -167,9 +167,23 @@ const Dashboard = () => {
       if (item.id === 'join_tribe' && myTribesData?.tribes && myTribesData.tribes.length > 0) {
         return { ...item, completed: true };
       }
-      // Mark notifications complete if push notifications are enabled
-      if (item.id === 'notifications' && user?.push_notifications_enabled) {
-        return { ...item, completed: true };
+      // Mark notifications complete if browser permission granted OR settings enabled
+      if (item.id === 'notifications') {
+        const browserPermissionGranted = 'Notification' in window && Notification.permission === 'granted';
+        const settingsEnabled = (() => {
+          try {
+            const saved = localStorage.getItem('fastinghero_settings');
+            if (saved) {
+              const settings = JSON.parse(saved);
+              return settings?.notifications?.fastReminders === true;
+            }
+          } catch { /* ignore */ }
+          return false;
+        })();
+
+        if (browserPermissionGranted || settingsEnabled || user?.push_notifications_enabled) {
+          return { ...item, completed: true };
+        }
       }
       return item;
     }));
@@ -549,7 +563,10 @@ const Dashboard = () => {
                   <Utensils className="w-5 h-5 text-secondary" />
                   <span className="text-sm text-foreground">Log Meal</span>
                 </button>
-                <button className="w-full flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+                <button
+                  onClick={() => navigate('/tribes')}
+                  className="w-full flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
+                >
                   <Users className="w-5 h-5 text-secondary" />
                   <span className="text-sm text-foreground">Find a Tribe</span>
                 </button>
