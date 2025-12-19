@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '@/api/client';
+import { api } from '@/api/client';
 import { useToast } from '@/hooks/use-toast';
 
 // Types
@@ -28,14 +28,14 @@ export function useReminderSettings() {
     const settingsQuery = useQuery({
         queryKey: ['reminder-settings'],
         queryFn: async (): Promise<ReminderSettings> => {
-            const response = await apiClient.get('/user/reminder-settings');
+            const response = await api.get('/user/reminder-settings');
             return response.data;
         },
     });
 
     const updateMutation = useMutation({
         mutationFn: async (settings: Partial<ReminderSettings>) => {
-            const response = await apiClient.put('/user/reminder-settings', settings);
+            const response = await api.put('/user/reminder-settings', settings);
             return response.data;
         },
         onSuccess: () => {
@@ -68,7 +68,7 @@ export function useOptimalFastingWindow() {
     return useQuery({
         queryKey: ['optimal-fasting-window'],
         queryFn: async (): Promise<OptimalFastingWindow> => {
-            const response = await apiClient.get('/user/optimal-fasting-window');
+            const response = await api.get('/user/optimal-fasting-window');
             return response.data;
         },
         staleTime: 1000 * 60 * 60, // Cache for 1 hour
