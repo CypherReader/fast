@@ -45,6 +45,10 @@ const OnboardingPayment = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
 
+  // Check if user is already authenticated (e.g., via OAuth)
+  const existingToken = localStorage.getItem('token');
+  const isOAuthUser = !!existingToken && (!state.email || !state.password);
+
   const formatCardNumber = (value: string) => {
     const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
     const matches = v.match(/\d{4,16}/g);
@@ -89,7 +93,8 @@ const OnboardingPayment = () => {
       return;
     }
 
-    if (!state.email || !state.password) {
+    // For non-OAuth users, require email and password
+    if (!isOAuthUser && (!state.email || !state.password)) {
       setError('Account details missing. Please go back and create an account.');
       return;
     }
@@ -97,17 +102,20 @@ const OnboardingPayment = () => {
     setIsProcessing(true);
 
     try {
-      // 1. Register User
-      const registerResponse = await api.post<{ token: string }>('/auth/register', {
-        email: state.email,
-        password: state.password,
-        name: state.name,
-      });
+      // If not OAuth user, register first
+      if (!isOAuthUser) {
+        // 1. Register User
+        const registerResponse = await api.post<{ token: string }>('/auth/register', {
+          email: state.email,
+          password: state.password,
+          name: state.name,
+        });
 
-      // 2. Store Token
-      localStorage.setItem('token', registerResponse.data.token);
+        // 2. Store Token
+        localStorage.setItem('token', registerResponse.data.token);
+      }
 
-      // 3. Update Profile (Goal & Plan)
+      // 3. Update Profile (Goal & Plan) - for all users
       await api.put('/onboarding/profile', {
         goal: state.goal,
         fasting_plan: state.fastingPlan,
