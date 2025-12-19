@@ -60,11 +60,12 @@ test.describe('Fasting Timer Flow', () => {
         const url = page.url();
         if (!url.includes('login')) {
             // Look for plan selection or plan display
-            const planContent = page.locator('[data-testid="fasting-plan"], text=16:8, text=18:6, text=OMAD, text=24h');
-            const planCount = await planContent.count();
+            const body = page.locator('body');
+            await expect(body).toBeVisible();
 
-            // May or may not have plans visible depending on state
-            await expect(page.locator('body')).toBeVisible();
+            // Verify page content
+            const pageContent = await body.textContent();
+            expect(pageContent).toBeTruthy();
         }
     });
 });
