@@ -41,5 +41,3 @@ ALTER TABLE users
 ADD COLUMN IF NOT EXISTS last_sos_at TIMESTAMP;
 -- Create index for rate limiting
 CREATE INDEX IF NOT EXISTS idx_users_last_sos ON users(last_sos_at);
--- Notification types (update notification_types enum if using PostgreSQL enums)
--- For now, we'll handle this in the application layer with string constants
