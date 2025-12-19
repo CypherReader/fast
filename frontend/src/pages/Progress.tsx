@@ -17,6 +17,7 @@ import {
 } from 'recharts';
 import { useProgress } from '@/hooks/use-progress';
 import { format, parseISO } from 'date-fns';
+import { WeeklyReportCard } from '@/components/progress/WeeklyReportCard';
 
 const Progress = () => {
     const navigate = useNavigate();
@@ -84,6 +85,15 @@ const Progress = () => {
                         </motion.div>
                     ))}
                 </div>
+
+                {/* Weekly Progress Report */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.15 }}
+                >
+                    <WeeklyReportCard />
+                </motion.div>
 
                 {/* Weight Chart */}
                 <motion.div
