@@ -51,7 +51,7 @@ func TestAuthService_Register_HashesPassword(t *testing.T) {
 	ctx := context.Background()
 
 	email := "test@example.com"
-	password := "password123"
+	password := "SecurePass123!" // Meets 12+ char requirement
 
 	// Expect FindByEmail to return error (user not found)
 	mockRepo.On("FindByEmail", ctx, email).Return(nil, assert.AnError)
@@ -76,7 +76,7 @@ func TestAuthService_Login_Success(t *testing.T) {
 	ctx := context.Background()
 
 	email := "test@example.com"
-	password := "password123"
+	password := "SecurePass123!"
 
 	hash, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 
@@ -101,8 +101,8 @@ func TestAuthService_Login_WrongPassword(t *testing.T) {
 	ctx := context.Background()
 
 	email := "test@example.com"
-	password := "password123"
-	wrongPassword := "wrongpassword"
+	password := "SecurePass123!"
+	wrongPassword := "WrongPass123!"
 
 	hash, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 

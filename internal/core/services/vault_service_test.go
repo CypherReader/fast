@@ -18,8 +18,10 @@ func TestVaultService_CalculateVaultStatus(t *testing.T) {
 		{
 			name: "Full earnings",
 			user: &domain.User{
-				VaultDeposit: 20.0,
-				EarnedRefund: 20.0,
+				VaultDeposit:       20.0,
+				EarnedRefund:       20.0,
+				SubscriptionTier:   domain.TierVault,
+				SubscriptionStatus: domain.SubStatusActive,
 			},
 			expectedDeposit: 20.0,
 			expectedEarned:  20.0,
@@ -28,8 +30,10 @@ func TestVaultService_CalculateVaultStatus(t *testing.T) {
 		{
 			name: "Partial earnings",
 			user: &domain.User{
-				VaultDeposit: 20.0,
-				EarnedRefund: 10.0,
+				VaultDeposit:       20.0,
+				EarnedRefund:       10.0,
+				SubscriptionTier:   domain.TierVault,
+				SubscriptionStatus: domain.SubStatusActive,
 			},
 			expectedDeposit: 20.0,
 			expectedEarned:  10.0,
@@ -38,8 +42,10 @@ func TestVaultService_CalculateVaultStatus(t *testing.T) {
 		{
 			name: "Over earnings",
 			user: &domain.User{
-				VaultDeposit: 20.0,
-				EarnedRefund: 25.0,
+				VaultDeposit:       20.0,
+				EarnedRefund:       25.0,
+				SubscriptionTier:   domain.TierVault,
+				SubscriptionStatus: domain.SubStatusActive,
 			},
 			expectedDeposit: 20.0,
 			expectedEarned:  25.0,
