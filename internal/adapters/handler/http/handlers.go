@@ -163,6 +163,8 @@ func (h *Handler) RegisterRoutes(router *gin.Engine) {
 	{
 		user.GET("/profile", h.GetUserProfile)
 		user.GET("/stats", h.GetUserStats)
+		user.GET("/sos-settings", h.GetSOSSettings)
+		user.PUT("/sos-settings", h.UpdateSOSSettings)
 	}
 
 	fasting := protected.Group("/fasting")

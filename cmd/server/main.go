@@ -425,20 +425,8 @@ func main() {
 
 	handler.RegisterRoutes(router)
 
-	// Get API group and auth middleware for additional routes
-	api := router.Group("/api/v1")
-	authMiddleware := http.AuthMiddleware(authService)
-
-	// Register SOS routes
-	protected := api.Group("")
-	protected.Use(authMiddleware)
-	{
-		protected.POST("/fasting/sos", handler.SendSOSFlare)
-		protected.POST("/sos/:id/hype", handler.SendHype)
-		protected.POST("/sos/:id/resolve", handler.ResolveSOS)
-		protected.GET("/user/sos-settings", handler.GetSOSSettings)
-		protected.PUT("/user/sos-settings", handler.UpdateSOSSettings)
-	}
+	// SOS routes are now registered in handler.RegisterRoutes()
+	// No additional route registration needed here
 
 	// 5. Start Server
 	port := os.Getenv("PORT")
