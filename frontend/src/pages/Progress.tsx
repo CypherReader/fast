@@ -1,74 +1,79 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, TrendingUp, Calendar, Target, Scale } from 'lucide-react';
+import {
+    ArrowLeft, Timer, Droplets, Footprints, Utensils,
+    TrendingUp, BarChart3
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useUser } from '@/hooks/use-user';
+import { useProgress } from '@/hooks/use-progress';
+import { useFasting, useFastingHistory } from '@/hooks/use-fasting';
+import { useMeals } from '@/hooks/use-meals';
 import UserMenu from '@/components/layout/UserMenu';
+import { ProgressRing } from '@/components/progress/ProgressRing';
+import { ShareCard } from '@/components/progress/ShareCard';
+import { Achievements } from '@/components/progress/Achievements';
+import { WeeklyReportCard } from '@/components/progress/WeeklyReportCard';
 import {
-    LineChart,
-    Line,
+    BarChart,
+    Bar,
     XAxis,
     YAxis,
     CartesianGrid,
     Tooltip,
     ResponsiveContainer,
-    AreaChart,
-    Area
 } from 'recharts';
-import { useProgress } from '@/hooks/use-progress';
-import { useFastingHistory } from '@/hooks/use-fasting';
-import { format, parseISO, subDays } from 'date-fns';
-import { WeeklyReportCard } from '@/components/progress/WeeklyReportCard';
+import { format, subDays, parseISO } from 'date-fns';
 
 const Progress = () => {
     const navigate = useNavigate();
     const { user, stats } = useUser();
-    const { weightHistory } = useProgress();
+    const { dailyHydration } = useProgress();
+    const { currentFast } = useFasting();
     const { history: fastingHistory } = useFastingHistory();
+    const { meals } = useMeals();
+    const [stepsToday, setStepsToday] = useState(0); // Manual entry for now
+    const [showStepsInput, setShowStepsInput] = useState(false);
 
-    // Transform weight history to chart format
-    const weightData = weightHistory && weightHistory.length > 0
-        ? [...weightHistory].reverse().map(entry => ({
-            date: format(parseISO(entry.logged_at), 'EEE'),
-            weight: entry.weight_lbs
-        }))
-        : [];
+    // Calculate today's calories
+    const todayStr = format(new Date(), 'yyyy-MM-dd');
+    const todayCalories = meals?.filter(m => m.logged_at.startsWith(todayStr))
+        .reduce((sum, m) => sum + (m.calories || 0), 0) || 0;
 
-    // Transform fasting history to chart format - group by day and sum hours
-    const fastingData = (() => {
-        if (!fastingHistory || fastingHistory.length === 0) {
-            // Return last 7 days with 0 hours if no history
-            return Array.from({ length: 7 }, (_, i) => ({
-                date: format(subDays(new Date(), 6 - i), 'EEE'),
-                hours: 0
-            }));
-        }
+    // Calculate current fast progress
+    const fastingGoalHours = 16; // Default, could come from user settings
+    const currentFastHours = currentFast?.status === 'active' && currentFast.start_time
+        ? (new Date().getTime() - new Date(currentFast.start_time).getTime()) / (1000 * 60 * 60)
+        : 0;
 
-        // Group completed fasts by day
-        const last7Days = Array.from({ length: 7 }, (_, i) => {
-            const day = subDays(new Date(), 6 - i);
-            const dayStr = format(day, 'yyyy-MM-dd');
+    // Transform fasting history to chart format
+    const fastingChartData = Array.from({ length: 7 }, (_, i) => {
+        const day = subDays(new Date(), 6 - i);
+        const dayStr = format(day, 'yyyy-MM-dd');
 
-            const dailyFasts = fastingHistory.filter(fast => {
-                if (!fast.end_time || fast.status !== 'completed') return false;
-                const fastDate = format(parseISO(fast.end_time), 'yyyy-MM-dd');
-                return fastDate === dayStr;
-            });
+        const dailyFasts = fastingHistory?.filter(fast => {
+            if (!fast.end_time || fast.status !== 'completed') return false;
+            const fastDate = format(parseISO(fast.end_time), 'yyyy-MM-dd');
+            return fastDate === dayStr;
+        }) || [];
 
-            const totalHours = dailyFasts.reduce((sum, fast) => {
-                const start = new Date(fast.start_time).getTime();
-                const end = new Date(fast.end_time!).getTime();
-                return sum + (end - start) / (1000 * 60 * 60);
-            }, 0);
+        const totalHours = dailyFasts.reduce((sum, fast) => {
+            const start = new Date(fast.start_time).getTime();
+            const end = new Date(fast.end_time!).getTime();
+            return sum + (end - start) / (1000 * 60 * 60);
+        }, 0);
 
-            return {
-                date: format(day, 'EEE'),
-                hours: Math.round(totalHours * 10) / 10
-            };
-        });
+        return {
+            date: format(day, 'EEE'),
+            hours: Math.round(totalHours * 10) / 10
+        };
+    });
 
-        return last7Days;
-    })();
+    const handleStepsSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        setShowStepsInput(false);
+    };
 
     return (
         <div className="min-h-screen bg-background">
@@ -89,102 +94,116 @@ const Progress = () => {
             </header>
 
             <main className="container mx-auto px-4 py-6 max-w-4xl space-y-6">
-                {/* Stats Overview */}
-                <div className="grid grid-cols-3 gap-4">
-                    {[
-                        { label: 'Current Streak', value: stats?.current_streak || 0, icon: TrendingUp, unit: 'days' },
-                        { label: 'Total Fasts', value: stats?.fasts_completed || 0, icon: Calendar, unit: 'fasts' },
-                        { label: 'Total Hours', value: stats?.total_fasting_hours || 0, icon: Target, unit: 'hours' },
-                    ].map((stat, index) => (
-                        <motion.div
-                            key={stat.label}
-                            className="bg-card border border-border rounded-xl p-4"
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: index * 0.1 }}
-                        >
-                            <stat.icon className="w-5 h-5 text-muted-foreground mb-2" />
-                            <div className="text-2xl font-bold text-foreground">
-                                {stat.value}
-                                <span className="text-xs font-normal text-muted-foreground ml-1">{stat.unit}</span>
-                            </div>
-                            <div className="text-xs text-muted-foreground">{stat.label}</div>
-                        </motion.div>
-                    ))}
-                </div>
+                {/* Share Card Section */}
+                <ShareCard
+                    userName={user?.name || user?.email || 'Faster'}
+                    streak={stats?.current_streak || 0}
+                    fastingPlan={currentFast?.plan_type || '16:8'}
+                    totalFasts={stats?.fasts_completed || 0}
+                    totalHours={Math.round(stats?.total_fasting_hours || 0)}
+                />
 
-                {/* Weekly Progress Report */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.15 }}
-                >
-                    <WeeklyReportCard />
-                </motion.div>
-
-                {/* Weight Chart */}
+                {/* Daily Progress Rings */}
                 <motion.div
                     className="bg-card border border-border rounded-2xl p-6"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 }}
+                    transition={{ delay: 0.1 }}
                 >
-                    <div className="flex items-center justify-between mb-6">
-                        <div className="flex items-center gap-2">
-                            <Scale className="w-5 h-5 text-primary" />
-                            <h3 className="font-semibold text-foreground">Weight Trend</h3>
+                    <h3 className="font-semibold text-foreground mb-6 flex items-center gap-2">
+                        <TrendingUp className="w-5 h-5 text-primary" />
+                        Today's Progress
+                    </h3>
+
+                    <div className="grid grid-cols-4 gap-4">
+                        <ProgressRing
+                            value={Math.round(currentFastHours * 10) / 10}
+                            max={fastingGoalHours}
+                            color="#f59e0b"
+                            icon={<Timer className="w-5 h-5 text-amber-400" />}
+                            label="Fasting"
+                            unit="hours"
+                        />
+                        <ProgressRing
+                            value={dailyHydration?.glasses_count || 0}
+                            max={8}
+                            color="#06b6d4"
+                            icon={<Droplets className="w-5 h-5 text-cyan-400" />}
+                            label="Water"
+                            unit="glasses"
+                        />
+                        <div
+                            className="cursor-pointer"
+                            onClick={() => setShowStepsInput(true)}
+                        >
+                            <ProgressRing
+                                value={stepsToday}
+                                max={10000}
+                                color="#10b981"
+                                icon={<Footprints className="w-5 h-5 text-green-400" />}
+                                label="Steps"
+                                unit="steps"
+                            />
                         </div>
-                        <select className="bg-muted/50 border-none text-sm rounded-lg px-3 py-1">
-                            <option>Last 7 Days</option>
-                            <option>Last 30 Days</option>
-                            <option>Last 3 Months</option>
-                        </select>
+                        <ProgressRing
+                            value={todayCalories}
+                            max={1800}
+                            color="#f97316"
+                            icon={<Utensils className="w-5 h-5 text-orange-400" />}
+                            label="Calories"
+                            unit="cal"
+                        />
                     </div>
 
-                    <div className="h-[300px] w-full">
-                        {weightData.length === 0 ? (
-                            <div className="h-full flex flex-col items-center justify-center text-center p-6">
-                                <Scale className="w-12 h-12 text-muted-foreground/30 mb-3" />
-                                <p className="text-foreground font-medium mb-1">No weight data yet</p>
-                                <p className="text-sm text-muted-foreground">Log your weight to see your progress chart!</p>
-                            </div>
-                        ) : (
-                            <ResponsiveContainer width="100%" height="100%">
-                                <LineChart data={weightData}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
-                                    <XAxis
-                                        dataKey="date"
-                                        stroke="#666"
-                                        fontSize={12}
-                                        tickLine={false}
-                                        axisLine={false}
-                                    />
-                                    <YAxis
-                                        stroke="#666"
-                                        fontSize={12}
-                                        tickLine={false}
-                                        axisLine={false}
-                                        domain={['dataMin - 1', 'dataMax + 1']}
-                                    />
-                                    <Tooltip
-                                        contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #333', borderRadius: '8px' }}
-                                        itemStyle={{ color: '#fff' }}
-                                    />
-                                    <Line
-                                        type="monotone"
-                                        dataKey="weight"
-                                        stroke="#f59e0b"
-                                        strokeWidth={3}
-                                        dot={{ fill: '#f59e0b', strokeWidth: 2 }}
-                                        activeDot={{ r: 6 }}
-                                    />
-                                </LineChart>
-                            </ResponsiveContainer>
-                        )}
-                    </div>
+                    {/* Steps Input Modal */}
+                    {showStepsInput && (
+                        <motion.div
+                            className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            onClick={() => setShowStepsInput(false)}
+                        >
+                            <motion.form
+                                className="bg-card border border-border rounded-2xl p-6 w-full max-w-sm"
+                                initial={{ scale: 0.9, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                onClick={e => e.stopPropagation()}
+                                onSubmit={handleStepsSubmit}
+                            >
+                                <h4 className="font-semibold text-foreground mb-4">Log Today's Steps</h4>
+                                <input
+                                    type="number"
+                                    placeholder="Enter steps..."
+                                    value={stepsToday || ''}
+                                    onChange={e => setStepsToday(parseInt(e.target.value) || 0)}
+                                    className="w-full px-4 py-3 rounded-lg bg-muted border border-border text-foreground mb-4 focus:outline-none focus:ring-2 focus:ring-primary"
+                                    autoFocus
+                                />
+                                <div className="flex gap-2">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        className="flex-1"
+                                        onClick={() => setShowStepsInput(false)}
+                                    >
+                                        Cancel
+                                    </Button>
+                                    <Button type="submit" className="flex-1">Save</Button>
+                                </div>
+                            </motion.form>
+                        </motion.div>
+                    )}
                 </motion.div>
 
-                {/* Fasting Consistency Chart */}
+                {/* Achievements Section */}
+                <Achievements
+                    fastingHistory={fastingHistory}
+                    waterStreak={dailyHydration?.glasses_count && dailyHydration.glasses_count >= 6 ? 1 : 0}
+                    stepsToday={stepsToday}
+                    caloriesLogged={todayCalories}
+                />
+
+                {/* Weekly Fasting Chart */}
                 <motion.div
                     className="bg-card border border-border rounded-2xl p-6"
                     initial={{ opacity: 0, y: 20 }}
@@ -192,19 +211,19 @@ const Progress = () => {
                     transition={{ delay: 0.3 }}
                 >
                     <div className="flex items-center justify-between mb-6">
-                        <div className="flex items-center gap-2">
-                            <Target className="w-5 h-5 text-secondary" />
-                            <h3 className="font-semibold text-foreground">Fasting Consistency</h3>
-                        </div>
+                        <h3 className="font-semibold text-foreground flex items-center gap-2">
+                            <BarChart3 className="w-5 h-5 text-secondary" />
+                            Weekly Fasting Summary
+                        </h3>
                     </div>
 
                     <div className="h-[200px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart data={fastingData}>
+                            <BarChart data={fastingChartData}>
                                 <defs>
-                                    <linearGradient id="colorHours" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                                        <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                                    <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stopColor="#10b981" />
+                                        <stop offset="100%" stopColor="#059669" />
                                     </linearGradient>
                                 </defs>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
@@ -220,21 +239,34 @@ const Progress = () => {
                                     fontSize={12}
                                     tickLine={false}
                                     axisLine={false}
+                                    unit="h"
                                 />
                                 <Tooltip
-                                    contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #333', borderRadius: '8px' }}
+                                    contentStyle={{
+                                        backgroundColor: '#1a1a1a',
+                                        border: '1px solid #333',
+                                        borderRadius: '8px'
+                                    }}
                                     itemStyle={{ color: '#fff' }}
+                                    formatter={(value: number) => [`${value} hours`, 'Fasted']}
                                 />
-                                <Area
-                                    type="monotone"
+                                <Bar
                                     dataKey="hours"
-                                    stroke="#10b981"
-                                    fillOpacity={1}
-                                    fill="url(#colorHours)"
+                                    fill="url(#barGradient)"
+                                    radius={[4, 4, 0, 0]}
                                 />
-                            </AreaChart>
+                            </BarChart>
                         </ResponsiveContainer>
                     </div>
+                </motion.div>
+
+                {/* Weekly AI Report */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 }}
+                >
+                    <WeeklyReportCard />
                 </motion.div>
             </main>
         </div>
