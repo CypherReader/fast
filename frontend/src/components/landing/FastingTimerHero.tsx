@@ -15,15 +15,10 @@ const getPhase = (hours: number) => {
   return phases[3];
 };
 
-const getRecoveryAmount = (hours: number) => {
-  // $0.125 per hour, max $2.00 at 16 hours
-  return Math.min(hours * 0.125, 2.0);
-};
-
 export const FastingTimerHero = () => {
   const [elapsed, setElapsed] = useState(14 * 3600 + 23 * 60 + 45); // Start at 14:23:45
   const [showMilestone, setShowMilestone] = useState(false);
-  
+
   useEffect(() => {
     const interval = setInterval(() => {
       setElapsed((prev) => {
@@ -42,35 +37,16 @@ export const FastingTimerHero = () => {
   const hours = Math.floor(elapsed / 3600);
   const minutes = Math.floor((elapsed % 3600) / 60);
   const seconds = elapsed % 60;
-  
+
   const progress = Math.min((elapsed / (24 * 3600)) * 100, 100);
   const circumference = 2 * Math.PI * 130;
   const strokeDashoffset = circumference - (progress / 100) * circumference;
-  
+
   const currentPhase = getPhase(hours);
-  const recoveryAmount = getRecoveryAmount(hours);
   const phaseProgress = Math.min(((hours % currentPhase.hours) / currentPhase.hours) * 100, 100);
 
   return (
     <div className="relative">
-      {/* Money recovery counter */}
-      <motion.div
-        className="text-center mb-4"
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-      >
-        <span className="text-muted-foreground text-sm">Recovering</span>
-        <motion.div
-          className="font-display text-3xl font-bold text-primary"
-          key={recoveryAmount.toFixed(2)}
-          initial={{ y: -10, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-        >
-          ${recoveryAmount.toFixed(2)}
-        </motion.div>
-      </motion.div>
-
       {/* Main timer circle */}
       <div className="relative w-[300px] h-[300px] mx-auto">
         {/* Pulsing glow effect */}
@@ -97,7 +73,7 @@ export const FastingTimerHero = () => {
             strokeWidth="12"
             opacity="0.3"
           />
-          
+
           {/* Progress ring with gradient */}
           <motion.circle
             cx="150"
@@ -113,7 +89,7 @@ export const FastingTimerHero = () => {
             animate={{ strokeDashoffset }}
             transition={{ duration: 0.5, ease: "easeOut" }}
           />
-          
+
           <defs>
             <linearGradient id="timerGradientHero" x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="hsl(var(--secondary))" />
