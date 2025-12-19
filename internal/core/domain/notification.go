@@ -39,4 +39,9 @@ const (
 	NotificationTypeHypeReceived  NotificationType = "hype_received" // User received hype support
 	NotificationTypeSOSResolved   NotificationType = "sos_resolved"  // SOS was resolved (rescued)
 	NotificationTypeCortexBackup  NotificationType = "cortex_backup" // Cortex auto-responded to SOS
+	// Smart Reminders
+	NotificationTypeFastStartReminder NotificationType = "fast_start_reminder" // Time to start fasting
+	NotificationTypeFastEndReminder   NotificationType = "fast_end_reminder"   // Fast completing soon
+	NotificationTypeHydrationReminder NotificationType = "hydration_reminder"  // Drink water reminder
+	NotificationTypeWeeklyCheckIn     NotificationType = "weekly_checkin"      // Weekly AI summary
 )

@@ -166,6 +166,7 @@ func main() {
 		progressRepo = postgres.NewPostgresProgressRepository(db)
 		tribeRepo = postgres.NewPostgresTribeRepository(db)
 		sosRepo = postgres.NewPostgresSOSRepository(db)
+		// Note: Using in-memory reminder repo even with DB for now (no postgres impl yet)
 	} else {
 		log.Println("!!! RUNNING IN IN-MEMORY MODE (DATA WILL BE LOST ON RESTART) !!!")
 		userRepo = memory.NewUserRepository()
@@ -182,6 +183,9 @@ func main() {
 		tribeRepo = memory.NewTribeRepository()
 		sosRepo = memory.NewMemorySOSRepository()
 	}
+
+	// Reminder repo (in-memory for now)
+	reminderRepo := memory.NewReminderRepository()
 
 	// Activity Repo (Memory only for now)
 	activityRepo := memory.NewActivityRepository()
@@ -345,6 +349,16 @@ func main() {
 	// Set SOS service in handler
 	handler.SetSOSService(sosService)
 
+	// Initialize Smart Reminder Service
+	smartReminderService := services.NewSmartReminderService(
+		reminderRepo,
+		userRepo,
+		fastingRepo,
+		notificationService,
+		cortexService,
+	)
+	handler.SetSmartReminderService(smartReminderService)
+
 	// Initialize Tribe handler only if tribe service exists
 	if tribeService != nil {
 		tribeHandler := http.NewTribeHandler(tribeService)
@@ -418,6 +432,17 @@ func main() {
 	})
 	if err != nil {
 		log.Fatalf("Failed to add SOS cron job: %v", err)
+	}
+
+	// Add cron job for smart reminders (every 5 minutes)
+	_, err = cronScheduler.AddFunc("*/5 * * * *", func() {
+		ctx := context.Background()
+		if err := smartReminderService.ProcessPendingReminders(ctx); err != nil {
+			log.Printf("Error processing smart reminders: %v", err)
+		}
+	})
+	if err != nil {
+		log.Fatalf("Failed to add smart reminder cron job: %v", err)
 	}
 
 	cronScheduler.Start()

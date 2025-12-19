@@ -15,26 +15,27 @@ import (
 )
 
 type Handler struct {
-	authService         ports.AuthService
-	fastingService      ports.FastingService
-	ketoService         ports.KetoService
-	leaderboardService  ports.LeaderboardService
-	gamificationService ports.GamificationService
-	cortexService       ports.CortexService
-	activityService     ports.ActivityService
-	telemetryService    ports.TelemetryService
-	mealService         ports.MealService
-	recipeService       ports.RecipeService
-	paymentHandler      *PaymentHandler
-	onboardingHandler   *OnboardingHandler
-	oauthHandler        *OAuthHandler
-	notificationService ports.NotificationService
-	socialService       ports.SocialService
-	progressService     ports.ProgressService
-	progressAnalyzer    *services.ProgressAnalyzer
-	streakMonitor       *services.StreakMonitor
-	sosService          ports.SOSService
-	tribeHandler        *TribeHandler
+	authService          ports.AuthService
+	fastingService       ports.FastingService
+	ketoService          ports.KetoService
+	leaderboardService   ports.LeaderboardService
+	gamificationService  ports.GamificationService
+	cortexService        ports.CortexService
+	activityService      ports.ActivityService
+	telemetryService     ports.TelemetryService
+	mealService          ports.MealService
+	recipeService        ports.RecipeService
+	paymentHandler       *PaymentHandler
+	onboardingHandler    *OnboardingHandler
+	oauthHandler         *OAuthHandler
+	notificationService  ports.NotificationService
+	socialService        ports.SocialService
+	progressService      ports.ProgressService
+	progressAnalyzer     *services.ProgressAnalyzer
+	streakMonitor        *services.StreakMonitor
+	sosService           ports.SOSService
+	tribeHandler         *TribeHandler
+	smartReminderService ports.SmartReminderService
 }
 
 func NewHandler(
@@ -89,6 +90,11 @@ func (h *Handler) SetSOSService(sosService ports.SOSService) {
 // SetTribeHandler sets the Tribe handler (called from main.go after handler construction)
 func (h *Handler) SetTribeHandler(tribeHandler *TribeHandler) {
 	h.tribeHandler = tribeHandler
+}
+
+// SetSmartReminderService sets the SmartReminderService (called from main.go after handler construction)
+func (h *Handler) SetSmartReminderService(srs ports.SmartReminderService) {
+	h.smartReminderService = srs
 }
 
 func (h *Handler) Register(c *gin.Context) {
@@ -165,6 +171,9 @@ func (h *Handler) RegisterRoutes(router *gin.Engine) {
 		user.GET("/stats", h.GetUserStats)
 		user.GET("/sos-settings", h.GetSOSSettings)
 		user.PUT("/sos-settings", h.UpdateSOSSettings)
+		user.GET("/reminder-settings", h.GetReminderSettings)
+		user.PUT("/reminder-settings", h.UpdateReminderSettings)
+		user.GET("/optimal-fasting-window", h.GetOptimalFastingWindow)
 	}
 
 	fasting := protected.Group("/fasting")
@@ -1253,4 +1262,79 @@ func (h *Handler) UpdateSOSSettings(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "settings updated"})
+}
+
+// GetReminderSettings handles GET /api/v1/user/reminder-settings
+func (h *Handler) GetReminderSettings(c *gin.Context) {
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	userID := userIDVal.(uuid.UUID)
+
+	if h.smartReminderService == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "reminder service not available"})
+		return
+	}
+
+	settings, err := h.smartReminderService.GetReminderSettings(c.Request.Context(), userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, settings)
+}
+
+// UpdateReminderSettings handles PUT /api/v1/user/reminder-settings
+func (h *Handler) UpdateReminderSettings(c *gin.Context) {
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	userID := userIDVal.(uuid.UUID)
+
+	if h.smartReminderService == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "reminder service not available"})
+		return
+	}
+
+	var settings domain.ReminderSettings
+	if err := c.BindJSON(&settings); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	err := h.smartReminderService.UpdateReminderSettings(c.Request.Context(), userID, &settings)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "reminder settings updated"})
+}
+
+// GetOptimalFastingWindow handles GET /api/v1/user/optimal-fasting-window
+func (h *Handler) GetOptimalFastingWindow(c *gin.Context) {
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	userID := userIDVal.(uuid.UUID)
+
+	if h.smartReminderService == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "reminder service not available"})
+		return
+	}
+
+	window, err := h.smartReminderService.AnalyzeOptimalFastingWindow(c.Request.Context(), userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, window)
 }

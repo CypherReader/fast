@@ -251,3 +251,24 @@ type SOSService interface {
 	UpdateSOSSettings(ctx context.Context, userID uuid.UUID, settings *domain.SOSSettings) error
 	CheckAndSendCortexBackup(ctx context.Context, sosID uuid.UUID) error // Auto-respond after 10m
 }
+
+// ReminderRepository defines the interface for scheduled reminder persistence
+type ReminderRepository interface {
+	Save(ctx context.Context, reminder *domain.ScheduledReminder) error
+	FindPending(ctx context.Context, before time.Time) ([]domain.ScheduledReminder, error)
+	MarkSent(ctx context.Context, reminderID uuid.UUID) error
+	DeleteByUserAndType(ctx context.Context, userID uuid.UUID, reminderType domain.ReminderType) error
+	GetUserSettings(ctx context.Context, userID uuid.UUID) (*domain.ReminderSettings, error)
+	SaveUserSettings(ctx context.Context, settings *domain.ReminderSettings) error
+}
+
+// SmartReminderService defines the business logic for smart reminders
+type SmartReminderService interface {
+	ScheduleFastStartReminder(ctx context.Context, userID uuid.UUID) error
+	ScheduleFastEndReminder(ctx context.Context, userID uuid.UUID, fastEndTime time.Time) error
+	ScheduleHydrationReminder(ctx context.Context, userID uuid.UUID) error
+	ProcessPendingReminders(ctx context.Context) error
+	GetReminderSettings(ctx context.Context, userID uuid.UUID) (*domain.ReminderSettings, error)
+	UpdateReminderSettings(ctx context.Context, userID uuid.UUID, settings *domain.ReminderSettings) error
+	AnalyzeOptimalFastingWindow(ctx context.Context, userID uuid.UUID) (*domain.OptimalFastingWindow, error)
+}
