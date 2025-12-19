@@ -35,6 +35,7 @@ const OnboardingPayment = () => {
   const navigate = useNavigate();
   const { state } = useOnboarding();
 
+  const [cardholderName, setCardholderName] = useState('');
   const [cardNumber, setCardNumber] = useState('');
   const [expiry, setExpiry] = useState('');
   const [cvc, setCvc] = useState('');
@@ -67,6 +68,10 @@ const OnboardingPayment = () => {
     setError('');
 
     // Basic validation
+    if (cardholderName.trim().length < 2) {
+      setError('Please enter the cardholder name');
+      return;
+    }
     if (cardNumber.replace(/\s/g, '').length < 16) {
       setError('Please enter a valid card number');
       return;
@@ -125,6 +130,7 @@ const OnboardingPayment = () => {
   };
 
   const isFormValid =
+    cardholderName.trim().length >= 2 &&
     cardNumber.replace(/\s/g, '').length >= 16 &&
     expiry.replace(/\s|\//g, '').length >= 4 &&
     cvc.length >= 3 &&
@@ -163,6 +169,21 @@ const OnboardingPayment = () => {
 
             {/* Card Form */}
             <div className="space-y-4">
+              {/* Cardholder Name */}
+              <div className="space-y-2">
+                <Label htmlFor="cardholderName" className="text-muted-foreground">
+                  Cardholder name <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="cardholderName"
+                  placeholder="John Doe"
+                  value={cardholderName}
+                  onChange={(e) => setCardholderName(e.target.value)}
+                  className="bg-card border-border h-12 text-foreground placeholder:text-muted-foreground/50"
+                  autoComplete="cc-name"
+                />
+              </div>
+
               {/* Card Number */}
               <div className="space-y-2">
                 <Label htmlFor="cardNumber" className="text-muted-foreground">
@@ -176,6 +197,7 @@ const OnboardingPayment = () => {
                     onChange={(e) => setCardNumber(formatCardNumber(e.target.value))}
                     maxLength={19}
                     className="bg-card border-border h-12 pl-12 text-foreground placeholder:text-muted-foreground/50"
+                    autoComplete="cc-number"
                   />
                   <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 </div>
