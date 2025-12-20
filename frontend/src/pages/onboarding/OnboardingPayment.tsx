@@ -110,38 +110,55 @@ const OnboardingPayment = () => {
       return;
     }
 
+    console.log('=== PAYMENT FLOW START ===');
+    console.log('isOAuthUser:', isOAuthUser);
+    console.log('existingToken:', existingToken ? 'exists' : 'none');
+    console.log('state:', { email: state.email, name: state.name, goal: state.goal, fastingPlan: state.fastingPlan });
+
     setIsProcessing(true);
 
     try {
       // If not OAuth user, register first
       if (!isOAuthUser) {
-        // 1. Register User
+        console.log('Step 1: Registering new user...');
         const registerResponse = await api.post<{ token: string }>('/auth/register', {
           email: state.email,
           password: state.password,
           name: state.name,
         });
+        console.log('Step 1: Registration successful, token received');
 
-        // 2. Store Token
+        // Store Token
         localStorage.setItem('token', registerResponse.data.token);
+        console.log('Step 1: Token stored in localStorage');
+      } else {
+        console.log('Step 1: Skipping registration (OAuth user)');
       }
 
-      // 3. Update Profile (Goal & Plan) - for all users
+      // Update Profile (Goal & Plan) - for all users
+      console.log('Step 2: Updating profile...', { goal: state.goal, fasting_plan: state.fastingPlan });
       await api.put('/onboarding/profile', {
         goal: state.goal,
         fasting_plan: state.fastingPlan,
       });
+      console.log('Step 2: Profile updated successfully');
 
-      // 4. Process Subscription Payment (Mock payment, real backend update)
+      // Process Subscription Payment
+      console.log('Step 3: Processing payment...');
       await api.post('/payments/deposit', {
         amount: 4.99,
         payment_method_id: 'pm_card_visa', // Mock Stripe ID
       });
+      console.log('Step 3: Payment successful');
 
+      console.log('=== PAYMENT FLOW COMPLETE - Navigating to success ===');
       navigate('/onboarding/success');
     } catch (err: unknown) {
+      console.error('=== PAYMENT FLOW ERROR ===');
       console.error('Payment/Registration failed:', err);
-      const error = err as { response?: { data?: { error?: string } } };
+      const error = err as { response?: { data?: { error?: string }; status?: number } };
+      console.error('Error status:', error.response?.status);
+      console.error('Error data:', error.response?.data);
       setError(error.response?.data?.error || 'Failed to process payment. Please try again.');
     } finally {
       setIsProcessing(false);
